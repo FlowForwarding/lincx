@@ -31,3 +31,15 @@ Code that starts external programs (using os:cmd/1):
 meck and sync are development-related thus we still end up with two major
 incomaptibilities: epcap and procket.
 
+The procket dependency is very slim. There are only a few lines that use it:
+
+	linc_us3/src/linc_us3_port_native.erl:    procket:write(Socket, Frame);
+	linc_us3/src/linc_us3_port_native.erl:    procket:write(Socket, Frame);
+	linc_us3/src/linc_us3_port_native.erl:    procket:close(Socket).
+	linc_us4/src/linc_us4_port_native.erl:    procket:write(Socket, Frame);
+	linc_us4/src/linc_us4_port_native.erl:    procket:write(Socket, Frame);
+	linc_us4/src/linc_us4_port_native.erl:    procket:close(Socket).
+
+And procket:write() calls happen on darwin or netbsd only.
+
+
