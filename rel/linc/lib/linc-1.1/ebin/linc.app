@@ -1,0 +1,22 @@
+%% app generated at {2013,12,12} {11,54,5}
+{application,linc,
+             [{description,"OpenFlow Logical Switch"},
+              {vsn,"1.1"},
+              {id,[]},
+              {modules,[gen_switch,linc,linc_buffer,linc_capable_sup,
+                        linc_logic,linc_ofconfig,linc_sup]},
+              {registered,[]},
+              {applications,[kernel,stdlib,lager,mnesia]},
+              {included_applications,[]},
+              {env,[{capable_switch_id,"CapableSwitch0"},
+                    {supported_versions,[3,4]},
+                    {of_config,enabled},
+                    {manufacturer_desc,<<"FlowForwarding.org">>},
+                    {hardware_desc,<<"Unknown">>},
+                    {software_desc,<<"LINC OpenFlow Software Switch 1.1">>},
+                    {serial_number,<<"Unknown">>},
+                    {datapath_desc,<<"Unknown">>}]},
+              {maxT,infinity},
+              {maxP,infinity},
+              {mod,{linc,[]}}]}.
+

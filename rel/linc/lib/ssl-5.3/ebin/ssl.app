@@ -1,0 +1,20 @@
+%% app generated at {2013,12,12} {11,54,6}
+{application,ssl,
+             [{description,"Erlang/OTP SSL application"},
+              {vsn,"5.3"},
+              {id,[]},
+              {modules,[dtls,dtls_connection,dtls_handshake,dtls_record,
+                        inet_tls_dist,ssl,ssl_alert,ssl_app,ssl_certificate,
+                        ssl_cipher,ssl_connection_sup,ssl_dist_sup,
+                        ssl_manager,ssl_pkix_db,ssl_session,ssl_session_cache,
+                        ssl_session_cache_api,ssl_socket,ssl_srp_primes,
+                        ssl_ssl2,ssl_ssl3,ssl_sup,ssl_tls1,ssl_tls_dist_proxy,
+                        tls,tls_connection,tls_handshake,tls_record]},
+              {registered,[ssl_sup,ssl_manager]},
+              {applications,[crypto,public_key,kernel,stdlib]},
+              {included_applications,[]},
+              {env,[]},
+              {maxT,infinity},
+              {maxP,infinity},
+              {mod,{ssl_app,[]}}]}.
+

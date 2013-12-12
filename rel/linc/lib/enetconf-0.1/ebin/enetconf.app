@@ -1,0 +1,21 @@
+%% app generated at {2013,12,12} {11,54,5}
+{application,enetconf,
+             [{description,"NETCONF for Erlang"},
+              {vsn,"0.1"},
+              {id,[]},
+              {modules,[enetconf,enetconf_capabilities,enetconf_client,
+                        enetconf_default,enetconf_fm_chunked,enetconf_fm_eom,
+                        enetconf_parser,enetconf_ssh,enetconf_xml,
+                        gen_netconf]},
+              {registered,[]},
+              {applications,[kernel,stdlib,crypto,ssh,xmerl]},
+              {included_applications,[]},
+              {env,[{capabilities,[{base,{1,1}},{base,{1,0}}]},
+                    {callback_module,enetconf_default},
+                    {sshd_ip,{127,0,0,1}},
+                    {sshd_port,1830},
+                    {sshd_user_passwords,[{"guest","guest"}]}]},
+              {maxT,infinity},
+              {maxP,infinity},
+              {mod,{enetconf,[]}}]}.
+
