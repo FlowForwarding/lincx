@@ -42,4 +42,14 @@ The procket dependency is very slim. There are only a few lines that use it:
 
 And procket:write() calls happen on darwin or netbsd only.
 
+Note: when adding bridge that connect to primary NIC (eth0) provide static
+configuration that matches that of eth0.
+
+----[13/12/13 17:36]------------------------------------------------------------
+
+Note: there are two configuration files rel/files/sys.config and
+rel/linc/releases/1.0/sys.config. rel/linc/bin/linc console uses the latter.
+
+The mock controller and linc switch tested using Ping demo.
+
 

@@ -1,4 +1,4 @@
-%% app generated at {2013,12,12} {11,54,6}
+%% app generated at {2013,12,13} {16,12,49}
 {application,ssh,
              [{description,"SSH-2 for Erlang/OTP"},
               {vsn,"2.1.7"},

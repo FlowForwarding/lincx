@@ -1,4 +1,4 @@
-%% app generated at {2013,12,12} {11,54,5}
+%% app generated at {2013,12,13} {16,12,49}
 {application,linc_us4,
              [{description,"LINC Userspace Backend v4"},
               {vsn,"1.1"},
