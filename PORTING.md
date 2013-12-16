@@ -52,4 +52,17 @@ rel/linc/releases/1.0/sys.config. rel/linc/bin/linc console uses the latter.
 
 The mock controller and linc switch tested using Ping demo.
 
+----[16/12/13 23:55]------------------------------------------------------------
+
+LINC uses reltool for release packaging. This does not play well with the
+current build service interface that expects the 'standard' rebar layout with
+deps and src directories, etc. The code can be repackaged or the reltool layout
+should be added to the build service and the ling_builder plugin.
+
+Currently linc gets started using bash scripts. This will not work for LING.
+The scripts that start linc in certain configuration must reside in Dom0 and use
+command line ('extra' parameter of the domain config) to pass options to linc.
+
+rebar eunit reports that all 107 tests passed. The unit tests is the minimum
+proof of correctness of the ported version.
 
