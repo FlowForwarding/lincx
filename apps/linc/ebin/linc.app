@@ -11,5 +11,7 @@
                     {software_desc,<<"LINC OpenFlow Software Switch 1.1">>},
                     {serial_number,<<"Unknown">>},
                     {datapath_desc,<<"Unknown">>}]},
-              {modules,[gen_switch,linc,linc_buffer,linc_capable_sup,
-                        linc_logic,linc_ofconfig,linc_sup]}]}.
+              {modules,[gen_switch,linc,linc_backend,linc_buffer,
+                        linc_buffer_tests,linc_capable_sup,linc_logic,
+                        linc_ofconfig,linc_ofconfig_tests,linc_sup,
+                        linc_tests]}]}.

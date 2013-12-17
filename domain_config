@@ -1,5 +1,5 @@
 name = "lincx"
 kernel = "vmling"
-extra = ""
+extra = "-dhcp"
 memory = "1024"
 vif = ["",]

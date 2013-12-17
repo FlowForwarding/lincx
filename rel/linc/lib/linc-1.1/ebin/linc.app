@@ -1,10 +1,12 @@
-%% app generated at {2013,12,17} {12,58,48}
+%% app generated at {2013,12,17} {17,12,35}
 {application,linc,
              [{description,"OpenFlow Logical Switch"},
               {vsn,"1.1"},
               {id,[]},
-              {modules,[gen_switch,linc,linc_buffer,linc_capable_sup,
-                        linc_logic,linc_ofconfig,linc_sup]},
+              {modules,[gen_switch,linc,linc_backend,linc_buffer,
+                        linc_buffer_tests,linc_capable_sup,linc_logic,
+                        linc_ofconfig,linc_ofconfig_tests,linc_sup,
+                        linc_tests]},
               {registered,[]},
               {applications,[kernel,stdlib,lager,mnesia]},
               {included_applications,[]},

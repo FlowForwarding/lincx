@@ -63,8 +63,9 @@ Currently linc gets started using bash scripts. This will not work for LING.
 The scripts that start linc in certain configuration must reside in Dom0 and use
 command line ('extra' parameter of the domain config) to pass options to linc.
 
-rebar eunit reports that all 107 tests passed. The unit tests is the minimum
-proof of correctness of the ported version.
+'make test' reports that all tests passed (except for linc_tests that says that
+asn1 not started). The unit tests is the minimum proof of correctness of the
+ported version.
 
 ----[17/12/13 17:19]------------------------------------------------------------
 
@@ -75,7 +76,46 @@ stanzas added to rebar.config to enable ling_builder plugin. The build was
 successful.
 
 The output (unstripped) image is less than 8M. The plugin successfully imported
-all relevant sources including dependencies. The image is suitable for unit
-testing.
+all relevant sources including dependencies but not compiled tests. The compiled
+tests are needed to run eunit.
+
+Contents of apps/linc/test directory copied to app/linc/src to ensure that compiled
+tests are available at runtime. A new LING image produced that includes the tests.
+
+The first try unsuccessful:
+
+	Eshell V5.10.2  (abort with ^G)
+	1> 
+	1> eunit:test(linc_buffer_tests).
+	undefined
+	*unexpected termination of test process*
+	::{badarg,[{erlang,atom_to_list,[[]],[]},
+		   {eunit_lib,fun_parent,1,[{file,"eunit_lib.erl"},{line,383}]},
+		   {eunit_data,parse_function,1,[{file,"eunit_data.erl"},{line,434}]},
+		   {eunit_data,next,1,[{file,"eunit_data.erl"},{line,170}]},
+		   {eunit_data,lookahead,1,[{file,[...]},{line,...}]},
+		   {eunit_data,group,1,[{file,...},{...}]},
+		   {eunit_data,next,1,[{...}|...]},
+		   {eunit_data,lookahead,1,[...]}]}
+
+	=======================================================
+	  Failed: 0.  Skipped: 0.  Passed: 0.
+	One or more tests were cancelled.
+	error
+
+erlang:fun_info(F, name) returns {name,[]} on LING. This needs a fix. A
+relevant bit from term_util.c:
+
+    case A_NAME:
+        return nil; //TODO
+
+Fixed. fun_info(F, name) returns {name,[]} only for unloaded modules.
+
+The first ever unit test passes now:
+
+	1> eunit:test(linc_buffer_tests).
+  	All 3 tests passed.
+	ok
+	2> 
 
 

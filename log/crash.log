@@ -1,0 +1,57 @@
+2013-12-17 16:59:31 =CRASH REPORT====
+  crasher:
+    initial call: tuncer:init/1
+    pid: <0.128.0>
+    registered_name: []
+    exception exit: {{{badmatch,{error,eperm}},[{tuncer,init,1,[{file,"src/tuncer.erl"},{line,155}]},{gen_server,init_it,6,[{file,"gen_server.erl"},{line,304}]},{proc_lib,init_p_do_apply,3,[{file,"proc_lib.erl"},{line,239}]}]},[{gen_server,init_it,6,[{file,"gen_server.erl"},{line,328}]},{proc_lib,init_p_do_apply,3,[{file,"proc_lib.erl"},{line,239}]}]}
+    ancestors: [<0.127.0>,<0.123.0>,<0.120.0>,<0.113.0>,<0.86.0>,<0.85.0>]
+    messages: []
+    links: [<0.127.0>]
+    dictionary: []
+    trap_exit: true
+    status: running
+    heap_size: 987
+    stack_size: 27
+    reductions: 1347
+  neighbours:
+2013-12-17 16:59:31 =CRASH REPORT====
+  crasher:
+    initial call: tuncer:init/1
+    pid: <0.133.0>
+    registered_name: []
+    exception exit: {{{badmatch,{error,eperm}},[{tuncer,init,1,[{file,"src/tuncer.erl"},{line,155}]},{gen_server,init_it,6,[{file,"gen_server.erl"},{line,304}]},{proc_lib,init_p_do_apply,3,[{file,"proc_lib.erl"},{line,239}]}]},[{gen_server,init_it,6,[{file,"gen_server.erl"},{line,328}]},{proc_lib,init_p_do_apply,3,[{file,"proc_lib.erl"},{line,239}]}]}
+    ancestors: [<0.132.0>,<0.123.0>,<0.120.0>,<0.113.0>,<0.86.0>,<0.85.0>]
+    messages: []
+    links: [<0.132.0>]
+    dictionary: []
+    trap_exit: true
+    status: running
+    heap_size: 610
+    stack_size: 27
+    reductions: 1398
+  neighbours:
+2013-12-17 16:59:31 =CRASH REPORT====
+  crasher:
+    initial call: tuncer:init/1
+    pid: <0.136.0>
+    registered_name: []
+    exception exit: {{{badmatch,{error,eperm}},[{tuncer,init,1,[{file,"src/tuncer.erl"},{line,155}]},{gen_server,init_it,6,[{file,"gen_server.erl"},{line,304}]},{proc_lib,init_p_do_apply,3,[{file,"proc_lib.erl"},{line,239}]}]},[{gen_server,init_it,6,[{file,"gen_server.erl"},{line,328}]},{proc_lib,init_p_do_apply,3,[{file,"proc_lib.erl"},{line,239}]}]}
+    ancestors: [<0.135.0>,<0.123.0>,<0.120.0>,<0.113.0>,<0.86.0>,<0.85.0>]
+    messages: []
+    links: [<0.135.0>]
+    dictionary: []
+    trap_exit: true
+    status: running
+    heap_size: 610
+    stack_size: 27
+    reductions: 1444
+  neighbours:
+2013-12-17 17:00:04 =ERROR REPORT====
+Bad input fd in erts_poll()! fd=15, port=#Port<0.10600>, driver=fd, name=15/15
+
+2013-12-17 17:09:18 =ERROR REPORT====
+Bad input fd in erts_poll()! fd=14, port=#Port<0.10598>, driver=fd, name=14/14
+
+2013-12-17 17:13:23 =ERROR REPORT====
+Bad input fd in erts_poll()! fd=15, port=#Port<0.10598>, driver=fd, name=15/15
+
