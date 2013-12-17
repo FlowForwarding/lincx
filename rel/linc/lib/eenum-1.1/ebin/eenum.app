@@ -1,4 +1,4 @@
-%% app generated at {2013,12,13} {16,12,48}
+%% app generated at {2013,12,17} {12,58,48}
 {application,eenum,
              [{description,"Simple enumerations for Erlang"},
               {vsn,"1.1"},

@@ -66,3 +66,16 @@ command line ('extra' parameter of the domain config) to pass options to linc.
 rebar eunit reports that all 107 tests passed. The unit tests is the minimum
 proof of correctness of the ported version.
 
+----[17/12/13 17:19]------------------------------------------------------------
+
+The Erlang on Xen image can be seen as alternative to the output of the reltool.
+
+A preliminary build using the Erlang on Xen build service attempted. A few
+stanzas added to rebar.config to enable ling_builder plugin. The build was
+successful.
+
+The output (unstripped) image is less than 8M. The plugin successfully imported
+all relevant sources including dependencies. The image is suitable for unit
+testing.
+
+

@@ -1,0 +1,5 @@
+name = "lincx"
+kernel = "vmling"
+extra = ""
+memory = "1024"
+vif = ["",]

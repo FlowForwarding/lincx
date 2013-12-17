@@ -1,4 +1,4 @@
-%% app generated at {2013,12,13} {16,12,49}
+%% app generated at {2013,12,17} {12,58,48}
 {application,of_protocol,
              [{description,"OpenFlow Protocol library"},
               {vsn,"1.0"},
