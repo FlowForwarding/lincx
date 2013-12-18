@@ -196,3 +196,28 @@ The build service does the .beam-to-.ling transformation of individual modules.
 Calls to compile_forms() and the like inside meck should call the build service
 to obtain loadable modules.
 
+Note: the compiler uses filename:absname(). This function fails if the current
+directory is not defined as is the case for LING by default. The current
+directory can be set using '-home Dir' command-line option. If current directory
+is set then the error above changes to (a more sensible):
+
+	3> eunit:test(linc_ofconfig_tests).
+	No LING tag found
+	undefined
+
+	=ERROR REPORT==== 18-Dec-2013::12:51:08 ===
+	Loading of  failed: not_loaded
+	*unexpected termination of test process*
+	::{error_loading_module,inet,not_loaded}
+
+	=======================================================
+	  Failed: 0.  Skipped: 0.  Passed: 0.
+	One or more tests were cancelled.
+	error
+
+The error means that the compiler produced a beam file but the file cannot be
+loaded on LING. A transformation via the build service is needed. There is a
+project called lingkit that does this. It is added as a dependency,
+meck_code.erl changed to use it.
+
+
