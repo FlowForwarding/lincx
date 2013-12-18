@@ -118,4 +118,81 @@ The first ever unit test passes now:
 	ok
 	2> 
 
+----[18/12/13 11:38]------------------------------------------------------------
+
+Another case of differing behaviour:
+
+	Eshell V5.10.2  (abort with ^G)
+	1> 
+	1> eunit:test(linc_ofconfig_tests).
+	undefined
+	*unexpected termination of test process*
+	::{not_implemented,[{erlang,is_builtin,3,
+				    [{file,"preload/erlang.erl"},{line,736}]},
+			    {meck_proc,expect_type,3,
+				       [{file,"src/meck_proc.erl"},{line,324}]},
+			    {meck_proc,'-normal_exports/1-lc$^0/1-0-',2,
+				       [{file,"src/meck_proc.erl"},{line,314}]},
+			    {meck_proc,normal_exports,1,
+				       [{file,"src/meck_proc.erl"},{line,313}]},
+			    {meck_proc,init,1,[{file,[...]},{line,...}]},
+			    {gen_server,init_it,6,[{file,...},{...}]},
+			    {proc_lib,init_p_do_apply,3,[{...}|...]}]}
+
+	=======================================================
+	  Failed: 0.  Skipped: 0.  Passed: 0.
+	One or more tests were cancelled.
+	error
+
+A relevant bit from erlang.erl:
+
+	is_builtin(_M, _F, _A) ->
+		erlang:error(not_implemented). %%TODO
+
+LING has the same function in a different module - bifs:is_builtin/1. These
+should be merged - done.
+
+A reference to cover application added to rebar.config as {import_lib,tools}.
+
+Another error from the meck:
+
+	Eshell V5.10.2  (abort with ^G)
+	1> eunit:test(linc_ofconfig_tests).
+	undefined
+	*unexpected termination of test process*
+	::{{case_clause,{error,beam_lib,{not_a_beam_file,<<70,79,82,49,0,0,...>>}}},
+	   [{meck_code,abstract_code,1,[{file,"src/meck_code.erl"},{line,44}]},
+		{meck_proc,backup_original,2,[{file,"src/meck_proc.erl"},{line,338}]},
+		{meck_proc,init,1,[{file,"src/meck_proc.erl"},{line,191}]},
+		{gen_server,init_it,6,[{file,"gen_server.erl"},{line,304}]},
+		{proc_lib,init_p_do_apply,3,[{file,[...]},{line,...}]}]}
+
+	=======================================================
+	  Failed: 0.  Skipped: 0.  Passed: 0.
+	One or more tests were cancelled.
+	error
+
+meck_proc.erl fixed to accept more general errors including the above. A
+reference to compiler application added.
+
+meck is using dynamic generation of mock modules. In general, this is possible
+with LING but requires changes to meck. The obstacle is the transformation of
+.beam files to .ling files. BEAM does a transformation at runtime. LING
+transforms the code statically. The problems manifest itself now as:
+
+	Eshell V5.10.2  (abort with ^G)
+	1> eunit:test(linc_ofconfig_tests).
+	undefined
+	*unexpected termination of test process*
+	::{compile_forms,{error,[{[],[{none,compile,{crash,beam_asm,{...}}}]}],[]}}
+
+	=======================================================
+	  Failed: 0.  Skipped: 0.  Passed: 0.
+	One or more tests were cancelled.
+	error
+	2> 
+
+The build service does the .beam-to-.ling transformation of individual modules.
+Calls to compile_forms() and the like inside meck should call the build service
+to obtain loadable modules.
 

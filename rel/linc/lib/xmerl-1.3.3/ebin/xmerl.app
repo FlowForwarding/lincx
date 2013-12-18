@@ -1,4 +1,4 @@
-%% app generated at {2013,12,17} {17,12,35}
+%% app generated at {2013,12,18} {13,27,7}
 {application,xmerl,
              [{description,"XML parser"},
               {vsn,"1.3.3"},
