@@ -1,6 +1,6 @@
 name = "lincx"
 kernel = "vmling"
 #extra = "-ipaddr 192.168.0.100 -netmask 255.255.255.0 -gateway 192.168.0.1"
-extra = "-dhcp"
+extra = "-dhcp -home /"
 memory = "1024"
 vif = ["",]

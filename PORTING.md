@@ -220,4 +220,23 @@ loaded on LING. A transformation via the build service is needed. There is a
 project called lingkit that does this. It is added as a dependency,
 meck_code.erl changed to use it.
 
+----[19/12/13 12:29]------------------------------------------------------------
+
+lingkit uses inets/httpc to use the build service. Unfortunately this does not
+work for LINC. linc_ofconfig_tests (and other tests?) mock inet module and
+cripple lingkit along the way. The solution is to add .beam -> .ling
+transformation to the image and stop using the build service (and lingkit).
+
+ling_ofconfig_tests now passes with all the mocking:
+
+	1> 
+	1> eunit:test(linc_ofconfig_tests).
+  	All 3 tests passed.
+	ok
+	2> 
+
+The testing harness itself is a hard test for the virtual machine. I had to
+enable the complete dynamic compilation support to the detriment of the startup
+time. There is a '-nobeam' option to turn this off if your code does not expect
+to load dynamically compiled code.
 
