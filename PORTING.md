@@ -285,3 +285,32 @@ Let us fix this. asn1 and crypto added as dependencies. application:start(asn1)
 and application:start(crypto) run before the test. public_key, ssh, xmerl,
 mnesia, syntax_tools are added as dependencies in rebar.config too. 
 
+----[21/12/13 00:52]------------------------------------------------------------
+
+For meck to work I had to preserve the abstract code embedded inside .beam
+files. This increased the image size dramatically. This should be made optional
+because production systems do not need the source code. meck library patched to
+use ling_lib:abstract_code() if beam_lib:chunks() fails.
+
+linc_tests still does not pass:
+
+	1> application:start(asn1).
+	ok
+	2> application:start(crypto).
+	ok
+	3> eunit:test(linc_tests).
+	22:50:20.595 [error] Failed to open log file log/error.log with error not owner
+	22:50:20.597 [error] Failed to open log file log/console.log with error not
+	owner
+	22:50:21.092 [error] Failed to open crash log file log/crash.log with error: not
+	owner
+	linc_tests: switch_setup_test_ (Start/stop LINC common logic)...*timed out*
+	undefined
+	=======================================================
+	  Failed: 0.  Skipped: 0.  Passed: 0.
+	One or more tests were cancelled.
+	error
+
+The "Failed to open" errors means that we need to add a writable filesystem
+under log/.
+
