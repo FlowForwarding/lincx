@@ -314,3 +314,16 @@ linc_tests still does not pass:
 The "Failed to open" errors means that we need to add a writable filesystem
 under log/.
 
+A writable filesystem mounted at /lincx/log. A sparse 4G file added as a block
+device to the virtual instance. A '-goofs /lincx/log' option tells the boot
+sequence that we want to use the first block device as a GooFS volume and mount
+it at /lincx/log. The volume gets formatted automatically on the first use.
+
+The writable filesystem allows us to collect the logs. error.log and crash.log
+are empty. console.log contains:
+
+	2013-12-20 23:12:45.020 [info] <0.6.0> Application lager started on node nonode@nohost
+	2013-12-20 23:12:49.308 [info] <0.6.0> Application enetconf started on node nonode@nohost
+	2013-12-20 23:12:50.027 [info] <0.6.0> Application compiler exited with reason: stopped
+
+There may be an issue with compiler.
