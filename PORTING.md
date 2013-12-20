@@ -237,6 +237,51 @@ ling_ofconfig_tests now passes with all the mocking:
 
 The testing harness itself is a hard test for the virtual machine. I had to
 enable the complete dynamic compilation support to the detriment of the startup
-time. There is a '-nobeam' option to turn this off if your code does not expect
-to load dynamically compiled code.
+time. There is now a '-nobeam' option to turn this off if your code does not
+expect to load dynamically compiled code.
+
+----[18/12/13 18:23]------------------------------------------------------------
+
+A new issue:
+
+	1> eunit:test(linc_tests).
+	undefined
+	*unexpected termination of test process*
+	::{badarg,[{erlang,round,[30000],[]},
+			   {eunit_data,parse,1,[{file,"eunit_data.erl"},{line,253}]},
+			   {eunit_data,next,1,[{file,"eunit_data.erl"},{line,170}]},
+			   {eunit_data,lookahead,1,[{file,"eunit_data.erl"},{line,530}]},
+			   {eunit_data,group,1,[{file,[...]},{line,...}]},
+			   {eunit_data,next,1,[{file,...},{...}]},
+			   {eunit_data,iter_next,1,[{...}|...]},
+			   {eunit_proc,get_next_item,1,[...]}]}
+
+	=======================================================
+	  Failed: 0.  Skipped: 0.  Passed: 0.
+	One or more tests were cancelled.
+	error
+	2> 
+
+LING does not accept integer as an argument to erlang:round(). Fixed.
+linc_tests wants public_key application - added as a dependency.
+
+As expected linc_tests returns the same error as on Erlang/OTP:
+
+	1> 
+	1> eunit:test(linc_tests).
+	module 'linc_tests'
+	*** context setup failed ***
+	**in function linc_tests:setup/0 (src/linc_tests.erl, line 70)
+	**error:{badmatch,{error,{not_started,asn1}}}
+
+
+	=======================================================
+	  Failed: 0.  Skipped: 0.  Passed: 0.
+	One or more tests were cancelled.
+	error
+	2> 
+
+Let us fix this. asn1 and crypto added as dependencies. application:start(asn1)
+and application:start(crypto) run before the test. public_key, ssh, xmerl,
+mnesia, syntax_tools are added as dependencies in rebar.config too. 
 

@@ -1,6 +1,6 @@
 name = "lincx"
 kernel = "vmling"
 #extra = "-ipaddr 192.168.0.100 -netmask 255.255.255.0 -gateway 192.168.0.1"
-extra = "-dhcp -home /"
+extra = "-dhcp -home / -pz /lincx/deps/eenum/ebin  -pz /lincx/deps/enetconf/ebin -pz /lincx/deps/epcap/ebin -pz /lincx/deps/lager/ebin -pz /lincx/deps/ling_builder/ebin -pz /lincx/deps/meck/ebin -pz /lincx/deps/of_config/ebin -pz /lincx/deps/of_protocol/ebin -pz /lincx/pkt/ebin -pz /lincx/deps/procket/ebin -pz /lincx/deps/sync/deps -pz /lincx/deps/tunctl/ebin -pz /lincx/apps/linc/ebin -pz /lincx/apps/linc_us3/ebin -pz /lincx/apps/linc_us4/ebin"
 memory = "1024"
 vif = ["",]
