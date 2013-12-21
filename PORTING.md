@@ -326,4 +326,39 @@ are empty. console.log contains:
 	2013-12-20 23:12:49.308 [info] <0.6.0> Application enetconf started on node nonode@nohost
 	2013-12-20 23:12:50.027 [info] <0.6.0> Application compiler exited with reason: stopped
 
-There may be an issue with compiler.
+It took me half a day to figure out the timeout set in the eunit specification
+is "per group of tests" and the default timeout of 5s still applies to
+individual tests. Changing the specification in the beginning of linc_tests.erl
+to:
+	switch_setup_test_() ->
+		{timeout, 30,
+		 {setup,
+		  fun setup/0,
+		  fun teardown/1,
+		  [{timeout, 30, {"Start/stop LINC common logic", fun logic/0}}]}}.
+
+brings us a step further:
+
+	2> eunit:test(linc_tests).
+	linc_tests: switch_setup_test_ (Start/stop LINC common logic)...*failed*
+	in function linc_tests:'-logic/0-fun-2-'/1 (src/linc_tests.erl, line 64)
+	in call from linc_tests:logic/0 (src/linc_tests.erl, line 64)
+	**error:{assertEqual_failed,
+		[{module,linc_tests},
+		 {line,64},
+		 {expression,"application : start ( linc )"},
+		 {expected,ok},
+		 {value,
+			 {error,
+				 {bad_return,
+					 {{linc,start,[normal,[]]},{'EXIT',{aborted,{...}}}}}}}]}
+
+
+	13:48:31.794 [error] CRASH REPORT Process <0.350.0> with 0 neighbours exited
+	with reason: {{aborted,{no_exists,[linc_ofconfig_startup,startup]}},[]}
+	=======================================================
+	  Failed: 1.  Skipped: 0.  Passed: 0.
+	error
+
+no_exists is a mnesia error code.
+

@@ -27,7 +27,7 @@ switch_setup_test_() ->
      {setup,
       fun setup/0,
       fun teardown/1,
-      [{"Start/stop LINC common logic", fun logic/0}]}}.
+      [{timeout, 30, {"Start/stop LINC common logic", fun logic/0}}]}}.
 
 logic() ->
     %% As a logic backend we choose stub module 'linc_backend' from linc/test
@@ -57,7 +57,16 @@ logic() ->
     meck:new(Backend),
     meck:expect(Backend, start, fun(_) -> {ok, version, state} end),
     meck:expect(Backend, stop, fun(_) -> ok end),
+
+	%%MK
+	%%ling:trace(3),
+
     ?assertEqual(ok, application:start(linc)),
+
+	%%MK
+	%%ling:trace(0),
+	erlang:display(linc_started),
+
     assert_linc_logic_is_running(SwitchId, 10),
     ?assertEqual(ok, application:stop(linc)),
     meck:unload(Backend),
@@ -66,6 +75,10 @@ logic() ->
 %% Fixtures --------------------------------------------------------------------
 
 setup() ->
+	%%MK
+	application:start(asn1),
+	application:start(crypto),
+
     error_logger:tty(false),
     ok = application:start(public_key),
     ok = application:start(ssh),
