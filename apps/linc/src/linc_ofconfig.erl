@@ -395,10 +395,10 @@ handle_get(SessionId, Filter) ->
 %%------------------------------------------------------------------------------
 
 init([]) ->
-    mnesia:change_table_copy_type(schema, node(), disc_copies),
+    %mnesia:change_table_copy_type(schema, node(), disc_copies),
     TabDef = [{attributes, record_info(fields, ofconfig)},
-              {record_name, ofconfig},
-              {disc_copies, [node()]}],
+              {record_name, ofconfig}],
+              %{disc_copies, [node()]}],
     mnesia:create_table(?STARTUP, TabDef),
     mnesia:wait_for_tables([?STARTUP], 5000),
     Certificates = init_startup(),

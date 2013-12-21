@@ -360,5 +360,268 @@ brings us a step further:
 	  Failed: 1.  Skipped: 0.  Passed: 0.
 	error
 
-no_exists is a mnesia error code.
+no_exists is a mnesia error code. Records in error.log and crash.log indicate
+that exception happens in linc_ofconfig:init() where mnesia gets set up. mnesia
+is configured to use disc_copies. It is possible to make mnesia to use writable
+disk, the same way as lager, but for now disc_copies removed from the init()
+function. linc_tests now passes:
+
+	1> 
+	1> eunit:test(linc_tests).
+	linc_started
+	  Test passed.
+	ok
+	2> 
+
+----[21/12/13 17:35]------------------------------------------------------------
+
+Proceeding to linc_us3 application. All test modules are copied to src directory
+to ensure they get baked into the image. The first module in alphabetical order
+is linc_us3_actions_tests:
+
+	1>
+	1> eunit:test(linc_us3_actions_tests, [verbose]).
+	======================== EUnit ========================
+	module 'linc_us3_actions_tests'
+	  linc_us3_actions_tests: actions_complex_test_ (Change dest IP and output to egress port)...[0.001 s] ok
+	  linc_us3_actions_tests: actions_set_test_ (Action Set: precedence of Group action)...ok
+	  linc_us3_actions_tests: actions_set_test_ (Action Set: drop if no Group or Output action)...ok
+	  linc_us3_actions_tests: actions_set_test_ (Action Set: Output action)...ok
+	  linc_us3_actions_tests: actions_test_ (Action Output)...ok
+	  linc_us3_actions_tests: actions_test_ (Action Group)...ok
+	  linc_us3_actions_tests: actions_test_ (Action Experimenter)...ok
+	  linc_us3_actions_tests: actions_test_ (Action Set-Field)...*failed*
+	in function linc_us3_actions_tests:'-check_action/3-fun-0-'/2
+	(src/linc_us3_actions_tests.erl, line 348)
+	in call from linc_us3_actions_tests:'-action_set_field/0-lc$^0/1-0-'/1
+	(src/linc_us3_actions_tests.erl, line 131)
+	**error:{assertEqual_failed,
+		[{module,linc_us3_actions_tests},
+		 {line,348},
+		 {expression,"Pkt2"},
+		 {expected,
+			 {linc_pkt,undefined,
+				 {ofp_match,[]},
+				 [],
+				 [{ether,<<0,0,0,...>>,<<0,0,...>>,200,0}],
+				 0,default,undefined,false,undefined,no_buffer,...}},
+		 {value,
+			 {linc_pkt,undefined,
+				 {ofp_match,[]},
+				 [],
+				 [{ether,<<0,0,...>>,<<0,...>>,100,...}],
+				 0,default,undefined,false,undefined,...}}]}
+
+
+	  linc_us3_actions_tests: actions_test_ (Action Set-Queue)...ok
+	  linc_us3_actions_tests: actions_test_ (Action Push-Tag: VLAN)...ok
+	  linc_us3_actions_tests: actions_test_ (Action Pop-Tag: VLAN)...ok
+	  linc_us3_actions_tests: actions_test_ (Action Push-Tag: MPLS)...ok
+	  linc_us3_actions_tests: actions_test_ (Action Pop-Tag: MPLS)...ok
+	  linc_us3_actions_tests: actions_test_ (Action Change-TTL: set MPLS TTL)...ok
+	  linc_us3_actions_tests: actions_test_ (Action Change-TTL: decrement MPLS TTL)...ok
+	  linc_us3_actions_tests: actions_test_ (Action Change-TTL: invalid MPLS TTL)...ok
+	  linc_us3_actions_tests: actions_test_ (Action Change-TTL: set IP TTL)...ok
+	  linc_us3_actions_tests: actions_test_ (Action Change-TTL: decrement IP TTL)...ok
+	  linc_us3_actions_tests: actions_test_ (Action Change-TTL: invalid IP TTL)...ok
+	  linc_us3_actions_tests: actions_test_ (Action Change-TTL: copy TTL outwards)...[0.001 s] ok
+	  linc_us3_actions_tests: actions_test_ (Action Change-TTL: copy TTL inwards)...ok
+	  [done in 11.038 s]
+	=======================================================
+	  Failed: 1.  Skipped: 0.  Passed: 20.
+	error
+	2>
+
+This is a bug in the test suite. linc_us3_packet_edit:set_field want
+<<Value:16>> as an argument when field is eth_type. The test case fixed.
+linc_us3_actions_tests passes:
+
+	1> 
+	1> eunit:test(linc_us3_actions_tests).
+	  All 21 tests passed.
+	ok
+	2> 
+
+linc_us3_convert_tests passes:
+
+	3> eunit:test(linc_us3_convert_tests, [verbose]).
+	======================== EUnit ========================
+	module 'linc_us3_convert_tests'
+	  linc_us3_convert_tests: convert_test_ (OXM Ethertype field generated for
+	packets shouldn't ignore VLAN tags)...[0.001 s] ok
+	  linc_us3_convert_tests: convert_test_ (OXM VLAN fields should match on outer
+	VLAN tag only)...ok
+	  [done in 0.006 s]
+	=======================================================
+	  All 2 tests passed.
+	ok
+
+linc_us3_flow_tests passes on the first try:
+
+	4> eunit:test(linc_us3_flow_tests, [verbose]).
+	======================== EUnit ========================
+	module 'linc_us3_flow_tests'
+	  linc_us3_flow_tests: table_mod_test_ (Get default value)...ok
+	  linc_us3_flow_tests: table_mod_test_ (Set config)...ok
+	  linc_us3_flow_tests: table_mod_test_ (Set all config)...[0.001 s] ok
+	  linc_us3_flow_tests: timer_test_ (Idle timeout)...[2.701 s] ok
+	  linc_us3_flow_tests: timer_test_ (Hard timeout)...[2.500 s] ok
+	  linc_us3_flow_tests: statistics_test_ (Update lookup counter)...ok
+	  linc_us3_flow_tests: statistics_test_ (Update match counter)...ok
+	  linc_us3_flow_tests: statistics_test_ (Update match counter, bad flow_id)...ok
+	  linc_us3_flow_tests: statistics_test_ (Empty flow stats)...ok
+	  linc_us3_flow_tests: statistics_test_ (Flow stats 1 table)...ok
+	  linc_us3_flow_tests: statistics_test_ (Flow stats all tables)...[0.002 s] ok
+	  linc_us3_flow_tests: statistics_test_ (Empty aggregate stats)...ok
+	  linc_us3_flow_tests: statistics_test_ (Aggregate stats 1 table)...ok
+	  linc_us3_flow_tests: statistics_test_ (Aggregate stats all tables)...[0.001 s] ok
+	  linc_us3_flow_tests: statistics_test_ (Empty table stats)...[0.005 s] ok
+	  linc_us3_flow_tests: flow_mod_test_ (Bad table_id)...ok
+	  linc_us3_flow_tests: flow_mod_test_ (Duplicate fields)...ok
+	  linc_us3_flow_tests: flow_mod_test_ (Prerequisite field present)...ok
+	  linc_us3_flow_tests: flow_mod_test_ (Prerequisite field present bad val)...ok
+	  linc_us3_flow_tests: flow_mod_test_ (Prerequisite field missing)...ok
+	  linc_us3_flow_tests: flow_mod_test_ (Goto table with smaller table_id)...ok
+	  linc_us3_flow_tests: flow_mod_test_ (Valid out port)...ok
+	  linc_us3_flow_tests: flow_mod_test_ (Invalid out port)...ok
+	  linc_us3_flow_tests: flow_mod_test_ (Valid out group)...ok
+	  linc_us3_flow_tests: flow_mod_test_ (Invalid out group)...ok
+	  linc_us3_flow_tests: flow_mod_test_ (Duplicate instruction type)...ok
+	  linc_us3_flow_tests: flow_mod_test_ (Set field incompatible with match)...ok
+	  linc_us3_flow_tests: flow_mod_test_ (Add 1 flow, no check_overlap)...ok
+	  linc_us3_flow_tests: flow_mod_test_ (Add 1 flow, check_overlap)...ok
+	  linc_us3_flow_tests: flow_mod_test_ (Add 2 non overlapping flows, no check_overlap)...ok
+	  linc_us3_flow_tests: flow_mod_test_ (Add 2 non overlapping flows, check_overlap)...ok
+	  linc_us3_flow_tests: flow_mod_test_ (Add 2 overlapping flows, no check_overlap)...ok
+	  linc_us3_flow_tests: flow_mod_test_ (Add 2 with overlapping flow, check_overlap)...ok
+	  linc_us3_flow_tests: flow_mod_test_ (Add 2 with exact match, reset_counters)...ok
+	  linc_us3_flow_tests: flow_mod_test_ (Add 2 with exact match, no reset_counters)...[0.001 s] ok
+	  linc_us3_flow_tests: flow_mod_test_ (Flow entry priority order)...ok
+	  linc_us3_flow_tests: flow_mod_test_ (Modify flow, strict, no reset_counts)...ok
+	  linc_us3_flow_tests: flow_mod_test_ (Modify flow, strict, reset_counts)...ok
+	  linc_us3_flow_tests: flow_mod_test_ (Modify flow, non-strict, cookie no match)...ok
+	  linc_us3_flow_tests: flow_mod_test_ (Modify flow, non-strict, cookie match)...ok
+	  linc_us3_flow_tests: flow_mod_test_ (Delete flow, strict)...ok
+	  linc_us3_flow_tests: flow_mod_test_ (Delete flow, non-strict, cookie no match)...ok
+	  linc_us3_flow_tests: flow_mod_test_ (Delete flow, non-strict, cookie match)...ok
+	  linc_us3_flow_tests: flow_mod_test_ (Delete flow, non-strict, send flow rem)...ok
+	  linc_us3_flow_tests: flow_mod_test_ (Delete flow, outport no match)...ok
+	  linc_us3_flow_tests: flow_mod_test_ (Delete flow, outport match)...ok
+	  linc_us3_flow_tests: flow_mod_test_ (Delete flow, outgroup no match)...ok
+	  linc_us3_flow_tests: flow_mod_test_ (Delete flow, outgroup match)...ok
+	  linc_us3_flow_tests: flow_mod_test_ (Delete flow, all tables)...[0.002 s] ok
+	  linc_us3_flow_tests: flow_mod_test_ (Delete where group)...[0.002 s] ok
+	  [done in 23.481 s]
+	=======================================================
+	  All 50 tests passed.
+	ok
+
+linc_us3_groups_tests - same:
+
+	5> eunit:test(linc_us3_groups_tests, [verbose]).
+	======================== EUnit ========================
+	module 'linc_us3_groups_tests'
+	  linc_us3_groups_tests: group_test_ (Add group)...ok
+	  linc_us3_groups_tests: group_test_ (Modify group)...ok
+	  linc_us3_groups_tests: group_test_ (Delete group)...ok
+	  linc_us3_groups_tests: group_test_ (Chain deletion)...ok
+	  linc_us3_groups_tests: group_test_ (Apply to packet)...[0.001 s] ok
+	  linc_us3_groups_tests: group_test_ (Stats & features)...ok
+	  linc_us3_groups_tests: group_test_ (is_valid)...ok
+	  [done in 0.017 s]
+	=======================================================
+	  All 7 tests passed.
+	ok
+
+linc_us3_instructions_tests - same:
+
+	6> eunit:test(linc_us3_instructions_tests, [verbose]).
+	======================== EUnit ========================
+	module 'linc_us3_instructions_tests'
+	  linc_us3_instructions_tests: instruction_test_ (Apply-Actions)...[0.001 s] ok
+	  linc_us3_instructions_tests: instruction_test_ (Clear-Actions)...ok
+	  linc_us3_instructions_tests: instruction_test_ (Write-Actions)...ok
+	  linc_us3_instructions_tests: instruction_test_ (Write-Metadata)...ok
+	  linc_us3_instructions_tests: instruction_test_ (Goto-Table)...ok
+	  linc_us3_instructions_tests: instruction_test_ (Empty instruction list)...ok
+	  [done in 0.015 s]
+	=======================================================
+	  All 6 tests passed.
+	ok
+
+12 of 17 case of linc_us3_packet_edit_tests fail (no listing). This is because
+the tests are not synchronised with changes to linc_us3_packet_edit.erl.
+linc_us3_packet_edit fails 12 cases on Erlang/OTP too. The module skipped.
+
+linc_us3_port_tests - no problems:
+
+	2> eunit:test(linc_us3_port_tests).
+	  All 20 tests passed.
+	ok
+	3> 
+
+linc_us3_queue_tests - same:
+
+	4> eunit:test(linc_us3_queue_tests, [verbose]).
+	======================== EUnit ========================
+	module 'linc_us3_queue_tests'
+	  linc_us3_queue_tests: queue_test_ (Port multipart: queue_stats_request)...ok
+	  linc_us3_queue_tests: queue_test_ (Sending through queue)...ok
+	  linc_us3_queue_tests: queue_test_ (Set queue property: min-rate)...ok
+	  linc_us3_queue_tests: queue_test_ (Set queue property: max-rate)...ok
+	  [done in 0.008 s]
+	=======================================================
+	  All 4 tests passed.
+	ok
+
+linc_us3_routing_tests - 1 failing case:
+
+	5> eunit:test(linc_us3_routing_tests, [verbose]).
+	======================== EUnit ========================
+	module 'linc_us3_routing_tests'
+	  linc_us3_routing_tests: routing_test_ (Routing: match on Flow Table entry)...[0.001 s] ok
+	  linc_us3_routing_tests: routing_test_ (Routing: match on Flow Table entry with highest priority)...ok
+	  linc_us3_routing_tests: routing_test_ (Routing: match on Flow Table entry with empty match list)...ok
+	  linc_us3_routing_tests: routing_test_ (Routing: match on next Flow Table because of Goto instruction)...ok
+	  linc_us3_routing_tests: routing_test_ (Routing: table miss - continue to next table)...ok
+	  linc_us3_routing_tests: routing_test_ (Routing: table miss - send to controller)...[3.564 s] ok
+	  linc_us3_routing_tests: routing_test_ (Routing: table miss - drop packet)...ok
+	  linc_us3_routing_tests: routing_test_ (Routing: match fields with masks)...*failed*
+	in function linc_us3_routing:two_fields_match/2
+	  called as
+	two_fields_match({ofp_field,openflow_basic,undefined,false,<<>>,undefined},{ofp_field,openflow_basic,undefined,true,<<>>,<<>>})
+	in call from linc_us3_routing_tests:'-mask_match/0-fun-0-'/3
+	(src/linc_us3_routing_tests.erl, line 150)
+	in call from linc_us3_routing_tests:'-mask_match/0-lc$^0/1-0-'/1
+	(src/linc_us3_routing_tests.erl, line 150)
+	**error:undef
+
+	  linc_us3_routing_tests: routing_test_ (Routing: spawn new route process)...ok
+	  [done in 3.617 s]
+	=======================================================
+	  Failed: 1.  Skipped: 0.  Passed: 8.
+	error
+
+Erlang/OTP fails the same case with the same error. I guess somebody else should
+get the tests in sync.
+
+The only case of linc_us3_tests fails:
+
+	5> eunit:test(linc_us3_tests).
+	linc_us3_tests: switch_setup_test_ (Start/stop LINC v3 switch backend w/o OF-Config subsystem)...*failed*
+	in function linc_us3_tests:'-no_ofconfig/0-fun-0-'/1 (src/linc_us3_tests.erl, line 50)
+	in call from linc_us3_tests:'-no_ofconfig/0-lc$^0/1-0-'/1 (src/linc_us3_tests.erl, line 50)
+	**error:{assertEqual_failed,
+		[{module,linc_us3_tests},
+		 {line,50},
+		 {expression,"application : start ( linc )"},
+		 {expected,ok},
+		 {value,
+			 {error,
+				 {bad_return,
+					 {{linc,start,[normal,[]]},
+					  {'EXIT',{{badmatch,...},[...]}}}}}}]}
+
+A few applications (asn1, crypto, public_key) are added to setup code for the
+test.
 

@@ -877,3 +877,99 @@ Module m must be purged before loading
     stack_size: 27
     reductions: 1401
   neighbours:
+2013-12-21 17:56:38 =CRASH REPORT====
+  crasher:
+    initial call: tuncer:init/1
+    pid: <0.105.0>
+    registered_name: []
+    exception exit: {{{badmatch,{error,eperm}},[{tuncer,init,1,[{file,"/home/mk/lincx/deps/tunctl/src/tuncer.erl"},{line,155}]},{gen_server,init_it,6,[{file,"gen_server.erl"},{line,304}]},{proc_lib,init_p_do_apply,3,[{file,"proc_lib.erl"},{line,239}]}]},[{gen_server,init_it,6,[{file,"gen_server.erl"},{line,328}]},{proc_lib,init_p_do_apply,3,[{file,"proc_lib.erl"},{line,239}]}]}
+    ancestors: [<0.104.0>,<0.100.0>,<0.97.0>,<0.90.0>,<0.86.0>,<0.85.0>]
+    messages: []
+    links: [<0.104.0>]
+    dictionary: []
+    trap_exit: true
+    status: running
+    heap_size: 987
+    stack_size: 27
+    reductions: 1462
+  neighbours:
+2013-12-21 17:56:38 =CRASH REPORT====
+  crasher:
+    initial call: tuncer:init/1
+    pid: <0.110.0>
+    registered_name: []
+    exception exit: {{{badmatch,{error,eperm}},[{tuncer,init,1,[{file,"/home/mk/lincx/deps/tunctl/src/tuncer.erl"},{line,155}]},{gen_server,init_it,6,[{file,"gen_server.erl"},{line,304}]},{proc_lib,init_p_do_apply,3,[{file,"proc_lib.erl"},{line,239}]}]},[{gen_server,init_it,6,[{file,"gen_server.erl"},{line,328}]},{proc_lib,init_p_do_apply,3,[{file,"proc_lib.erl"},{line,239}]}]}
+    ancestors: [<0.109.0>,<0.100.0>,<0.97.0>,<0.90.0>,<0.86.0>,<0.85.0>]
+    messages: []
+    links: [<0.109.0>]
+    dictionary: []
+    trap_exit: true
+    status: running
+    heap_size: 610
+    stack_size: 27
+    reductions: 1513
+  neighbours:
+2013-12-21 17:56:39 =CRASH REPORT====
+  crasher:
+    initial call: tuncer:init/1
+    pid: <0.113.0>
+    registered_name: []
+    exception exit: {{{badmatch,{error,eperm}},[{tuncer,init,1,[{file,"/home/mk/lincx/deps/tunctl/src/tuncer.erl"},{line,155}]},{gen_server,init_it,6,[{file,"gen_server.erl"},{line,304}]},{proc_lib,init_p_do_apply,3,[{file,"proc_lib.erl"},{line,239}]}]},[{gen_server,init_it,6,[{file,"gen_server.erl"},{line,328}]},{proc_lib,init_p_do_apply,3,[{file,"proc_lib.erl"},{line,239}]}]}
+    ancestors: [<0.112.0>,<0.100.0>,<0.97.0>,<0.90.0>,<0.86.0>,<0.85.0>]
+    messages: []
+    links: [<0.112.0>]
+    dictionary: []
+    trap_exit: true
+    status: running
+    heap_size: 610
+    stack_size: 27
+    reductions: 1416
+  neighbours:
+2013-12-21 18:06:26 =CRASH REPORT====
+  crasher:
+    initial call: tuncer:init/1
+    pid: <0.105.0>
+    registered_name: []
+    exception exit: {{{badmatch,{error,eperm}},[{tuncer,init,1,[{file,"/home/mk/lincx/deps/tunctl/src/tuncer.erl"},{line,155}]},{gen_server,init_it,6,[{file,"gen_server.erl"},{line,304}]},{proc_lib,init_p_do_apply,3,[{file,"proc_lib.erl"},{line,239}]}]},[{gen_server,init_it,6,[{file,"gen_server.erl"},{line,328}]},{proc_lib,init_p_do_apply,3,[{file,"proc_lib.erl"},{line,239}]}]}
+    ancestors: [<0.104.0>,<0.100.0>,<0.97.0>,<0.90.0>,<0.86.0>,<0.85.0>]
+    messages: []
+    links: [<0.104.0>]
+    dictionary: []
+    trap_exit: true
+    status: running
+    heap_size: 987
+    stack_size: 27
+    reductions: 1475
+  neighbours:
+2013-12-21 18:06:27 =CRASH REPORT====
+  crasher:
+    initial call: tuncer:init/1
+    pid: <0.110.0>
+    registered_name: []
+    exception exit: {{{badmatch,{error,eperm}},[{tuncer,init,1,[{file,"/home/mk/lincx/deps/tunctl/src/tuncer.erl"},{line,155}]},{gen_server,init_it,6,[{file,"gen_server.erl"},{line,304}]},{proc_lib,init_p_do_apply,3,[{file,"proc_lib.erl"},{line,239}]}]},[{gen_server,init_it,6,[{file,"gen_server.erl"},{line,328}]},{proc_lib,init_p_do_apply,3,[{file,"proc_lib.erl"},{line,239}]}]}
+    ancestors: [<0.109.0>,<0.100.0>,<0.97.0>,<0.90.0>,<0.86.0>,<0.85.0>]
+    messages: []
+    links: [<0.109.0>]
+    dictionary: []
+    trap_exit: true
+    status: running
+    heap_size: 610
+    stack_size: 27
+    reductions: 1486
+  neighbours:
+2013-12-21 18:06:27 =CRASH REPORT====
+  crasher:
+    initial call: tuncer:init/1
+    pid: <0.113.0>
+    registered_name: []
+    exception exit: {{{badmatch,{error,eperm}},[{tuncer,init,1,[{file,"/home/mk/lincx/deps/tunctl/src/tuncer.erl"},{line,155}]},{gen_server,init_it,6,[{file,"gen_server.erl"},{line,304}]},{proc_lib,init_p_do_apply,3,[{file,"proc_lib.erl"},{line,239}]}]},[{gen_server,init_it,6,[{file,"gen_server.erl"},{line,328}]},{proc_lib,init_p_do_apply,3,[{file,"proc_lib.erl"},{line,239}]}]}
+    ancestors: [<0.112.0>,<0.100.0>,<0.97.0>,<0.90.0>,<0.86.0>,<0.85.0>]
+    messages: []
+    links: [<0.112.0>]
+    dictionary: []
+    trap_exit: true
+    status: running
+    heap_size: 610
+    stack_size: 27
+    reductions: 1371
+  neighbours:
