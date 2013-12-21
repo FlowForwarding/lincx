@@ -623,5 +623,418 @@ The only case of linc_us3_tests fails:
 					  {'EXIT',{{badmatch,...},[...]}}}}}}]}
 
 A few applications (asn1, crypto, public_key) are added to setup code for the
-test.
+test. Incomplete configuration seems to be passed on to linc application. The
+test may depend on a presence of a configuration file. Skipped.
+
+----[21/12/13 23:55]------------------------------------------------------------
+
+Moving on to linc_us4.
+
+	1> eunit:test(linc_us4_actions_tests, [verbose]).
+	======================== EUnit ========================
+	module 'linc_us4_actions_tests'
+	  linc_us4_actions_tests: actions_complex_test_ (Change dest IP and output to egress port)...[0.001 s] ok
+	  linc_us4_actions_tests: actions_set_test_ (Action Set: precedence of Group action)...ok
+	  linc_us4_actions_tests: actions_set_test_ (Action Set: drop if no Group or Output action)...ok
+	  linc_us4_actions_tests: actions_set_test_ (Action Set: Output action)...ok
+	  linc_us4_actions_tests: actions_test_ (Action Output)...ok
+	  linc_us4_actions_tests: actions_test_ (Action Output: controller with reason 'action')...ok
+	  linc_us4_actions_tests: actions_test_ (Action Output: controller with reason 'no_match')...[0.001 s] ok
+	  linc_us4_actions_tests: actions_test_ (Action Group)...ok
+	  linc_us4_actions_tests: actions_test_ (Action Experimenter)...ok
+	  linc_us4_actions_tests: actions_test_ (Action Set-Field)...ok
+	  linc_us4_actions_tests: actions_test_ (Action Set-Queue)...ok
+	  linc_us4_actions_tests: actions_test_ (Action Push-Tag: PBB)...ok
+	  linc_us4_actions_tests: actions_test_ (Action Pop-Tag: PBB)...ok
+	  linc_us4_actions_tests: actions_test_ (Action Push-Tag: VLAN)...ok
+	  linc_us4_actions_tests: actions_test_ (Action Pop-Tag: VLAN)...ok
+	  linc_us4_actions_tests: actions_test_ (Action Push-Tag: MPLS)...ok
+	  linc_us4_actions_tests: actions_test_ (Action Pop-Tag: MPLS)...ok
+	  linc_us4_actions_tests: actions_test_ (Action Change-TTL: set MPLS TTL)...ok
+	  linc_us4_actions_tests: actions_test_ (Action Change-TTL: decrement MPLS TTL)...ok
+	  linc_us4_actions_tests: actions_test_ (Action Change-TTL: invalid MPLS TTL)...ok
+	  linc_us4_actions_tests: actions_test_ (Action Change-TTL: set IP TTL)...ok
+	  linc_us4_actions_tests: actions_test_ (Action Change-TTL: decrement IP TTL)...ok
+	  linc_us4_actions_tests: actions_test_ (Action Change-TTL: invalid IP TTL)...ok
+	  linc_us4_actions_tests: actions_test_ (Action Change-TTL: copy TTL outwards)...ok
+	  linc_us4_actions_tests: actions_test_ (Action Change-TTL: copy TTL inwards)...ok
+	  [done in 14.579 s]
+	=======================================================
+	  All 25 tests passed.
+	ok
+
+	2> eunit:test(linc_us4_convert_tests, [verbose]).
+	======================== EUnit ========================
+	module 'linc_us4_convert_tests'
+	  linc_us4_convert_tests: constraints_test_ (OXM Ethertype field generated for packets shouldn't ignore VLAN tags)...[0.002 s] ok
+	  linc_us4_convert_tests: constraints_test_ (OXM VLAN fields should match on outer VLAN tag only)...ok
+	  linc_us4_convert_tests: convert_test_ (Convert pkt:packet() to ofp_field(): PBB)...ok
+	  linc_us4_convert_tests: convert_test_ (Convert pkt:packet() to ofp_field(): Ethernet)...ok
+	  linc_us4_convert_tests: convert_test_ (Convert pkt:packet() to ofp_field(): VLAN)...ok
+	  linc_us4_convert_tests: convert_test_ (Convert pkt:packet() to ofp_field(): ARP)...ok
+	  linc_us4_convert_tests: convert_test_ (Convert pkt:packet() to ofp_field(): SCTP)...ok
+	  linc_us4_convert_tests: convert_test_ (Convert pkt:packet() to ofp_field(): MPLS)...ok
+	  linc_us4_convert_tests: convert_test_ (Convert pkt:packet() to ofp_field(): IPv4)...ok
+	  linc_us4_convert_tests: convert_test_ (Convert pkt:packet() to ofp_field(): IPv6)...ok
+	  linc_us4_convert_tests: convert_test_ (Convert pkt:packet() to ofp_field(): ICMPv4)...ok
+	  linc_us4_convert_tests: convert_test_ (Convert pkt:packet() to ofp_field(): ICMPv6)...ok
+	  linc_us4_convert_tests: convert_test_ (Convert pkt:packet() to ofp_field(): TCP)...ok
+	  linc_us4_convert_tests: convert_test_ (Convert pkt:packet() to ofp_field(): UDP)...ok
+	  linc_us4_convert_tests: convert_test_ (Convert pkt:packet() to ofp_field(): unknown)...ok
+	  [done in 0.036 s]
+	=======================================================
+	  All 15 tests passed.
+	ok
+
+	3> eunit:test(linc_us4_convert_tests, [verbose]).
+	======================== EUnit ========================
+	module 'linc_us4_convert_tests'
+	  linc_us4_convert_tests: constraints_test_ (OXM Ethertype field generated for packets shouldn't ignore VLAN tags)...[0.002 s] ok
+	  linc_us4_convert_tests: constraints_test_ (OXM VLAN fields should match on outer VLAN tag only)...ok
+	  linc_us4_convert_tests: convert_test_ (Convert pkt:packet() to ofp_field(): PBB)...ok
+	  linc_us4_convert_tests: convert_test_ (Convert pkt:packet() to ofp_field(): Ethernet)...ok
+	  linc_us4_convert_tests: convert_test_ (Convert pkt:packet() to ofp_field(): VLAN)...ok
+	  linc_us4_convert_tests: convert_test_ (Convert pkt:packet() to ofp_field(): ARP)...ok
+	  linc_us4_convert_tests: convert_test_ (Convert pkt:packet() to ofp_field(): SCTP)...ok
+	  linc_us4_convert_tests: convert_test_ (Convert pkt:packet() to ofp_field(): MPLS)...ok
+	  linc_us4_convert_tests: convert_test_ (Convert pkt:packet() to ofp_field(): IPv4)...ok
+	  linc_us4_convert_tests: convert_test_ (Convert pkt:packet() to ofp_field(): IPv6)...ok
+	  linc_us4_convert_tests: convert_test_ (Convert pkt:packet() to ofp_field(): ICMPv4)...ok
+	  linc_us4_convert_tests: convert_test_ (Convert pkt:packet() to ofp_field(): ICMPv6)...ok
+	  linc_us4_convert_tests: convert_test_ (Convert pkt:packet() to ofp_field(): TCP)...ok
+	  linc_us4_convert_tests: convert_test_ (Convert pkt:packet() to ofp_field(): UDP)...ok
+	  linc_us4_convert_tests: convert_test_ (Convert pkt:packet() to ofp_field(): unknown)...ok
+	  [done in 0.036 s]
+	=======================================================
+	  All 15 tests passed.
+	ok
+
+	4> eunit:test(linc_us4_groups_tests, [verbose]).
+	======================== EUnit ========================
+	module 'linc_us4_groups_tests'
+	  linc_us4_groups_tests: group_test_ (Add group)...[0.001 s] ok
+	  Add invalid group
+		adding group with id OFPG_ALL should give an error
+		  linc_us4_groups_tests:101: add_invalid_group...ok
+		  linc_us4_groups_tests:103: add_invalid_group...ok
+		  [done in 0.005 s]
+		adding group with id OFPG_ANY should give an error
+		  linc_us4_groups_tests:101: add_invalid_group...ok
+		  linc_us4_groups_tests:103: add_invalid_group...ok
+		  [done in 0.004 s]
+		adding group with id greater than OFPG_MAX should give an error
+		  linc_us4_groups_tests:101: add_invalid_group...ok
+		  linc_us4_groups_tests:103: add_invalid_group...ok
+		  [done in 0.004 s]
+		[done in 0.013 s]
+	  linc_us4_groups_tests: group_test_ (Modify group)...ok
+	  linc_us4_groups_tests: group_test_ (Delete group)...ok
+	  linc_us4_groups_tests: group_test_ (Chain deletion)...ok
+	  linc_us4_groups_tests: group_test_ (Apply to packet)...[0.001 s] ok
+	  linc_us4_groups_tests: group_test_ (Stats & features)...ok
+	  linc_us4_groups_tests: group_test_ (is_valid)...ok
+	  [done in 0.032 s]
+	=======================================================
+	  All 13 tests passed.
+	ok
+
+	5> eunit:test(linc_us4_instructions_tests, [verbose]).
+	======================== EUnit ========================
+	module 'linc_us4_instructions_tests'
+	  linc_us4_instructions_tests: instruction_test_ (Meter)...ok
+	  linc_us4_instructions_tests: instruction_test_ (Apply-Actions)...ok
+	  linc_us4_instructions_tests: instruction_test_ (Clear-Actions)...ok
+	  linc_us4_instructions_tests: instruction_test_ (Write-Actions)...ok
+	  linc_us4_instructions_tests: instruction_test_ (Write-Metadata)...ok
+	  linc_us4_instructions_tests: instruction_test_ (Goto-Table)...ok
+	  linc_us4_instructions_tests: instruction_test_ (Empty instruction list)...ok
+	  [done in 0.015 s]
+	=======================================================
+	  All 7 tests passed.
+	ok
+
+	6> eunit:test(linc_us4_meter_tests, [verbose]).
+	======================== EUnit ========================
+	module 'linc_us4_meter_tests'
+	  linc_us4_meter_tests: meters_test_ (Initilize/Terminate)...[0.011 s] ok
+	  linc_us4_meter_tests: meters_test_ (Get features)...ok
+	  Meter Modification and Multiparts
+		linc_us4_meter_tests: meters_test_ (Add)...ok
+		linc_us4_meter_tests: meters_test_ (Add when already exists)...[0.001 s] ok
+		linc_us4_meter_tests: meters_test_ (Add with bad flags)...[0.001 s] ok
+		linc_us4_meter_tests: meters_test_ (Add with unsupported band)...[0.001 s] ok
+		linc_us4_meter_tests: meters_test_ (Add with pktps value)...[0.001 s] ok
+		linc_us4_meter_tests: meters_test_ (Add with no value (kbps default))...[0.001 s] ok
+		linc_us4_meter_tests: meters_test_ (Add with both kbps and pktps)...[0.001 s] ok
+		linc_us4_meter_tests: meters_test_ (Add with burst)...[0.001 s] ok
+		linc_us4_meter_tests: meters_test_ (Add with burst and pktps)...[0.001 s] ok
+		linc_us4_meter_tests: meters_test_ (Modify)...[0.001 s] ok
+		linc_us4_meter_tests: meters_test_ (Modify non-existing)...ok
+		linc_us4_meter_tests: meters_test_ (Modify with bad_flags)...[0.001 s] ok
+		linc_us4_meter_tests: meters_test_ (Delete)...ok
+		linc_us4_meter_tests: meters_test_ (Delete non-existing)...ok
+		linc_us4_meter_tests: meters_test_ (Delete all)...ok
+		linc_us4_meter_tests: meters_test_ (Get config, no meters)...ok
+		linc_us4_meter_tests: meters_test_ (Get stats, no meters)...ok
+		linc_us4_meter_tests: meters_test_ (Get stats, stats disabled)...[0.001 s] ok
+		linc_us4_meter_tests: meters_test_ (Update flow count)...[0.001 s] ok [done in 6.880 s]
+	  Applying Meters
+		linc_us4_meter_tests: meters_test_ (Apply meter, no match)...[0.001 s] ok
+		linc_us4_meter_tests: meters_test_ (Apply meter, drop)...[0.001 s] ok
+		linc_us4_meter_tests: meters_test_ (Apply meter, dscp_remark)...ok
+		linc_us4_meter_tests: meters_test_ (Apply meter, experimenter)...ok
+		linc_us4_meter_tests: meters_test_ (Apply meter, pktps)...ok
+		linc_us4_meter_tests: meters_test_ (Apply meter, burst/kbps)...[0.001 s] ok
+		linc_us4_meter_tests: meters_test_ (Apply meter, burst/pktps)...[0.004 s] ok
+		[done in 2.159 s]
+	  [done in 9.054 s]
+	=======================================================
+	  All 28 tests passed.
+	ok
+
+	7> eunit:test(linc_us4_packet_tests, [verbose]).
+	======================== EUnit ========================
+	module 'linc_us4_packet_tests'
+	  Edit packet: no header
+		linc_us4_packet_tests:229: set_field (set field eth_type)...[0.002 s] ok
+		[done in 0.005 s]
+	  Edit packet: bad field
+		linc_us4_packet_tests:229: set_field (set field bad_field)...[0.006 s] ok
+		[done in 0.008 s]
+	  Edit packet: duplicated header
+		linc_us4_packet_tests:229: set_field (set field eth_type)...ok
+		[done in 0.002 s]
+	  Edit packet: nested header
+		linc_us4_packet_tests:229: set_field (set field eth_type)...ok
+		[done in 0.003 s]
+	  linc_us4_packet_tests:92: skip_header (Edit packet: skip header)...ok
+	  Edit packet: outermost header
+		linc_us4_packet_tests:229: set_field (set field ip_proto)...ok
+		linc_us4_packet_tests:111: outermost_header...ok
+		[done in 0.004 s]
+	  Edit packet: Ethernet
+		linc_us4_packet_tests:229: set_field (set field eth_type)...ok
+		linc_us4_packet_tests:229: set_field (set field eth_dst)...ok
+		linc_us4_packet_tests:229: set_field (set field eth_src)...ok
+		[done in 0.007 s]
+	  Edit packet: VLAN
+		linc_us4_packet_tests:229: set_field (set field vlan_vid)...[0.001 s] ok
+		linc_us4_packet_tests:229: set_field (set field vlan_pcp)...[0.001 s] ok
+		[done in 0.006 s]
+	  Edit packet: ARP
+		linc_us4_packet_tests:229: set_field (set field arp_op)...[0.001 s] ok
+		linc_us4_packet_tests:229: set_field (set field arp_spa)...ok
+		linc_us4_packet_tests:229: set_field (set field arp_tpa)...ok
+		linc_us4_packet_tests:229: set_field (set field arp_sha)...ok
+		linc_us4_packet_tests:229: set_field (set field arp_tha)...ok
+		[done in 0.012 s]
+	  Edit packet: SCTP
+		linc_us4_packet_tests:229: set_field (set field sctp_src)...ok
+		linc_us4_packet_tests:229: set_field (set field sctp_dst)...ok
+		[done in 0.004 s]
+	  Edit packet: ICMPv4
+		linc_us4_packet_tests:229: set_field (set field icmpv4_type)...ok
+		linc_us4_packet_tests:229: set_field (set field icmpv4_code)...ok
+		[done in 0.005 s]
+	  Edit packet: ICMPv6
+		linc_us4_packet_tests:229: set_field (set field icmpv6_type)...ok
+		linc_us4_packet_tests:229: set_field (set field icmpv6_code)...ok
+		[done in 0.005 s]
+	  Edit packet: TCP
+		linc_us4_packet_tests:229: set_field (set field tcp_src)...ok
+		linc_us4_packet_tests:229: set_field (set field tcp_dst)...ok
+		[done in 0.004 s]
+	  Edit packet: UDP
+		linc_us4_packet_tests:229: set_field (set field udp_src)...ok
+		linc_us4_packet_tests:229: set_field (set field udp_dst)...ok
+		[done in 0.004 s]
+	  Edit packet: MPLS
+		linc_us4_packet_tests:229: set_field (set field mpls_label)...[0.002 s] ok
+		linc_us4_packet_tests:229: set_field (set field mpls_tc)...ok
+		[done in 0.121 s]
+	  Edit packet: IPv4
+		linc_us4_packet_tests:229: set_field (set field ip_proto)...ok
+		linc_us4_packet_tests:229: set_field (set field ip_dscp)...ok
+		linc_us4_packet_tests:229: set_field (set field ip_ecn)...ok
+		linc_us4_packet_tests:229: set_field (set field ipv4_src)...ok
+		linc_us4_packet_tests:229: set_field (set field ipv4_dst)...ok
+		[done in 0.011 s]
+	  Edit packet: IPv6
+		linc_us4_packet_tests:229: set_field (set field ip_proto)...ok
+		linc_us4_packet_tests:229: set_field (set field ip_dscp)...ok
+		linc_us4_packet_tests:229: set_field (set field ip_ecn)...ok
+		linc_us4_packet_tests:229: set_field (set field ipv6_src)...ok
+		linc_us4_packet_tests:229: set_field (set field ipv6_dst)...ok
+		linc_us4_packet_tests:229: set_field (set field ipv6_flabel)...ok
+		linc_us4_packet_tests:229: set_field (set field ipv6_nd_target)...ok
+		linc_us4_packet_tests:229: set_field (set field ipv6_nd_target)...[0.001 s] ok
+		linc_us4_packet_tests:229: set_field (set field ipv6_nd_sll)...ok
+		linc_us4_packet_tests:229: set_field (set field ipv6_nd_sll)...ok
+		[done in 0.022 s]
+	  [done in 0.230 s]
+	=======================================================
+	  All 44 tests passed.
+	ok
+
+	8> eunit:test(linc_us4_port_tests, [verbose]).
+	======================== EUnit ========================
+	module 'linc_us4_port_tests'
+	  linc_us4_port_tests: port_test_ (Port: port_mod)...ok
+	  linc_us4_port_tests: port_test_ (Port: is_valid)...ok
+	  linc_us4_port_tests: port_test_ (Port send: in_port)...ok
+	  linc_us4_port_tests: port_test_ (Port send: table)...[0.770 s] ok
+	  linc_us4_port_tests: port_test_ (Port send: normal)...ok
+	  linc_us4_port_tests: port_test_ (Port send: flood)...[0.503 s] ok
+	  linc_us4_port_tests: port_test_ (Port send: all)...[0.501 s] ok
+	  linc_us4_port_tests: port_test_ (Port send: controller)...ok
+	  linc_us4_port_tests: port_test_ (Port send: local)...[0.004 s] ok
+	  linc_us4_port_tests: port_test_ (Port send: any)...ok
+	  linc_us4_port_tests: port_test_ (Port send: port number)...ok
+	  linc_us4_port_tests: port_test_ (Port multipart: port_desc_request)...ok
+	  linc_us4_port_tests: port_test_ (Port multipart: port_stats_request)...ok
+	  linc_us4_port_tests: port_test_ (Port config: port_down)...ok
+	  linc_us4_port_tests: port_test_ (Port config: no_recv)...ok
+	  linc_us4_port_tests: port_test_ (Port config: no_fwd)...ok
+	  linc_us4_port_tests: port_test_ (Port config: no_pkt_in)...ok
+	  linc_us4_port_tests: port_test_ (Port state: link_down)...ok
+	  linc_us4_port_tests: port_test_ (Port state: blocked)...ok
+	  linc_us4_port_tests: port_test_ (Port state: live)...ok
+	  linc_us4_port_tests: port_test_ (Port features: change advertised
+	features)...ok
+	  [done in 2.133 s]
+	=======================================================
+	  All 21 tests passed.
+	ok
+
+	9> eunit:test(linc_us4_queue_tests, [verbose]).
+	======================== EUnit ========================
+	module 'linc_us4_queue_tests'
+	  linc_us4_queue_tests: queue_test_ (Port multipart: queue_stats_request)...ok
+	  linc_us4_queue_tests: queue_test_ (Sending through queue)...ok
+	  linc_us4_queue_tests: queue_test_ (Set queue property: min-rate)...ok
+	  linc_us4_queue_tests: queue_test_ (Set queue property: max-rate)...ok
+	  [done in 0.008 s]
+	=======================================================
+	  All 4 tests passed.
+	ok
+
+	10> eunit:test(linc_us4_routing_tests, [verbose]).
+	======================== EUnit ========================
+	module 'linc_us4_routing_tests'
+	  linc_us4_routing_tests: vlan_matching_test_ (Test matching packets with and
+	without a VLAN tag)...*failed*
+	in function linc_us4_routing:pkt_fields_match_flow_fields/2
+	  called as
+	pkt_fields_match_flow_fields([{ofp_field,openflow_basic,vlan_vid,false,<<0,10:4>>,undefined}],[])
+	in call from
+	linc_us4_routing_tests:'-match_with_and_without_vlan_tag/0-fun-0-'/1
+	(src/linc_us4_routing_tests.erl, line 247)
+	in call from linc_us4_routing_tests:match_with_and_without_vlan_tag/0
+	(src/linc_us4_routing_tests.erl, line 247)
+	**error:undef
+
+
+	  linc_us4_routing_tests: vlan_matching_test_ (Test matching only packets without a VLAN tag)...*failed*
+	in function linc_us4_routing:pkt_fields_match_flow_fields/2
+	  called as
+	pkt_fields_match_flow_fields([{ofp_field,openflow_basic,vlan_vid,false,<<0,10:4>>,undefined}],[{ofp_field,openflow_basic,vlan_vid,false,<<0,0:5>>,undefined}])
+	in call from linc_us4_routing_tests:'-match_only_without_vlan_tag/0-fun-0-'/2
+	(src/linc_us4_routing_tests.erl, line 256)
+	in call from linc_us4_routing_tests:match_only_without_vlan_tag/0
+	(src/linc_us4_routing_tests.erl, line 256)
+	**error:undef
+
+
+	  linc_us4_routing_tests: vlan_matching_test_ (Test matching only packets with a VLAN tag regardless of VID value)...*failed*
+	in function linc_us4_routing:pkt_fields_match_flow_fields/2
+	  called as
+	pkt_fields_match_flow_fields([{ofp_field,openflow_basic,vlan_vid,false,<<0,10:4>>,undefined}],[{ofp_field,openflow_basic,vlan_vid,true,<<128,0:5>>,<<128,0:5>>}])
+	in call from linc_us4_routing_tests:'-match_unrestricted_vlan_tag/0-fun-0-'/2
+	(src/linc_us4_routing_tests.erl, line 266)
+	in call from linc_us4_routing_tests:match_unrestricted_vlan_tag/0
+	(src/linc_us4_routing_tests.erl, line 266)
+	**error:undef
+
+
+	  linc_us4_routing_tests: vlan_matching_test_ (Test matching packets containing a VLAN tag with masked VID)...*failed*
+	in function linc_us4_routing:pkt_fields_match_flow_fields/2
+	  called as
+	pkt_fields_match_flow_fields([{ofp_field,openflow_basic,vlan_vid,false,<<0,7:4>>,undefined}],[{ofp_field,openflow_basic,vlan_vid,true,<<128,7:5>>,<<255,23:5>>}])
+	in call from linc_us4_routing_tests:'-match_masked_vlan_tag/0-fun-0-'/2
+	(src/linc_us4_routing_tests.erl, line 278)
+	in call from linc_us4_routing_tests:match_masked_vlan_tag/0
+	(src/linc_us4_routing_tests.erl, line 278)
+	**error:undef
+
+
+	  linc_us4_routing_tests: vlan_matching_test_ (Test matching packets containing a VLAN tag with specified VID)...*failed*
+	in function linc_us4_routing:pkt_fields_match_flow_fields/2
+	  called as
+	pkt_fields_match_flow_fields([{ofp_field,openflow_basic,vlan_vid,false,<<0,7:4>>,undefined}],[{ofp_field,openflow_basic,vlan_vid,false,<<128,7:5>>,undefined}])
+	in call from linc_us4_routing_tests:'-match_not_masked_vlan_tag/0-fun-0-'/2
+	(src/linc_us4_routing_tests.erl, line 290)
+	in call from linc_us4_routing_tests:match_not_masked_vlan_tag/0
+	(src/linc_us4_routing_tests.erl, line 290)
+	**error:undef
+
+
+	  linc_us4_routing_tests: routing_test_ (Routing: match on Flow Table entry)...ok
+	  linc_us4_routing_tests: routing_test_ (Routing: match on Flow Table entry with highest priority)...ok
+	  linc_us4_routing_tests: routing_test_ (Routing: match on Flow Table entry with empty match list)...ok
+	  linc_us4_routing_tests: routing_test_ (Routing: match on Flow Table miss entry)...ok
+	  linc_us4_routing_tests: routing_test_ (Routing: match on Flow Table miss entry invokes Goto instruction)...ok
+	  linc_us4_routing_tests: routing_test_ (Routing: match on next Flow Table because of Goto instruction)...ok
+	  linc_us4_routing_tests: routing_test_ (Routing: table miss - continue to next table)...ok
+	  linc_us4_routing_tests: routing_test_ (Routing: table miss - send to controller)...[3.581 s] ok
+	  linc_us4_routing_tests: routing_test_ (Routing: table miss - drop packet)...ok
+	  linc_us4_routing_tests: routing_test_ (Routing: match fields with masks)...*failed*
+	in function linc_us4_routing:pkt_field_match_flow_field/2
+	  called as
+	pkt_field_match_flow_field({ofp_field,openflow_basic,undefined,false,<<>>,undefined},{ofp_field,openflow_basic,undefined,true,<<>>,<<>>})
+	in call from linc_us4_routing_tests:'-mask_match/0-fun-0-'/3
+	(src/linc_us4_routing_tests.erl, line 223)
+	in call from linc_us4_routing_tests:'-mask_match/0-lc$^0/1-0-'/1
+	(src/linc_us4_routing_tests.erl, line 222)
+	**error:undef
+
+
+	  linc_us4_routing_tests: routing_test_ (Routing: spawn new route process)...ok
+	  [done in 7.034 s]
+	=======================================================
+	  Failed: 6.  Skipped: 0.  Passed: 10.
+	error
+
+This must be again an unmaintained test suite. On Erlang/OTP 5 cases of
+linc_us4_routing_tests fail (and none pass).
+
+	11> eunit:test(linc_us4_table_features_tests, [verbose]).
+	======================== EUnit ========================
+	module 'linc_us4_table_features_tests'
+	  linc_us4_table_features_tests: table_features_test_ (Get table features)...[0.034 s] ok
+	  linc_us4_table_features_tests: table_features_test_ (Set missing features)...ok
+	  linc_us4_table_features_tests: table_features_test_ (Set duplicate features)...ok
+	  linc_us4_table_features_tests: table_features_test_ (Set bad table id)...ok
+	  linc_us4_table_features_tests: table_features_test_ (Set features)...[0.013 s] ok
+	  [done in 0.058 s]
+	=======================================================
+	  All 5 tests passed.
+	ok
+
+	12> eunit:test(linc_us4_tests, [verbose]).
+	======================== EUnit ========================
+	module 'linc_us4_tests'
+	  linc_us4_tests: default_switch_config (Test if the switch initial config is set correctly)...ok
+	  linc_us4_tests: custom_switch_config (Test if the switch config is set correctly)...ok
+	  linc_us4_tests: switch_setup_test_ (Start/stop LINC v4 switch backend w/o OF-Config subsystem)...[0.314 s] ok
+	  linc_us4_tests: switch_setup_test_ (Start/stop LINC v4 switch backend with OF-Config subsystem)...22:19:59.076 [error] Starting ssh application failed because: {error,{not_started,crypto}}
+	22:19:59.089 [error] Starting enetconf application failed because: {error,{not_started,crypto}} [0.350 s] ok
+	  linc_us4_tests: switch_setup_test_ (Start/stop LINC v4 switch backend with controllers listener enabled)...[0.315 s] ok
+	  [done in 16.798 s]
+	=======================================================
+	  All 5 tests passed.
+	ok
+
+All tests except linc_us4_routing_tests passed on the first try. Tests for
+linc_us4 seems better maintained yet there are bits that require a brushup.
+
 

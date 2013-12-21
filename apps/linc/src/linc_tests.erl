@@ -35,7 +35,7 @@ logic() ->
     %% exist.
     Backend = linc_backend,
     application:load(linc),
-    %% application:set_env(linc, backend, Backend),
+    application:set_env(linc, backend, Backend),
     Config = [{switch, SwitchId = 0,
                [{backend, Backend},
                 {controllers, []},
@@ -58,14 +58,7 @@ logic() ->
     meck:expect(Backend, start, fun(_) -> {ok, version, state} end),
     meck:expect(Backend, stop, fun(_) -> ok end),
 
-	%%MK
-	%%ling:trace(3),
-
     ?assertEqual(ok, application:start(linc)),
-
-	%%MK
-	%%ling:trace(0),
-	erlang:display(linc_started),
 
     assert_linc_logic_is_running(SwitchId, 10),
     ?assertEqual(ok, application:stop(linc)),
