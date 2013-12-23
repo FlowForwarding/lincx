@@ -1,7 +1,6 @@
 name = "lincx"
 kernel = "vmling"
-#extra = "-ipaddr 192.168.0.100 -netmask 255.255.255.0 -gateway 192.168.0.1"
-extra = "-dhcp -goofs /lincx/log -home /lincx -pz /lincx/deps/eenum/ebin  -pz /lincx/deps/enetconf/ebin -pz /lincx/deps/epcap/ebin -pz /lincx/deps/lager/ebin -pz /lincx/deps/ling_builder/ebin -pz /lincx/deps/meck/ebin -pz /lincx/deps/of_config/ebin -pz /lincx/deps/of_protocol/ebin -pz /lincx/pkt/ebin -pz /lincx/deps/procket/ebin -pz /lincx/deps/sync/deps -pz /lincx/deps/tunctl/ebin -pz /lincx/apps/linc/ebin -pz /lincx/apps/linc_us3/ebin -pz /lincx/apps/linc_us4/ebin"
+extra = "-dhcp -goofs /lincx/log -home /lincx -pz /lincx/apps/linc/ebin /lincx/apps/linc_us3/ebin /lincx/apps/linc_us4/ebin /lincx/deps/eenum/ebin /lincx/deps/enetconf/ebin /lincx/deps/epcap/ebin /lincx/deps/lager/ebin /lincx/deps/ling_builder/ebin /lincx/deps/meck/ebin /lincx/deps/of_config/ebin /lincx/deps/of_protocol/ebin /lincx/deps/pkt/ebin /lincx/deps/procket/ebin /lincx/deps/sync/ebin /lincx/deps/tunctl/ebin -config /lincx/priv/sys.config"
 memory = "1024"
 disk = [ "tap:aio:/home/mk/lincx/lincxdisk1.img,xvda,w" ]
-vif = [ "", ]
+vif = [ '', '', '' ]

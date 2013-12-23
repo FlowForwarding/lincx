@@ -10,8 +10,7 @@ offline:
 	@./scripts/post_generate_hook
 
 compile: get-deps update-deps
-	@./rebar compile
-
+	@./rebar compile 
 get-deps:
 	@./rebar get-deps
 
@@ -42,3 +41,25 @@ dev_prepare: compile
 
 dev:
 	erl -env ERL_MAX_ETS_TABLES 3000 -pa apps/*/ebin apps/*/test deps/*/ebin -config rel/files/sys.config -args_file rel/files/vm.args -eval "lists:map(fun application:start/1, [kernel, stdlib, public_key, crypto, ssl, compiler, syntax_tools, runtime_tools, xmerl, mnesia, lager, linc, sync])"
+
+#-------------------------------------------------------------------------------
+# LING-related targets
+#
+
+APPS_EBIN_DIRS := $(addprefix /lincx/,$(wildcard apps/*/ebin))
+DEPS_EBIN_DIRS := $(addprefix /lincx/,$(wildcard deps/*/ebin))
+PATHZ := $(APPS_EBIN_DIRS) $(DEPS_EBIN_DIRS)
+SYSCONF := /lincx/priv/sys.config
+DOMCONF := domain_config
+
+$(DOMCONF):
+	@echo "name = \"lincx\"" >$(DOMCONF)
+	@echo "kernel = \"vmling\"" >>$(DOMCONF)
+	@echo "extra = \"-dhcp -goofs /lincx/log -home /lincx -pz $(PATHZ) -config $(SYSCONF)\"" >>$(DOMCONF)
+	@echo "memory = \"1024\"" >>$(DOMCONF)
+	@echo "disk = [ \"tap:aio:/home/mk/lincx/lincxdisk1.img,xvda,w\" ]" >>$(DOMCONF)
+	@echo "vif = [ '', '', '' ]" >>$(DOMCONF)
+
+x:	$(DOMCONF)
+	sudo xl create -c $(DOMCONF)
+

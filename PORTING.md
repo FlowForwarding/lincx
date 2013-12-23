@@ -1037,4 +1037,57 @@ linc_us4_routing_tests fail (and none pass).
 All tests except linc_us4_routing_tests passed on the first try. Tests for
 linc_us4 seems better maintained yet there are bits that require a brushup.
 
+----[23/12/13 03:12]------------------------------------------------------------
+
+The simple-packet-forward demo require at least two network interfaces that
+exchange data. LING supports arbitrary many network interface but only the first
+(eth0) can be attached to TCP/IP stack. Other interfaces are accessible as "raw
+sockets". A sample configuration with three network interfaces:
+
+	1> inet:getifaddrs().
+	{ok,[{"lo",
+		  [{flags,[up,loopback,running]},
+		   {addr,{127,0,0,1}},
+		   {netmask,{255,0,0,0}}]},
+		 {"eth0",
+		  [{flags,[up,broadcast,running,multicast]},
+		   {hwaddr,[0,22,62,99,234,97]},
+		   {addr,{192,168,0,48}},
+		   {netmask,{255,255,255,0}}]},
+		 {"eth1",
+		  [{flags,[up,broadcast,running,multicast]}, {hwaddr,[0,22,62,87,40,73]}]},
+		 {"eth2",
+		  [{flags,[up,broadcast,running,multicast]},
+		   {hwaddr,[0,22,62,16,116,105]}]}]}
+	2> 
+
+NB: an example of sys.config given on the Ping demo page has an error: a ports
+property within a ports property:
+
+	{ports,
+    [
+     {ports, 
+      [
+       {port, 1, {queues, []}},
+       {port, 2, {queues, []}}
+      ]}
+    ]},
+
+The sys.config put into a directory priv and an option added to rebar.config to
+import contents of the directory to the image. An attempt to start linc
+application now culminated in the following error:
+
+	{no_driver,{spawn,"sudo /lincx/../priv/epcap -d /lincx/../priv/tmp -i eth1 -P -N -I """}}
+
+epcap should be replaced with LING raw sockets. Much smaller and cleaner code
+can be expected.
+
+----[24/12/13 00:05]------------------------------------------------------------
+
+deps/epcap and deps/tunctl are removed completely to ensure that code works
+without them. Later they may be added back if the same codebase should work
+everywhere.
+
+The way that suggest itself is to introduce a new 'port type' -- vif -- in
+addition to tap and eth.
 
