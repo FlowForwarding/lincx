@@ -18,7 +18,8 @@
 %% @copyright 2012 FlowForwarding.org
 -module(linc_us4_port_native).
 
--export([tap/2,
+-export([vif/1,
+		 tap/2,
          eth/1,
          send/3,
          close/1]).
@@ -28,6 +29,20 @@
 -include_lib("linc/include/linc_logger.hrl").
 -include("linc_us4.hrl").
 -include("linc_us4_port.hrl").
+
+-spec vif(string()) -> {port(), binary()} |
+					   {error, term()}.
+vif(Interface) ->
+	case net_vif:open(Interface, [binary]) of
+	{ok,Port} ->
+		HwAddr = get_hw_addr(Interface),
+		{Port,HwAddr};
+
+	{error,Error} ->
+		?ERROR("Vif error ~p for interface ~p",
+					[Error,Interface]),
+		{stop,shutdown}
+	end.
 
 -spec tap(string(), list(term())) -> {port(), pid(), binary()} |
                                      {stop, shutdown}.
@@ -95,6 +110,9 @@ send(Socket, Ifindex, Frame) ->
             packet:send(Socket, Ifindex, Frame)
     end.
 
+close(#state{socket = undefined, port_ref = undefined, erlang_port =VifPort}) ->
+	%% vif type port
+	erlang:close_port(VifPort);
 close(#state{socket = undefined, port_ref = PortRef}) ->
     tuncer:down(PortRef),
     tuncer:destroy(PortRef);

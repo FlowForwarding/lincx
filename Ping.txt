@@ -1,0 +1,433 @@
+sudo xl create -c domain_config
+Parsing config from domain_config
+Daemon running with PID 20363
+Attaching vbd...
+vbd: info 0 sectors 8388608 of size 512
+vbd: barrier 0 flush-cache 1 trim 0
+eth0: MAC 00:16:3e:7f:3c:82
+eth1: MAC 00:16:3e:1b:e4:27
+eth2: MAC 00:16:3e:15:de:5f
+Erlang [ling-0.2.2]
+
+Eshell V5.10.2  (abort with ^G)
+1>
+1> rr("priv/of_protocol.hrl").
+[async_config,controller_status,ofp_hello,ofp_message,
+ ofp_parser]
+2> rr("priv/ofp_v4.hrl").
+[ofp_action_copy_ttl_in,ofp_action_copy_ttl_out,
+ ofp_action_dec_mpls_ttl,ofp_action_dec_nw_ttl,
+ ofp_action_experimenter,ofp_action_group,ofp_action_output,
+ ofp_action_pop_mpls,ofp_action_pop_pbb,ofp_action_pop_vlan,
+ ofp_action_push_mpls,ofp_action_push_pbb,
+ ofp_action_push_vlan,ofp_action_set_field,
+ ofp_action_set_mpls_ttl,ofp_action_set_nw_ttl,
+ ofp_action_set_queue,ofp_aggregate_stats_reply,
+ ofp_aggregate_stats_request,ofp_barrier_reply,
+ ofp_barrier_request,ofp_bucket,ofp_bucket_counter,
+ ofp_desc_reply,ofp_desc_request,ofp_echo_reply,
+ ofp_echo_request,ofp_error_msg,ofp_error_msg_experimenter|...]
+3>
+3> {ok, CtrlPid} = of_controller_v4:start(6633).
+{ok,<0.250.0>}
+4> 23:53:27.031 [info] Application lager started on node nonode@nohost
+
+4> mnesia:start().
+ok
+5> 23:53:34.138 [info] Application mnesia started on node nonode@nohost
+
+5> {ok,S} = file:read_file("priv/sys.config"), io:format("~s", [S]).
+[
+ {linc,
+  [
+   {of_config,disabled},
+
+   {capable_switch_ports,
+    [
+         {port,1,[{interface,"eth1"},{type,vif}]},
+         {port,2,[{interface,"eth2"},{type,vif}]}
+    ]},
+
+   {capable_switch_queues,[]},
+
+   {logical_switches,
+    [
+     {switch,0,
+      [
+       {backend,linc_us4},
+       {controllers,
+        [
+         {"Switch0-DefaultController","localhost",6633,tcp}
+        ]},
+
+       {queues_status, disabled},
+
+       {ports,
+                [
+                 {port,1,{queues,[]}},
+                 {port,2,{queues,[]}}
+        ]}
+          ]}
+    ]}
+  ]},
+
+ {enetconf,
+  [
+   {capabilities, [{base, {1, 0}},
+                   {base, {1, 1}},
+                   {startup, {1, 0}},
+                   {'writable-running', {1, 0}}]},
+   {callback_module, linc_ofconfig},
+   {sshd_ip, any},
+   {sshd_port, 1830},
+   {sshd_user_passwords,
+    [
+     {"linc", "linc"}
+    ]}
+  ]},
+
+ {lager,
+  [
+   {handlers,
+    [
+     {lager_console_backend, info},
+     {lager_file_backend,
+      [
+       {"log/error.log", error, 10485760, "$D0", 5},
+       {"log/console.log", info, 10485760, "$D0", 5}
+      ]}
+    ]}
+  ]},
+
+ {sasl,
+  [
+   {sasl_error_logger, {file, "log/sasl-error.log"}},
+   {errlog_type, error},
+   {error_logger_mf_dir, "log"},           % Log directory
+   {error_logger_mf_maxbytes, 10485760},   % 10 MB max file size
+   {error_logger_mf_maxfiles, 5}           % 5 files max
+  ]}
+
+].
+ok
+6>
+6> application:start(linc).
+ok
+7> 23:54:24.964 [info] Application linc started on node nonode@nohost
+vif: op 100 dlen 4
+23:54:24.977 [info] Created port: {port,1,[{queues_status,disabled},{queues,[{port,2,[{port_rate,{100,mbps}},{port_queues,[]}]},{port,1,[{port_rate,{100,mbps}},{port_queues,[]}]}]},{config,{port_configuration,undefined,up,false,false,false}},{features,{features,undefined,'100Mb-FD',true,copper,unsupported}},{interface,"eth1"},{type,vif}]}
+vif: op 100 dlen 4
+23:54:24.980 [info] Created port: {port,2,[{queues_status,disabled},{queues,[{port,2,[{port_rate,{100,mbps}},{port_queues,[]}]},{port,1,[{port_rate,{100,mbps}},{port_queues,[]}]}]},{config,{port_configuration,undefined,up,false,false,false}},{features,{features,undefined,'100Mb-FD',true,copper,unsupported}},{interface,"eth2"},{type,vif}]}
+23:54:24.984 [info] Accepted connection from #Port<0.13.0> {{1,0,0,127},63196}
+23:54:24.989 [info] Connected to controller localhost:6633/0 using OFP v4
+23:54:25.175 [info] Received message from #Port<0.13.0>: {ofp_message,4,hello,0,{ofp_hello,[{versionbitmap,[4]}]}}
+23:54:26.136 [info] Received message from #Port<0.13.0>: {ofp_message,4,multipart_reply,2153886217,{ofp_flow_stats_reply,[],[{ofp_flow_stats,0,0,249206000,1,0,0,[],<<0,0,0,0,0,0,0,0>>,0,0,{ofp_match,[{ofp_field,openflow_basic,eth_type,false,<<8,0>>,undefined},{ofp_field,openflow_basic,ip_proto,false,<<6>>,undefined},{ofp_field,openflow_basic,ipv4_src,false,<<192,168,0,79>>,undefined}]},[{ofp_instruction_apply_actions,2,[{ofp_action_set_field,13,{ofp_field,openflow_basic,tcp_dst,false,<<31,43>>,undefined}},{ofp_action_output,16,2,no_buffer}]}]},{ofp_flow_stats,0,0,498727000,1,0,0,[],<<0,0,0,0,0,0,0,0>>,0,0,{ofp_match,[{ofp_field,openflow_basic,eth_type,false,<<8,0>>,undefined},{ofp_field,openflow_basic,ipv4_src,false,<<192,168,0,68>>,undefined}]},[{ofp_instruction_apply_actions,2,[{ofp_action_set_field,13,{ofp_field,openflow_basic,ipv4_dst,false,<<10,0,0,68>>,undefined}},{ofp_action_output,16,2,no_buffer}]}]},{ofp_flow_stats,0,0,743230000,0,0,0,[],<<0,0,0,0,0,0,0,0>>,0,0,{ofp_match,[]},[{ofp_instruction_apply_actions,2,[{ofp_action_output,16,controller,no_buffer}]}]}]}}
+23:54:26.345 [info] Received message from #Port<0.13.0>: {ofp_message,4,echo_reply,1337138230,{ofp_echo_reply,<<>>}}
+23:54:26.550 [info] Received message from #Port<0.13.0>: {ofp_message,4,features_reply,2566017580,{ofp_features_reply,<<0,22,62,127,60,130>>,0,0,255,0,[flow_stats,table_stats,port_stats,group_stats,queue_stats]}}
+23:54:26.754 [info] Received message from #Port<0.13.0>: {ofp_message,4,get_config_reply,3932713463,{ofp_get_config_reply,[],no_buffer}}
+23:54:27.625 [info] Received message from #Port<0.13.0>: {ofp_message,4,error,2561991291,{ofp_error_msg,port_mod_failed,bad_hw_addr,<<>>}}
+23:54:27.831 [info] Received message from #Port<0.13.0>: {ofp_message,4,multipart_reply,610350148,{ofp_port_desc_reply,[],[{ofp_port,2,<<0,22,62,21,222,95>>,<<"Port2">>,[],[live],['100mb_fd',copper,autoneg],[copper,autoneg],['100mb_fd',copper,autoneg],['100mb_fd',copper,autoneg],5000,5000},{ofp_port,1,<<0,22,62,27,228,39>>,<<"Port1">>,[],[live],['100mb_fd',copper,autoneg],[copper,autoneg],['100mb_fd',copper,autoneg],['100mb_fd',copper,autoneg],5000,5000}]}}
+23:54:28.039 [info] Received message from #Port<0.13.0>: {ofp_message,4,multipart_reply,899574699,{ofp_desc_reply,[],<<"FlowForwarding.org">>,<<"Unknown">>,<<"LINC OpenFlow Software Switch 1.1">>,<<"Unknown">>,<<"Unknown">>}}
+23:54:28.253 [info] Received message from #Port<0.13.0>: {ofp_message,4,multipart_reply,2994196869,{ofp_aggregate_stats_reply,[],0,0,3}}
+23:54:28.489 [info] Received message from #Port<0.13.0>: {ofp_message,4,multipart_reply,686384823,{ofp_table_stats_reply,[],[{ofp_table_stats,0,3,0,0},{ofp_table_stats,1,0,0,0},{ofp_table_stats,2,0,0,0},{ofp_table_stats,3,0,0,0},{ofp_table_stats,4,0,0,0},{ofp_table_stats,5,0,0,0},{ofp_table_stats,6,0,0,0},{ofp_table_stats,7,0,0,0},{ofp_table_stats,8,0,0,0},{ofp_table_stats,9,0,0,0},{ofp_table_stats,10,0,0,0},{ofp_table_stats,11,0,0,0},{ofp_table_stats,12,0,0,0},{ofp_table_stats,13,0,0,0},{ofp_table_stats,14,0,0,0},{ofp_table_stats,15,0,0,0},{ofp_table_stats,16,0,0,0},{ofp_table_stats,17,0,0,0},{ofp_table_stats,18,0,0,0},{ofp_table_stats,19,0,0,0},{ofp_table_stats,20,0,0,0},{ofp_table_stats,21,0,0,0},{ofp_table_stats,22,0,0,0},{ofp_table_stats,23,0,0,0},{ofp_table_stats,24,0,0,0},{ofp_table_stats,25,0,0,0},{ofp_table_stats,26,0,0,0},{ofp_table_stats,27,0,0,0},{ofp_table_stats,28,0,0,0},{ofp_table_stats,29,0,0,0},{ofp_table_stats,30,0,0,0},{ofp_table_stats,31,0,0,0},{ofp_table_stats,32,0,0,0},{ofp_table_stats,33,0,0,0},{ofp_table_stats,34,0,0,0},{ofp_table_stats,35,0,0,0},{ofp_table_stats,36,0,0,0},{ofp_table_stats,37,0,0,0},{ofp_table_stats,38,0,0,0},{ofp_table_stats,39,0,0,0},{ofp_table_stats,40,0,0,0},{ofp_table_stats,41,0,0,0},{ofp_table_stats,42,0,0,0},{ofp_table_stats,43,0,0,0},{ofp_table_stats,44,0,0,0},{ofp_table_stats,45,0,0,0},{ofp_table_stats,46,0,0,0},{ofp_table_stats,47,0,0,0},{ofp_table_stats,48,0,0,0},{ofp_table_stats,49,0,0,0},{ofp_table_stats,50,0,0,0},{ofp_table_stats,51,0,0,0},{ofp_table_stats,52,0,0,0},{ofp_table_stats,53,0,0,0},{ofp_table_stats,54,0,0,0},{ofp_table_stats,55,0,0,0},{ofp_table_stats,56,0,0,0},{ofp_table_stats,57,0,0,0},{ofp_table_stats,58,0,0,0},{ofp_table_stats,59,0,0,0},{ofp_table_stats,60,0,0,0},{ofp_table_stats,61,0,0,0},{ofp_table_stats,62,0,0,0},{ofp_table_stats,63,0,0,0},{ofp_table_stats,64,0,0,0},{ofp_table_stats,65,0,0,0},{ofp_table_stats,66,0,0,0},{ofp_table_stats,67,0,0,0},{ofp_table_stats,68,0,0,0},{ofp_table_stats,69,0,0,0},{ofp_table_stats,70,0,0,0},{ofp_table_stats,71,0,0,0},{ofp_table_stats,72,0,0,0},{ofp_table_stats,73,0,0,0},{ofp_table_stats,74,0,0,0},{ofp_table_stats,75,0,0,0},{ofp_table_stats,76,0,0,0},{ofp_table_stats,77,0,0,0},{ofp_table_stats,78,0,0,0},{ofp_table_stats,79,0,0,0},{ofp_table_stats,80,0,0,0},{ofp_table_stats,81,0,0,0},{ofp_table_stats,82,0,0,0},{ofp_table_stats,83,0,0,0},{ofp_table_stats,84,0,0,0},{ofp_table_stats,85,0,0,0},{ofp_table_stats,86,0,0,0},{ofp_table_stats,87,0,0,0},{ofp_table_stats,88,0,0,0},{ofp_table_stats,89,0,0,0},{ofp_table_stats,90,0,0,0},{ofp_table_stats,91,0,0,0},{ofp_table_stats,92,0,0,0},{ofp_table_stats,93,0,0,0},{ofp_table_stats,94,0,0,0},{ofp_table_stats,95,0,0,0},{ofp_table_stats,96,0,0,0},{ofp_table_stats,97,0,0,0},{ofp_table_stats,98,0,0,0},{ofp_table_stats,99,0,0,0},{ofp_table_stats,100,0,0,0},{ofp_table_stats,101,0,0,0},{ofp_table_stats,102,0,0,0},{ofp_table_stats,103,0,0,0},{ofp_table_stats,104,0,0,0},{ofp_table_stats,105,0,0,0},{ofp_table_stats,106,0,0,0},{ofp_table_stats,107,0,0,0},{ofp_table_stats,108,0,0,0},{ofp_table_stats,109,0,0,0},{ofp_table_stats,110,0,0,0},{ofp_table_stats,111,0,0,0},{ofp_table_stats,112,0,0,0},{ofp_table_stats,113,0,0,0},{ofp_table_stats,114,0,0,0},{ofp_table_stats,115,0,0,0},{ofp_table_stats,116,0,0,0},{ofp_table_stats,117,0,0,0},{ofp_table_stats,118,0,0,0},{ofp_table_stats,119,0,0,0},{ofp_table_stats,120,0,0,0},{ofp_table_stats,121,0,0,0},{ofp_table_stats,122,0,0,0},{ofp_table_stats,123,0,0,0},{ofp_table_stats,124,0,0,0},{ofp_table_stats,125,0,0,0},{ofp_table_stats,126,0,0,0},{ofp_table_stats,127,0,0,0},{ofp_table_stats,128,0,0,0},{ofp_table_stats,129,0,0,0},{ofp_table_stats,130,0,0,0},{ofp_table_stats,131,0,0,0},{ofp_table_stats,132,0,0,0},{ofp_table_stats,133,0,0,0},{ofp_table_stats,134,0,0,0},{ofp_table_stats,135,0,0,0},{ofp_table_stats,136,0,0,0},{ofp_table_stats,137,0,0,0},{ofp_table_stats,138,0,0,0},{ofp_table_stats,139,0,0,0},{ofp_table_stats,140,0,0,0},{ofp_table_stats,141,0,0,0},{ofp_table_stats,142,0,0,0},{ofp_table_stats,143,0,0,0},{ofp_table_stats,144,0,0,0},{ofp_table_stats,...
+23:54:28.697 [info] Received message from #Port<0.13.0>: {ofp_message,4,multipart_reply,2397690440,{ofp_port_stats_reply,[],[{ofp_port_stats,2,0,0,0,0,0,0,0,0,0,0,0,0,3,716564000},{ofp_port_stats,1,0,0,0,0,0,0,0,0,0,0,0,0,3,719788000}]}}
+23:54:28.907 [info] Received message from #Port<0.13.0>: {ofp_message,4,error,923302212,{ofp_error_msg,queue_op_failed,bad_queue,<<>>}}
+23:54:29.114 [info] Received message from #Port<0.13.0>: {ofp_message,4,multipart_reply,1966768732,{ofp_group_stats_reply,[],[{ofp_group_stats,1,0,0,0,1,738256000,[{ofp_bucket_counter,0,0}]}]}}
+23:54:29.320 [info] Received message from #Port<0.13.0>: {ofp_message,4,multipart_reply,1809893894,{ofp_group_desc_reply,[],[{ofp_group_desc_stats,all,1,[{ofp_bucket,1,1,1,[{ofp_action_output,16,2,no_buffer}]}]}]}}
+23:54:29.525 [info] Received message from #Port<0.13.0>: {ofp_message,4,multipart_reply,25437686,{ofp_group_features_reply,[],[all,select,indirect,ff],[select_weight,chaining],{16777216,16777216,16777216,16777216},{[output,copy_ttl_out,copy_ttl_in,set_mpls_ttl,dec_mpls_ttl,push_vlan,pop_vlan,push_mpls,pop_mpls,set_queue,group,set_nw_ttl,dec_nw_ttl,set_field,push_pbb,pop_pbb],[output,copy_ttl_out,copy_ttl_in,set_mpls_ttl,dec_mpls_ttl,push_vlan,pop_vlan,push_mpls,pop_mpls,set_queue,group,set_nw_ttl,dec_nw_ttl,set_field,push_pbb,pop_pbb],[output,copy_ttl_out,copy_ttl_in,set_mpls_ttl,dec_mpls_ttl,push_vlan,pop_vlan,push_mpls,pop_mpls,set_queue,group,set_nw_ttl,dec_nw_ttl,set_field,push_pbb,pop_pbb],[output,copy_ttl_out,copy_ttl_in,set_mpls_ttl,dec_mpls_ttl,push_vlan,pop_vlan,push_mpls,pop_mpls,set_queue,group,set_nw_ttl,dec_nw_ttl,set_field,push_pbb,pop_pbb]}}}
+23:54:29.734 [info] Received message from #Port<0.13.0>: {ofp_message,4,queue_get_config_reply,2414286023,{ofp_queue_get_config_reply,any,[]}}
+23:54:29.942 [info] Received message from #Port<0.13.0>: {ofp_message,4,role_reply,2043427153,{ofp_role_reply,equal,18446744073709551615}}
+23:54:30.147 [info] Received message from #Port<0.13.0>: {ofp_message,4,barrier_reply,1722116342,{ofp_barrier_reply}}
+23:54:31.126 [info] Received message from #Port<0.13.0>: {ofp_message,4,multipart_reply,4248984972,{ofp_meter_config_reply,[],[{ofp_meter_config,[kbps],17,[{ofp_meter_band_drop,drop,900,4294967295}]}]}}
+
+7>
+7> ets:tab2list(linc:lookup(0, flow_table_0)).
+[{flow_entry,
+     {0,#Ref<local.0.0.2995>},
+     0,
+     #ofp_match{fields = []},
+     <<0,0,0,0,0,0,0,0>>,
+     [],
+     {1387,842865,382340},
+     {infinity,0,0},
+     {infinity,0,0},
+     [#ofp_instruction_apply_actions{
+          seq = 2,
+          actions =
+              [#ofp_action_output{
+                   seq = 16,port = controller,max_len = no_buffer}]}]},
+ {flow_entry,
+     {1,#Ref<local.0.0.2997>},
+     1,
+     #ofp_match{
+         fields =
+             [#ofp_field{
+                  class = openflow_basic,name = eth_type,has_mask = false,
+                  value = <<8,0>>,
+                  mask = undefined},
+              #ofp_field{
+                  class = openflow_basic,name = ipv4_src,has_mask = false,
+                  value = <<192,168,0,68>>,
+                  mask = undefined}]},
+     <<0,0,0,0,0,0,0,0>>,
+     [],
+     {1387,842865,626894},
+     {infinity,0,0},
+     {infinity,0,0},
+     [#ofp_instruction_apply_actions{
+          seq = 2,
+          actions =
+              [#ofp_action_set_field{
+                   seq = 13,
+                   field =
+                       #ofp_field{
+                           class = openflow_basic,name = ipv4_dst,
+                           has_mask = false,
+                           value = <<10,0,0,68>>,
+                           mask = undefined}},
+               #ofp_action_output{
+                   seq = 16,port = 2,max_len = no_buffer}]}]},
+ {flow_entry,
+     {1,#Ref<local.0.0.2998>},
+     1,
+     #ofp_match{
+         fields =
+             [#ofp_field{
+                  class = openflow_basic,name = eth_type,has_mask = false,
+                  value = <<8,0>>,
+                  mask = undefined},
+              #ofp_field{
+                  class = openflow_basic,name = ip_proto,has_mask = false,
+                  value = <<6>>,
+                  mask = undefined},
+              #ofp_field{
+                  class = openflow_basic,name = ipv4_src,has_mask = false,
+                  value = <<192,168,0,79>>,
+                  mask = undefined}]},
+     <<0,0,0,0,0,0,0,0>>,
+     [],
+     {1387,842865,876458},
+     {infinity,0,0},
+     {infinity,0,0},
+     [#ofp_instruction_apply_actions{
+          seq = 2,
+          actions =
+              [#ofp_action_set_field{
+                   seq = 13,
+                   field =
+                       #ofp_field{
+                           class = openflow_basic,name = tcp_dst,
+                           has_mask = false,
+                           value = <<31,43>>,
+                           mask = undefined}},
+               #ofp_action_output{
+                   seq = 16,port = 2,max_len = no_buffer}]}]}]
+8>
+8> ets:tab2list(linc:lookup(0, linc_ports)).
+[{linc_port,2,<0.347.0>},{linc_port,1,<0.324.0>}]
+9>
+9> ClearFlowTable = #ofp_message{
+9>                                   version = 4,
+9>                                   xid = 100,
+9>                                   body = #ofp_flow_mod{
+9>                                            cookie = <<0:64>>,
+9>                                            cookie_mask = <<0:64>>,
+9>                                            table_id = 0,
+9>                                            command = delete,
+9>                                            idle_timeout = 30000,
+9>                                            hard_timeout = 60000,
+9>                                            priority = 1,
+9>                                            buffer_id = 1,
+9>                                            out_port = any,
+9>                                            out_group = any,
+9>                                            flags = [],
+9>                                            match = #ofp_match{fields = []},
+9>                                            instructions = []}}.
+#ofp_message{version = 4,type = undefined,xid = 100,
+             body = #ofp_flow_mod{cookie = <<0,0,0,0,0,0,0,0>>,
+                                  cookie_mask = <<0,0,0,0,0,0,0,0>>,
+                                  table_id = 0,command = delete,
+                                  idle_timeout = 30000,hard_timeout = 60000,
+                                  priority = 1,buffer_id = 1,out_port = any,
+                                  out_group = any,flags = [],
+                                  match = #ofp_match{fields = []},
+                                  instructions = []}}
+10>
+10> {ok, [Conn|_]} = of_controller_v4:get_connections(CtrlPid).
+{ok,[{{1,0,0,127},63196}]}
+11> f(Conn).
+ok
+12> Conn = {{127,0,0,1},63196}.
+{{127,0,0,1},63196}
+13> of_controller_v4:send(CtrlPid, Conn, ClearFlowTable).
+23:57:04.334 [info] Sending {ofp_message,4,undefined,100,{ofp_flow_mod,<<0,0,0,0,0,0,0,0>>,<<0,0,0,0,0,0,0,0>>,0,delete,30000,60000,1,1,any,any,[],{ofp_match,[]},[]}}
+<0.250.0>
+14> 23:57:04.344 [error] Sending message failed
+
+14> f(Conn).
+ok
+15> Conn = {{1,0,0,127},63196}.
+{{1,0,0,127},63196}
+16> of_controller_v4:send(CtrlPid, Conn, ClearFlowTable).
+23:57:39.036 [info] Sending {ofp_message,4,undefined,100,{ofp_flow_mod,<<0,0,0,0,0,0,0,0>>,<<0,0,0,0,0,0,0,0>>,0,delete,30000,60000,1,1,any,any,[],{ofp_match,[]},[]}}
+<0.250.0>
+17>
+17> ets:tab2list(linc:lookup(0, flow_table_0)).
+[]
+18> FlowMod = #ofp_message{
+18>                             version = 4,
+18>                             xid = 100,
+18>                              body = #ofp_flow_mod{
+18>                                   cookie = <<0:64>>,
+18>                                   cookie_mask = <<0:64>>,
+18>                                   table_id = 0,
+18>                                   command = add,
+18>                                   idle_timeout = 30000,
+18>                                   hard_timeout = 60000,
+18>                                   priority = 1,
+18>                                   buffer_id = 1,
+18>                                   out_port = 2,
+18>                                   out_group = 5,
+18>                                   flags = [],
+18>                                   match = #ofp_match{
+18>                                              fields = [#ofp_field{
+18>                                                         class = openflow_basic,
+18>                                                         name = in_port,
+18>                                                         has_mask = false,
+18>                                                         value = <<1:32>>}]},
+18>                                   instructions = [#ofp_instruction_write_actions{
+18>                                                      actions = [#ofp_action_output{
+18>                                                                    port = 2,
+18>                                                                    max_len = 64}]}]}}.
+#ofp_message{
+    version = 4,type = undefined,xid = 100,
+    body =
+        #ofp_flow_mod{
+            cookie = <<0,0,0,0,0,0,0,0>>,
+            cookie_mask = <<0,0,0,0,0,0,0,0>>,
+            table_id = 0,command = add,idle_timeout = 30000,
+            hard_timeout = 60000,priority = 1,buffer_id = 1,
+            out_port = 2,out_group = 5,flags = [],
+            match =
+                #ofp_match{
+                    fields =
+                        [#ofp_field{
+                             class = openflow_basic,name = in_port,
+                             has_mask = false,
+                             value = <<0,0,0,...>>,
+                             mask = undefined}]},
+            instructions =
+                [#ofp_instruction_write_actions{
+                     seq = 4,
+                     actions =
+                         [#ofp_action_output{
+                              seq = 16,port = 2,max_len = 64}]}]}}
+19> f(Conn).
+ok
+20> FlowMod = #ofp_message{
+20>                             version = 4,
+20>                             xid = 100,
+20>                              body = #ofp_flow_mod{
+20>                                   cookie = <<0:64>>,
+20>                                   cookie_mask = <<0:64>>,
+20>                                   table_id = 0,
+20>                                   command = add,
+20>                                   idle_timeout = 30000,
+20>                                   hard_timeout = 60000,
+20>                                   priority = 1,
+20>                                   buffer_id = 1,
+20>                                   out_port = 2,
+20>                                   out_group = 5,
+20>                                   flags = [],
+20>                                   match = #ofp_match{
+20>                                              fields = [#ofp_field{
+20>                                                         class = openflow_basic,
+20>                                                         name = in_port,
+20>                                                         has_mask = false,
+20>                                                         value = <<1:32>>}]},
+20>                                   instructions = [#ofp_instruction_write_actions{
+20>                                                      actions = [#ofp_action_output{
+20>                                                                    port = 2,
+20>                                                                    max_len = 64}]}]}}.
+#ofp_message{
+    version = 4,type = undefined,xid = 100,
+    body =
+        #ofp_flow_mod{
+            cookie = <<0,0,0,0,0,0,0,0>>,
+            cookie_mask = <<0,0,0,0,0,0,0,0>>,
+            table_id = 0,command = add,idle_timeout = 30000,
+            hard_timeout = 60000,priority = 1,buffer_id = 1,
+            out_port = 2,out_group = 5,flags = [],
+            match =
+                #ofp_match{
+                    fields =
+                        [#ofp_field{
+                             class = openflow_basic,name = in_port,
+                             has_mask = false,
+                             value = <<0,0,0,...>>,
+                             mask = undefined}]},
+            instructions =
+                [#ofp_instruction_write_actions{
+                     seq = 4,
+                     actions =
+                         [#ofp_action_output{
+                              seq = 16,port = 2,max_len = 64}]}]}}
+21> {ok, [Conn|_]} = of_controller_v4:get_connections(CtrlPid).
+{ok,[{{1,0,0,127},63196}]}
+22> of_controller_v4:send(CtrlPid, Conn, FlowMod).
+00:01:54.284 [info] Sending {ofp_message,4,undefined,100,{ofp_flow_mod,<<0,0,0,0,0,0,0,0>>,<<0,0,0,0,0,0,0,0>>,0,add,30000,60000,1,1,2,5,[],{ofp_match,[{ofp_field,openflow_basic,in_port,false,<<0,0,0,1>>,undefined}]},[{ofp_instruction_write_actions,4,[{ofp_action_output,16,2,64}]}]}}
+<0.250.0>
+23>
+23> ets:tab2list(linc:lookup(0, flow_table_0)).
+[{flow_entry,
+     {1,#Ref<local.0.0.4005>},
+     1,
+     #ofp_match{
+         fields =
+             [#ofp_field{
+                  class = openflow_basic,name = in_port,has_mask = false,
+                  value = <<0,0,0,1>>,
+                  mask = undefined}]},
+     <<0,0,0,0,0,0,0,0>>,
+     [],
+     {1387,843314,292618},
+     {infinity,0,0},
+     {infinity,0,0},
+     [#ofp_instruction_write_actions{
+          seq = 4,
+          actions =
+              [#ofp_action_output{seq = 16,port = 2,max_len = 64}]}]}]
+24> RemoveFlows = #ofp_message{
+24>                                 version = 4,
+24>                                 xid = 200,
+24>                                 body = #ofp_flow_mod{
+24>                                           cookie = <<0:64>>,
+24>                                           cookie_mask = <<0:64>>,
+24>                                           table_id = 0,
+24>                                           command = delete,
+24>                                           idle_timeout = 30000,
+24>                                           hard_timeout = 60000,
+24>                                           priority = 1,
+24>                                           buffer_id = 1,
+24>                                           out_port = 2,
+24>                                           out_group = 5,
+24>                                           flags = [],
+24>                                           match = #ofp_match{fields = []},
+24>                                           instructions = []}}.
+#ofp_message{version = 4,type = undefined,xid = 200,
+             body = #ofp_flow_mod{cookie = <<0,0,0,0,0,0,0,0>>,
+                                  cookie_mask = <<0,0,0,0,0,0,0,0>>,
+                                  table_id = 0,command = delete,
+                                  idle_timeout = 30000,hard_timeout = 60000,
+                                  priority = 1,buffer_id = 1,out_port = 2,
+                                  out_group = 5,flags = [],
+                                  match = #ofp_match{fields = []},
+                                  instructions = []}}
+25> of_controller_v4:send(CtrlPid, Conn, RemoveFlows).
+00:04:35.594 [info] Sending {ofp_message,4,undefined,200,{ofp_flow_mod,<<0,0,0,0,0,0,0,0>>,<<0,0,0,0,0,0,0,0>>,0,delete,30000,60000,1,1,2,5,[],{ofp_match,[]},[]}}
+<0.250.0>
+26> ets:tab2list(linc:lookup(0, flow_table_0)).
+[]
+27>
+27> q().
+ok

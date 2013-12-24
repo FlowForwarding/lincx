@@ -340,6 +340,32 @@ init([SwitchId, {port, PortNo, PortOpts}]) ->
             end
     end,
     case Type of
+		%% vif is a new interface type that maps to special vif ports found on
+		%% Erlang on Xen. vif ports provide a direct connection to low-level
+		%% virtual network interface drivers.
+		vif ->
+			case linc_us4_port_native:vif(Interface) of
+			{ErlangPort,HwAddr} ->
+				%% copied for the 3rd time
+            	ets:insert(linc:lookup(SwitchId, linc_ports),
+                               #linc_port{port_no = PortNo, pid = self()}),
+                ets:insert(linc:lookup(SwitchId, linc_port_stats),
+                               #ofp_port_stats{port_no = PortNo,
+											   duration_sec = erlang:now()}),
+				case queues_config(SwitchId, PortOpts) of
+				disabled ->
+					disabled;
+				QueuesConfig ->
+					SendFun = fun(Frame) ->
+						port_command(ErlangPort, Frame)
+					end,
+					linc_us4_queue:attach_all(SwitchId, PortNo,
+											  SendFun, QueuesConfig)
+				end,
+                {ok, State#state{erlang_port = ErlangPort,
+                                 port = Port#ofp_port{hw_addr = HwAddr}}}
+			end;
+
         %% When switch connects to a tap interface, erlang receives file
         %% descriptor to read/write ethernet frames directly from the
         %% desired /dev/tapX character device. No socket communication
