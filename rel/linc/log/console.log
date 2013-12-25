@@ -34,3 +34,12 @@
 2013-12-13 16:34:19.762 [error] emulator Bad input fd in erts_poll()! fd=18, port=#Port<0.1181>, driver=fd, name=18/18
 
 
+2013-12-25 14:19:29.299 [info] <0.500.0> Application lager started on node linc@den
+2013-12-25 14:19:29.299 [info] <0.500.0> Application ssh started on node linc@den
+2013-12-25 14:19:29.299 [info] <0.500.0> Application enetconf started on node linc@den
+2013-12-25 14:19:29.324 [info] <0.500.0> Application linc started on node linc@den
+2013-12-25 14:19:29.371 [info] <0.640.0>@linc_us4_port:add:546 Created port: {port,1,[{queues_status,disabled},{queues,[]},{config,{port_configuration,undefined,up,false,false,false}},{features,{features,undefined,'100Mb-FD',true,copper,unsupported}},{queues,[]},{interface,"tap-linc-port1"}]}
+2013-12-25 14:19:29.411 [info] <0.640.0>@linc_us4_port:add:546 Created port: {port,2,[{queues_status,disabled},{queues,[]},{config,{port_configuration,undefined,up,false,false,false}},{features,{features,undefined,'100Mb-FD',true,copper,unsupported}},{queues,[]},{interface,"tap-linc-port2"}]}
+2013-12-25 14:20:58.914 [error] emulator Bad input fd in erts_poll()! fd=16, port=#Port<0.1183>, driver=fd, name=16/16
+
+

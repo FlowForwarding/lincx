@@ -173,7 +173,7 @@ Another error from the meck:
 	error
 
 meck_proc.erl fixed to accept more general errors including the above. A
-reference to compiler application added.
+reference to compiler application added [25/12/13 - reverted].
 
 meck is using dynamic generation of mock modules. In general, this is possible
 with LING but requires changes to meck. The obstacle is the transformation of
@@ -1089,5 +1089,13 @@ without them. Later they may be added back if the same codebase should work
 everywhere.
 
 The way that suggest itself is to introduce a new 'port type' -- vif -- in
-addition to tap and eth.
+addition to tap and eth. vif type ports added to linc_us4_port.erl. 
+
+lincx now successfully runs the Ping demo. The remaining issue is that the
+receiving interface gets multiple copies of the ICMP packet.
+
+----[25/12/13 14:10]------------------------------------------------------------
+
+
+
 

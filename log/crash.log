@@ -1021,3 +1021,183 @@ Module m must be purged before loading
     stack_size: 27
     reductions: 1390
   neighbours:
+2013-12-25 14:27:01 =CRASH REPORT====
+  crasher:
+    initial call: linc_us4_port:init/1
+    pid: <0.104.0>
+    registered_name: []
+    exception exit: {{function_clause,[{filename,join,[{error,bad_name},"tmp"],[{file,"filename.erl"},{line,406}]},{filename,join,1,[{file,"filename.erl"},{line,393}]},{linc_us4_port,init,1,[{file,"src/linc_us4_port.erl"},{line,296}]},{gen_server,init_it,6,[{file,"gen_server.erl"},{line,304}]},{proc_lib,init_p_do_apply,3,[{file,"proc_lib.erl"},{line,239}]}]},[{gen_server,init_it,6,[{file,"gen_server.erl"},{line,328}]},{proc_lib,init_p_do_apply,3,[{file,"proc_lib.erl"},{line,239}]}]}
+    ancestors: [<0.100.0>,<0.97.0>,<0.90.0>,<0.86.0>,<0.85.0>]
+    messages: []
+    links: [<0.100.0>]
+    dictionary: []
+    trap_exit: true
+    status: running
+    heap_size: 610
+    stack_size: 27
+    reductions: 125
+  neighbours:
+2013-12-25 14:27:06 =SUPERVISOR REPORT====
+     Supervisor: {<0.90.0>,linc_sup}
+     Context:    shutdown_error
+     Reason:     killed
+     Offender:   [{pid,<0.91.0>},{name,linc_logic},{mfargs,{linc_logic,start_link,[0,linc_us4,[],[{switch,0,[{datapath_id,"D4:3D:7E:EC:EF:F5:00:00"},{backend,linc_us4},{controllers,[{"Switch0-DefaultController","localhost",6633,tcp}]},{controllers_listener,disabled},{queues_status,disabled},{ports,[{port,1,[{config,{port_configuration,undefined,up,false,false,false}},{features,{features,undefined,'100Mb-FD',true,copper,unsupported}},{interface,"tap-linc-port1"}]},{port,2,[{config,{port_configuration,undefined,up,false,false,false}},{features,{features,undefined,'100Mb-FD',true,copper,unsupported}},{interface,"tap-linc-port2"}]}]},{queues,[]}]}]]}},{restart_type,permanent},{shutdown,5000},{child_type,worker}]
+
+2013-12-25 14:30:29 =CRASH REPORT====
+  crasher:
+    initial call: linc_us4_port:init/1
+    pid: <0.93.0>
+    registered_name: []
+    exception exit: {{function_clause,[{filename,join,[{error,bad_name},"tmp"],[{file,"filename.erl"},{line,406}]},{filename,join,1,[{file,"filename.erl"},{line,393}]},{linc_us4_port,init,1,[{file,"src/linc_us4_port.erl"},{line,296}]},{gen_server,init_it,6,[{file,"gen_server.erl"},{line,304}]},{proc_lib,init_p_do_apply,3,[{file,"proc_lib.erl"},{line,239}]}]},[{gen_server,init_it,6,[{file,"gen_server.erl"},{line,328}]},{proc_lib,init_p_do_apply,3,[{file,"proc_lib.erl"},{line,239}]}]}
+    ancestors: [<0.92.0>,<0.90.0>,<0.86.0>,<0.82.0>,<0.81.0>]
+    messages: []
+    links: [<0.92.0>]
+    dictionary: []
+    trap_exit: true
+    status: running
+    heap_size: 610
+    stack_size: 27
+    reductions: 125
+  neighbours:
+2013-12-25 14:30:34 =SUPERVISOR REPORT====
+     Supervisor: {<0.86.0>,linc_sup}
+     Context:    shutdown_error
+     Reason:     killed
+     Offender:   [{pid,<0.87.0>},{name,linc_logic},{mfargs,{linc_logic,start_link,[0,linc_us4,[],[{switch,0,[{datapath_id,"D4:3D:7E:EC:EF:F5:00:00"},{backend,linc_us4},{controllers,[{"Switch0-DefaultController","localhost",6633,tcp}]},{controllers_listener,disabled},{queues_status,disabled},{ports,[{port,1,[{config,{port_configuration,undefined,up,false,false,false}},{features,{features,undefined,'100Mb-FD',true,copper,unsupported}},{interface,"tap-linc-port1"}]},{port,2,[{config,{port_configuration,undefined,up,false,false,false}},{features,{features,undefined,'100Mb-FD',true,copper,unsupported}},{interface,"tap-linc-port2"}]}]},{queues,[]}]}]]}},{restart_type,permanent},{shutdown,5000},{child_type,worker}]
+
+2013-12-25 14:32:35 =CRASH REPORT====
+  crasher:
+    initial call: application_master:init/4
+    pid: <0.78.0>
+    registered_name: []
+    exception exit: {{bad_return,{{linc,start,[normal,[]]},{'EXIT',{{badmatch,undefined},[{linc_ofconfig,get_linc_logical_switches,0,[{file,"src/linc_ofconfig.erl"},{line,192}]},{linc_ofconfig,read_and_update_startup,0,[{file,"src/linc_ofconfig.erl"},{line,350}]},{linc_capable_sup,start_link,0,[{file,"src/linc_capable_sup.erl"},{line,48}]},{application_master,start_it_old,4,[{file,"application_master.erl"},{line,269}]}]}}}},[{application_master,init,4,[{file,"application_master.erl"},{line,133}]},{proc_lib,init_p_do_apply,3,[{file,"proc_lib.erl"},{line,239}]}]}
+    ancestors: [<0.77.0>]
+    messages: [{'EXIT',<0.79.0>,normal}]
+    links: [<0.77.0>,<0.7.0>]
+    dictionary: []
+    trap_exit: true
+    status: running
+    heap_size: 987
+    stack_size: 27
+    reductions: 169
+  neighbours:
+2013-12-25 14:33:40 =CRASH REPORT====
+  crasher:
+    initial call: linc_us4_port:init/1
+    pid: <0.90.0>
+    registered_name: []
+    exception exit: {{function_clause,[{filename,join,[{error,bad_name},"tmp"],[{file,"filename.erl"},{line,406}]},{filename,join,1,[{file,"filename.erl"},{line,393}]},{linc_us4_port,init,1,[{file,"src/linc_us4_port.erl"},{line,296}]},{gen_server,init_it,6,[{file,"gen_server.erl"},{line,304}]},{proc_lib,init_p_do_apply,3,[{file,"proc_lib.erl"},{line,239}]}]},[{gen_server,init_it,6,[{file,"gen_server.erl"},{line,328}]},{proc_lib,init_p_do_apply,3,[{file,"proc_lib.erl"},{line,239}]}]}
+    ancestors: [<0.89.0>,<0.87.0>,<0.84.0>,<0.80.0>,<0.79.0>]
+    messages: []
+    links: [<0.89.0>]
+    dictionary: []
+    trap_exit: true
+    status: running
+    heap_size: 610
+    stack_size: 27
+    reductions: 125
+  neighbours:
+2013-12-25 14:33:45 =SUPERVISOR REPORT====
+     Supervisor: {<0.84.0>,linc_sup}
+     Context:    shutdown_error
+     Reason:     killed
+     Offender:   [{pid,<0.85.0>},{name,linc_logic},{mfargs,{linc_logic,start_link,[0,linc_us4,[],[{switch,0,[{datapath_id,"D4:3D:7E:EC:EF:F5:00:00"},{backend,linc_us4},{controllers,[{"Switch0-DefaultController","localhost",6633,tcp}]},{controllers_listener,disabled},{queues_status,disabled},{ports,[{port,1,[{config,{port_configuration,undefined,up,false,false,false}},{features,{features,undefined,'100Mb-FD',true,copper,unsupported}},{interface,"tap-linc-port1"}]},{port,2,[{config,{port_configuration,undefined,up,false,false,false}},{features,{features,undefined,'100Mb-FD',true,copper,unsupported}},{interface,"tap-linc-port2"}]}]},{queues,[]}]}]]}},{restart_type,permanent},{shutdown,5000},{child_type,worker}]
+
+2013-12-25 14:34:27 =CRASH REPORT====
+  crasher:
+    initial call: linc_us4_port:init/1
+    pid: <0.99.0>
+    registered_name: []
+    exception exit: {{function_clause,[{filename,join,[{error,bad_name},"tmp"],[{file,"filename.erl"},{line,406}]},{filename,join,1,[{file,"filename.erl"},{line,393}]},{linc_us4_port,init,1,[{file,"src/linc_us4_port.erl"},{line,296}]},{gen_server,init_it,6,[{file,"gen_server.erl"},{line,304}]},{proc_lib,init_p_do_apply,3,[{file,"proc_lib.erl"},{line,239}]}]},[{gen_server,init_it,6,[{file,"gen_server.erl"},{line,328}]},{proc_lib,init_p_do_apply,3,[{file,"proc_lib.erl"},{line,239}]}]}
+    ancestors: [<0.98.0>,<0.96.0>,<0.93.0>,<0.89.0>,<0.88.0>]
+    messages: []
+    links: [<0.98.0>]
+    dictionary: []
+    trap_exit: true
+    status: running
+    heap_size: 610
+    stack_size: 27
+    reductions: 125
+  neighbours:
+2013-12-25 14:34:32 =SUPERVISOR REPORT====
+     Supervisor: {<0.93.0>,linc_sup}
+     Context:    shutdown_error
+     Reason:     killed
+     Offender:   [{pid,<0.94.0>},{name,linc_logic},{mfargs,{linc_logic,start_link,[0,linc_us4,[],[{switch,0,[{datapath_id,"D4:3D:7E:EC:EF:F5:00:00"},{backend,linc_us4},{controllers,[{"Switch0-DefaultController","localhost",6633,tcp}]},{controllers_listener,disabled},{queues_status,disabled},{ports,[{port,1,[{config,{port_configuration,undefined,up,false,false,false}},{features,{features,undefined,'100Mb-FD',true,copper,unsupported}},{interface,"tap-linc-port1"}]},{port,2,[{config,{port_configuration,undefined,up,false,false,false}},{features,{features,undefined,'100Mb-FD',true,copper,unsupported}},{interface,"tap-linc-port2"}]}]},{queues,[]}]}]]}},{restart_type,permanent},{shutdown,5000},{child_type,worker}]
+
+2013-12-25 14:35:41 =CRASH REPORT====
+  crasher:
+    initial call: linc_us4_port:init/1
+    pid: <0.106.0>
+    registered_name: []
+    exception exit: {{function_clause,[{filename,join,[{error,bad_name},"tmp"],[{file,"filename.erl"},{line,406}]},{filename,join,1,[{file,"filename.erl"},{line,393}]},{linc_us4_port,init,1,[{file,"src/linc_us4_port.erl"},{line,296}]},{gen_server,init_it,6,[{file,"gen_server.erl"},{line,304}]},{proc_lib,init_p_do_apply,3,[{file,"proc_lib.erl"},{line,239}]}]},[{gen_server,init_it,6,[{file,"gen_server.erl"},{line,328}]},{proc_lib,init_p_do_apply,3,[{file,"proc_lib.erl"},{line,239}]}]}
+    ancestors: [<0.105.0>,<0.103.0>,<0.100.0>,<0.90.0>,<0.89.0>]
+    messages: []
+    links: [<0.105.0>]
+    dictionary: []
+    trap_exit: true
+    status: running
+    heap_size: 610
+    stack_size: 27
+    reductions: 125
+  neighbours:
+2013-12-25 14:35:46 =SUPERVISOR REPORT====
+     Supervisor: {<0.100.0>,linc_sup}
+     Context:    shutdown_error
+     Reason:     killed
+     Offender:   [{pid,<0.101.0>},{name,linc_logic},{mfargs,{linc_logic,start_link,[0,linc_us4,[],[{switch,0,[{datapath_id,"D4:3D:7E:EC:EF:F5:00:00"},{backend,linc_us4},{controllers,[{"Switch0-DefaultController","localhost",6633,tcp}]},{controllers_listener,disabled},{queues_status,disabled},{ports,[{port,1,[{config,{port_configuration,undefined,up,false,false,false}},{features,{features,undefined,'100Mb-FD',true,copper,unsupported}},{interface,"tap-linc-port1"}]},{port,2,[{config,{port_configuration,undefined,up,false,false,false}},{features,{features,undefined,'100Mb-FD',true,copper,unsupported}},{interface,"tap-linc-port2"}]}]},{queues,[]}]}]]}},{restart_type,permanent},{shutdown,5000},{child_type,worker}]
+
+2013-12-25 14:39:31 =CRASH REPORT====
+  crasher:
+    initial call: linc_us4_port:init/1
+    pid: <0.106.0>
+    registered_name: []
+    exception exit: {{undef,[{tuncer,create,["tap-linc-port1"],[]},{linc_us4_port_native,tap,2,[{file,"src/linc_us4_port_native.erl"},{line,50}]},{linc_us4_port,init,1,[{file,"src/linc_us4_port.erl"},{line,374}]},{gen_server,init_it,6,[{file,"gen_server.erl"},{line,304}]},{proc_lib,init_p_do_apply,3,[{file,"proc_lib.erl"},{line,239}]}]},[{gen_server,init_it,6,[{file,"gen_server.erl"},{line,328}]},{proc_lib,init_p_do_apply,3,[{file,"proc_lib.erl"},{line,239}]}]}
+    ancestors: [<0.105.0>,<0.103.0>,<0.100.0>,<0.90.0>,<0.89.0>]
+    messages: []
+    links: [<0.105.0>]
+    dictionary: []
+    trap_exit: true
+    status: running
+    heap_size: 987
+    stack_size: 27
+    reductions: 456
+  neighbours:
+2013-12-25 14:39:36 =SUPERVISOR REPORT====
+     Supervisor: {<0.100.0>,linc_sup}
+     Context:    shutdown_error
+     Reason:     killed
+     Offender:   [{pid,<0.101.0>},{name,linc_logic},{mfargs,{linc_logic,start_link,[0,linc_us4,[],[{switch,0,[{datapath_id,"D4:3D:7E:EC:EF:F5:00:00"},{backend,linc_us4},{controllers,[{"Switch0-DefaultController","localhost",6633,tcp}]},{controllers_listener,disabled},{queues_status,disabled},{ports,[{port,1,[{config,{port_configuration,undefined,up,false,false,false}},{features,{features,undefined,'100Mb-FD',true,copper,unsupported}},{interface,"tap-linc-port1"}]},{port,2,[{config,{port_configuration,undefined,up,false,false,false}},{features,{features,undefined,'100Mb-FD',true,copper,unsupported}},{interface,"tap-linc-port2"}]}]},{queues,[]}]}]]}},{restart_type,permanent},{shutdown,5000},{child_type,worker}]
+
+2013-12-25 14:40:05 =CRASH REPORT====
+  crasher:
+    initial call: tuncer:init/1
+    pid: <0.107.0>
+    registered_name: []
+    exception exit: {{{badmatch,{error,eperm}},[{tuncer,init,1,[{file,"/home/mk/lincx/deps/tunctl/src/tuncer.erl"},{line,155}]},{gen_server,init_it,6,[{file,"gen_server.erl"},{line,304}]},{proc_lib,init_p_do_apply,3,[{file,"proc_lib.erl"},{line,239}]}]},[{gen_server,init_it,6,[{file,"gen_server.erl"},{line,328}]},{proc_lib,init_p_do_apply,3,[{file,"proc_lib.erl"},{line,239}]}]}
+    ancestors: [<0.106.0>,<0.105.0>,<0.103.0>,<0.100.0>,<0.90.0>,<0.89.0>]
+    messages: []
+    links: [<0.106.0>]
+    dictionary: []
+    trap_exit: true
+    status: running
+    heap_size: 987
+    stack_size: 27
+    reductions: 1386
+  neighbours:
+2013-12-25 14:40:05 =CRASH REPORT====
+  crasher:
+    initial call: tuncer:init/1
+    pid: <0.113.0>
+    registered_name: []
+    exception exit: {{{badmatch,{error,eperm}},[{tuncer,init,1,[{file,"/home/mk/lincx/deps/tunctl/src/tuncer.erl"},{line,155}]},{gen_server,init_it,6,[{file,"gen_server.erl"},{line,304}]},{proc_lib,init_p_do_apply,3,[{file,"proc_lib.erl"},{line,239}]}]},[{gen_server,init_it,6,[{file,"gen_server.erl"},{line,328}]},{proc_lib,init_p_do_apply,3,[{file,"proc_lib.erl"},{line,239}]}]}
+    ancestors: [<0.112.0>,<0.105.0>,<0.103.0>,<0.100.0>,<0.90.0>,<0.89.0>]
+    messages: []
+    links: [<0.112.0>]
+    dictionary: []
+    trap_exit: true
+    status: running
+    heap_size: 610
+    stack_size: 27
+    reductions: 1430
+  neighbours:

@@ -46,6 +46,9 @@ dev:
 # LING-related targets
 #
 
+devx:
+	erl -env ERL_MAX_ETS_TABLES 3000 -pa apps/*/ebin apps/*/test deps/*/ebin -config rel/files/sys.config -args_file rel/files/vm.args -eval "lists:map(fun application:start/1, [crypto,asn1,public_key,ssh,compiler,syntax_tools,xmerl,mnesia,lager,linc])"
+
 APPS_EBIN_DIRS := $(addprefix /lincx/,$(wildcard apps/*/ebin))
 DEPS_EBIN_DIRS := $(addprefix /lincx/,$(wildcard deps/*/ebin))
 PATHZ := $(APPS_EBIN_DIRS) $(DEPS_EBIN_DIRS)
