@@ -30,3 +30,9 @@ It was double verified that it is the switch that provides the connectivity
 between vms. The first run of iperf gives the first performance figure for
 LINC/BEAM for the described setup - 140Mbits/s.
 
+----[27/12/13 17:05]------------------------------------------------------------
+
+Repeting the runs gives gradually decreasing throughtput. The controller process
+consumes a lot of memory. It looks like the switch send all packets to the
+controller for inspection. Flows must be configured differently?
+
