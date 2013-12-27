@@ -92,3 +92,26 @@
 2013-12-26 16:01:04.200 [info] <0.72.0>@of_controller_v4:handle:700 Received message from #Port<0.6295>: {ofp_message,4,error,251897357,{ofp_error_msg,meter_mod_failed,meter_exists,<<>>}}
 2013-12-26 16:01:04.602 [info] <0.72.0>@of_controller_v4:handle:700 Received message from #Port<0.6295>: {ofp_message,4,multipart_reply,4248984972,{ofp_meter_config_reply,[],[{ofp_meter_config,[kbps],17,[{ofp_meter_band_drop,drop,900,4294967295}]}]}}
 2013-12-26 16:01:14.962 [info] <0.72.0>@of_controller_v4:handle:670 Adding new entry:  1 |  :0:16:3E:A7:9B:6D | <<0,22,62,167,155,109>>
+2013-12-26 16:41:38.694 [error] emulator Bad input fd in erts_poll()! fd=16, port=#Port<0.10539>, driver=fd, name=16/16
+
+
+2013-12-26 16:41:38.662 [info] <0.72.0>@of_controller_v4:handle:620 Socket #Port<0.6295> closed
+2013-12-27 01:41:36.919 [info] <0.7.0> Application lager started on node linc@den
+2013-12-27 01:41:36.932 [info] <0.7.0> Application enetconf started on node linc@den
+2013-12-27 01:41:36.946 [info] <0.7.0> Application linc started on node linc@den
+2013-12-27 01:41:36.975 [info] <0.101.0>@linc_us4_port:add:572 Created port: {port,1,[{queues_status,disabled},{queues,[]},{config,{port_configuration,undefined,up,false,false,false}},{features,{features,undefined,'100Mb-FD',true,copper,unsupported}},{interface,"tap-linc-port1"}]}
+2013-12-27 01:41:36.986 [info] <0.101.0>@linc_us4_port:add:572 Created port: {port,2,[{queues_status,disabled},{queues,[]},{config,{port_configuration,undefined,up,false,false,false}},{features,{features,undefined,'100Mb-FD',true,copper,unsupported}},{interface,"tap-linc-port2"}]}
+2013-12-27 01:43:46.084 [info] <0.101.0>@linc_logic:handle_info:336 Connected to controller localhost:6633/0 using OFP v4
+2013-12-27 01:44:05.198 [info] <0.101.0>@linc_logic:handle_info:340 Connection to controller localhost:6633/0 closed because of tcp_closed
+2013-12-27 01:46:08.282 [info] <0.101.0>@linc_logic:handle_info:336 Connected to controller localhost:6633/0 using OFP v4
+2013-12-27 01:46:47.163 [info] <0.101.0>@linc_logic:handle_info:340 Connection to controller localhost:6633/0 closed because of tcp_closed
+2013-12-27 01:54:20.400 [info] <0.101.0>@linc_logic:handle_info:336 Connected to controller localhost:6633/0 using OFP v4
+2013-12-27 01:56:13.238 [info] <0.101.0>@linc_logic:handle_info:340 Connection to controller localhost:6633/0 closed because of tcp_closed
+2013-12-27 01:59:19.362 [info] <0.101.0>@linc_logic:handle_info:336 Connected to controller localhost:6633/0 using OFP v4
+2013-12-27 01:59:55.969 [info] <0.101.0>@linc_logic:handle_info:340 Connection to controller localhost:6633/0 closed because of tcp_closed
+2013-12-27 02:00:04.984 [info] <0.101.0>@linc_logic:handle_info:336 Connected to controller localhost:6633/0 using OFP v4
+2013-12-27 02:00:30.156 [info] <0.101.0>@linc_logic:handle_info:340 Connection to controller localhost:6633/0 closed because of tcp_closed
+2013-12-27 02:00:45.193 [info] <0.101.0>@linc_logic:handle_info:336 Connected to controller localhost:6633/0 using OFP v4
+2013-12-27 02:01:15.523 [info] <0.101.0>@linc_logic:handle_info:340 Connection to controller localhost:6633/0 closed because of tcp_closed
+2013-12-27 02:01:24.543 [info] <0.101.0>@linc_logic:handle_info:336 Connected to controller localhost:6633/0 using OFP v4
+2013-12-27 02:02:14.316 [info] <0.101.0>@linc_logic:handle_info:340 Connection to controller localhost:6633/0 closed because of tcp_closed

@@ -1,3 +1,6 @@
 2013-12-26 03:16:55 =ERROR REPORT====
 Error in process <0.69.0> with exit value: {function_clause,[{of_protocol,encode,[{ofp_flow_stats_request,[],all,any,any,<<8 bytes>>,<<8 bytes>>,{ofp_match,[]}}],[{file,"/home/mk/lincx/deps/of_protocol/src/of_protocol.erl"},{line,37}]},{of_controller_v4,do_send,2,[{file,"scripts/o... 
 
+2013-12-26 16:41:38 =ERROR REPORT====
+Bad input fd in erts_poll()! fd=16, port=#Port<0.10539>, driver=fd, name=16/16
+

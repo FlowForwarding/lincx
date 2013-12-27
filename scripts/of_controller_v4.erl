@@ -175,6 +175,18 @@ handle_connection(Parent, Socket, Scenario) ->
     handle(#cstate{parent = Parent, socket = Socket, parser = Parser}).
 
 
+%%MK
+scenario(simple_iperf_test) ->
+	[flow_mod_delete_all_flows,
+     	 flow_add([], [{in_port, <<1:32>>}], [{apply_actions,
+                                               [{output,2, no_buffer}]}]),
+     	 flow_add([], [{in_port, <<2:32>>}], [{apply_actions,
+                                               [{output,1, no_buffer}]}])];
+scenario(simple_iperf_stats) ->
+	[flow_stats_request];
+scenario(simple_iperf_stop) ->
+	[flow_mod_delete_all_flows];
+
 scenario(all_messages) ->
     [flow_mod_table_miss,
      flow_mod_issue68,
