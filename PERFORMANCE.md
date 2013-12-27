@@ -41,7 +41,8 @@ controller for inspection. Flows must be configured differently?
 The iperf test setup added as a scenario to of_controller_v4.erl. The scenario
 first removes all data flow then adds two flows from port 1 to port 2 and back.
 New tests confirm the poor throughput observed earlier - 140Mbits/s. The
-possible cause is the latency of 1.5ms that affects TCP throughput.
+likely cause is the latency of 1.5ms that affects TCP throughput. When iperf
+runs in UDP mode the throughput is much better - 810Mbits/s.
 
 I have to start with the following (not spectacular) baseline.
 
@@ -51,9 +52,10 @@ The following table summarize the performance of LINC switch running on Erlang/O
 
 Parameter | Value
 ----------|------
-Throughput | 140Mbits/s
+Throughput (TCP) | 140Mbits/s
+Throughput (UDP) | 810Mbits/s
 Latency | 1.4ms
-RAM footprint | 450M
+RAM footprint | 450M (TCP), 5G (UDP)
 CPU utilization | 220%
 
 ### Steps to reproduce

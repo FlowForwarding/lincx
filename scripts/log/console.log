@@ -40,3 +40,9 @@
 2013-12-27 02:01:21.653 [info] <0.7.0> Application lager started on node nonode@nohost
 2013-12-27 02:01:24.528 [info] <0.50.0>@of_controller_v4:loop:585 Accepted connection from #Port<0.5484> {{127,0,0,1},51287}
 2013-12-27 02:01:24.545 [info] <0.53.0>@of_controller_v4:handle:712 Received message from #Port<0.5484>: {ofp_message,4,hello,0,{ofp_hello,[{versionbitmap,[4]}]}}
+2013-12-27 02:46:01.225 [info] <0.7.0> Application lager started on node nonode@nohost
+2013-12-27 02:46:02.827 [info] <0.50.0>@of_controller_v4:loop:585 Accepted connection from #Port<0.5483> {{127,0,0,1},58894}
+2013-12-27 02:46:02.843 [info] <0.52.0>@of_controller_v4:handle:712 Received message from #Port<0.5483>: {ofp_message,4,hello,0,{ofp_hello,[{versionbitmap,[4]}]}}
+2013-12-27 02:48:52.247 [info] <0.7.0> Application lager started on node nonode@nohost
+2013-12-27 02:48:52.878 [info] <0.50.0>@of_controller_v4:loop:585 Accepted connection from #Port<0.5483> {{127,0,0,1},47655}
+2013-12-27 02:48:52.903 [info] <0.52.0>@of_controller_v4:handle:712 Received message from #Port<0.5483>: {ofp_message,4,hello,0,{ofp_hello,[{versionbitmap,[4]}]}}
