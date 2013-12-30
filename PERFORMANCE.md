@@ -68,3 +68,23 @@ CPU utilization | 220%
 6. Exit the controller shell
 7. Run 'iperf -s' in one vm and 'iperf -c <ip-addr>' in the other
 
+----[27/12/13 16:34]------------------------------------------------------------
+
+Most probably, UDP figures are bogus as a part of the traffic gets lost. More
+checks needed. The thoughput should be read on the receiving end.
+
+----[31/12/13 01:14]------------------------------------------------------------
+
+LINC/LING setup in the configuration similar to the one used for the baseline.
+LINC runs in a separate DomU its vifs are bridged to corrsponding vifs of vm1
+and vm2 -- see scripts/setup-network.sh (ling option).
+
+The performance of LINC/LING is similar to that of LINC/BEAM in terms of
+throughput and latency. The memory and CPU consumption is way lower.
+
+The performance of LINC/LING improved greatly after reimplementing IP checksum
+calculation as a BIF (binary:ip_checksum()). The performance of LINC switch can
+be improved by getting rid of gen_server for ports. If it is necessary to wrap
+LINC ports into a process a barebone process should be used. It is (much) faster 
+than gen_server.
+

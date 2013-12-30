@@ -112,7 +112,7 @@ send(Socket, Ifindex, Frame) ->
 
 close(#state{socket = undefined, port_ref = undefined, erlang_port =VifPort}) ->
 	%% vif type port
-	erlang:close_port(VifPort);
+	erlang:port_close(VifPort);
 close(#state{socket = undefined, port_ref = PortRef}) ->
     tuncer:down(PortRef),
     tuncer:destroy(PortRef);

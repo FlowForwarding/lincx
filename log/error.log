@@ -4,3 +4,6 @@
 2013-12-26 16:41:38.694 [error] emulator Bad input fd in erts_poll()! fd=16, port=#Port<0.10539>, driver=fd, name=16/16
 
 
+2013-12-27 03:08:05.062 [error] emulator Bad input fd in erts_poll()! fd=16, port=#Port<0.10539>, driver=fd, name=16/16
+
+

@@ -119,3 +119,6 @@
 2013-12-27 02:47:22.818 [info] <0.101.0>@linc_logic:handle_info:340 Connection to controller localhost:6633/0 closed because of tcp_closed
 2013-12-27 02:48:52.901 [info] <0.101.0>@linc_logic:handle_info:336 Connected to controller localhost:6633/0 using OFP v4
 2013-12-27 02:48:56.478 [info] <0.101.0>@linc_logic:handle_info:340 Connection to controller localhost:6633/0 closed because of tcp_closed
+2013-12-27 03:08:05.062 [error] emulator Bad input fd in erts_poll()! fd=16, port=#Port<0.10539>, driver=fd, name=16/16
+
+

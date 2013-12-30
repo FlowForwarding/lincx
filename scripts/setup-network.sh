@@ -4,7 +4,7 @@ vif1=vif171.0
 vif2=vif169.0
 
 if [ $# -lt 1 ]; then
-	echo "Usage: $0 inet|perf"
+	echo "Usage: $0 inet|perf|taps|ling"
 	exit
 fi
 
@@ -36,6 +36,18 @@ taps)
 	brctl addif br-linc2 tap-linc-port2
 	ifconfig tap-linc-port1 up
 	ifconfig tap-linc-port2 up
+	;;
+
+ling)
+	domid=`xl domid lincx`
+
+	lingvif1=vif${domid}.1
+	lingvif2=vif${domid}.2
+
+	brctl delif xenbr0 $lingvif1
+	brctl delif xenbr0 $lingvif2
+	brctl addif br-linc1 $lingvif1
+	brctl addif br-linc2 $lingvif2
 	;;
 
 *)

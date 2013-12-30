@@ -52,15 +52,24 @@ devx:
 APPS_EBIN_DIRS := $(addprefix /lincx/,$(wildcard apps/*/ebin))
 DEPS_EBIN_DIRS := $(addprefix /lincx/,$(wildcard deps/*/ebin))
 PATHZ := $(APPS_EBIN_DIRS) $(DEPS_EBIN_DIRS)
+MEMORY := 1024
 SYSCONF := /lincx/priv/sys.config
+EVAL1 := lists:map(fun application:start/1, [crypto,asn1,public_key,ssh,compiler,syntax_tools,xmerl,mnesia,lager,linc])
+
+EXTRA := -dhcp
+#EXTRA += -goofs /lincx/log
+EXTRA += -home /lincx
+EXTRA += -pz $(PATHZ)
+EXTRA += -config $(SYSCONF)
+#EXTRA += -eval \"$(EVAL1)\"
 DOMCONF := domain_config
 
 $(DOMCONF):
 	@echo "name = \"lincx\"" >$(DOMCONF)
 	@echo "kernel = \"vmling\"" >>$(DOMCONF)
-	@echo "extra = \"-dhcp -goofs /lincx/log -home /lincx -pz $(PATHZ) -config $(SYSCONF)\"" >>$(DOMCONF)
-	@echo "memory = \"1024\"" >>$(DOMCONF)
-	@echo "disk = [ \"tap:aio:/home/mk/lincx/lincxdisk1.img,xvda,w\" ]" >>$(DOMCONF)
+	@echo 'extra = "$(EXTRA)"' >> $(DOMCONF)
+	@echo "memory = \"$(MEMORY)\"" >>$(DOMCONF)
+#	@echo "disk = [ \"tap:aio:/home/mk/lincx/lincxdisk1.img,xvda,w\" ]" >>$(DOMCONF)
 	@echo "vif = [ '', '', '' ]" >>$(DOMCONF)
 
 x:	$(DOMCONF)
