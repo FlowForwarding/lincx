@@ -69,6 +69,7 @@ $(DOMCONF):
 	@echo "kernel = \"vmling\"" >>$(DOMCONF)
 	@echo 'extra = "$(EXTRA)"' >> $(DOMCONF)
 	@echo "memory = \"$(MEMORY)\"" >>$(DOMCONF)
+	@echo "cpus=\"7\"" >> $(DOMCONF)
 #	@echo "disk = [ \"tap:aio:/home/mk/lincx/lincxdisk1.img,xvda,w\" ]" >>$(DOMCONF)
 	@echo "vif = [ '', '', '' ]" >>$(DOMCONF)
 

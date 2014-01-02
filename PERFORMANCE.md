@@ -88,3 +88,65 @@ be improved by getting rid of gen_server for ports. If it is necessary to wrap
 LINC ports into a process a barebone process should be used. It is (much) faster 
 than gen_server.
 
+----[02/01/14]------------------------------------------------------------------
+
+## nullx experiment
+
+For this experiment the entire code of LINC replaced with the following stub:
+
+	-module(nullx).
+	-export([start/0]).
+
+	start() ->
+		spawn(fun() ->
+			{ok,P1} = net_vif:open(eth1),
+			{ok,P2} = net_vif:open(eth2),
+
+			io:format("plug: ~w|~w\n", [P1,P2]),
+			plug(P1, P2)
+		end).
+
+	plug(P1, P2) ->
+		plug(P1, P2, 2000).
+
+	plug(P1, P2, 0) ->
+		erlang:garbage_collect(),
+		plug(P1, P2);
+
+	plug(P1, P2, N) ->
+		receive
+		{P1,{data,Frame}} ->
+			erlang:port_command(P2, Frame),
+			plug(P1, P2, N -1);
+		{P2,{data,Frame}} ->
+			erlang:port_command(P1, Frame),
+			plug(P1, P2, N -1)
+		end.
+
+The server shovels data between two interfaces and no more. The manual garbage
+collection is needed as the standard strategy does not prevent the overflow.
+
+The nullx/LING show the latency of 850-950us and the TCP thoughput of
+1.05Gbits/s. This means that a frame spends only 5-10us inside Erlang.
+
+The experiment suggests that LINC implementation may not be performance-oriented
+enough as the simplest rules introduce the latency of 220us.
+
+The garbage collection behaviour is of much importance for the experiment and
+for LINC performance. LINC may need non-standard options or entire new garbage
+collection algorithm.
+
+--------------------------------------------------------------------------------
+
+The dependency between latency (ping) and TCP throughput (iperf) is tricky:
+
+Latency | TCP throughput | Note
+--------|----------------|-----
+1.43ms | 140Mbits/s | LINC/BEAM
+1.36ms | 170Mbits/s | LINC/LING
+0.850ms | 1.05Gbits/s | nullx/LING
+0.640ms | 20Gbits/s | same bridge - no switching
+
+There seems to be a step-wise dependency when throughput grows abruptly when the
+latency falls below 1ms.
+
