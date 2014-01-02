@@ -150,3 +150,30 @@ Latency | TCP throughput | Note
 There seems to be a step-wise dependency when throughput grows abruptly when the
 latency falls below 1ms.
 
+----[03/01/14]------------------------------------------------------------------
+
+LINC may benefit from the following approach to the Erlang implementation of its
+performance critical part (fastpath):
+
+1. Keep matching rules in a programmer friendly format. For example:
+
+	[
+		{src_mac,<<0,1,2,3,4,5>>},{forward,{port,1}},
+		{dst_ip,{1,2,3,4}},drop}
+		...
+	]
+
+2. Translates this representation to an Erlang module that does direct pattern
+matching on the incoming frames, e.g.
+
+	action(<<0,1,2,3,4,5,_/binary>> =Frame, P1, P2) -> forward(P1);
+	action(<<_:12/binary,4,3,2,1,_/binary>> =Frame, P1, P2) -> drop;
+	...
+
+3. Compile and reload the module to apply the changes to the matching rules.
+
+It will be difficult to beat this performance-wise even with hand-crafted C
+code. The crucial step is the pattern matching compilation which is diffcult to
+reproduce manually in most cases.
+
+
