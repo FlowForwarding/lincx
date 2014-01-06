@@ -1040,7 +1040,7 @@ linc_us4 seems better maintained yet there are bits that require a brushup.
 ----[23/12/13 03:12]------------------------------------------------------------
 
 The simple-packet-forward demo require at least two network interfaces that
-exchange data. LING supports arbitrary many network interface but only the first
+exchange data. LING supports arbitrarily many network interface but only the first
 (eth0) can be attached to TCP/IP stack. Other interfaces are accessible as "raw
 sockets". A sample configuration with three network interfaces:
 
@@ -1075,7 +1075,7 @@ property within a ports property:
 
 The sys.config put into a directory priv and an option added to rebar.config to
 import contents of the directory to the image. An attempt to start linc
-application now culminated in the following error:
+application now culminates in the following error:
 
 	{no_driver,{spawn,"sudo /lincx/../priv/epcap -d /lincx/../priv/tmp -i eth1 -P -N -I """}}
 
@@ -1095,7 +1095,4 @@ lincx now successfully runs the Ping demo. The remaining issue is that the
 receiving interface gets multiple copies of the ICMP packet.
 
 ----[25/12/13 14:10]------------------------------------------------------------
-
-
-
 
