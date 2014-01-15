@@ -1,4 +1,4 @@
-%% rel generated at {2013,12,18} {13,27,5}
+%% rel generated at {2014,1,15} {14,0,59}
 {release,{"linc","1.0"},
          {erts,"5.10.2"},
          [{kernel,"2.16.2"},

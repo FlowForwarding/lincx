@@ -959,7 +959,7 @@
                 </xs:annotation>
                 <xs:complexType>
                     <xs:sequence>
-                        <xs:element name="controller" maxOccurs="unbounded">
+                        <xs:element name="controller" minOccurs="0" maxOccurs="unbounded">
                             <xs:annotation>
                                 <xs:documentation> The list of OpenFlow Controllers that are
                                     assigned to the OpenFlow Logical Switch. The switch MUST NOT
