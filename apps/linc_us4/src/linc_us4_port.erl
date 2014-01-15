@@ -357,11 +357,6 @@ init([SwitchId, {port, PortNo, PortOpts}]) ->
 					disabled;
 				QueuesConfig ->
 					SendFun = fun(Frame) ->
-						
-						%%MK
-						ling:trace(0),
-						erlang:display(trace_off1),
-
 						port_command(ErlangPort, Frame)
 					end,
 					linc_us4_queue:attach_all(SwitchId, PortNo,
@@ -512,12 +507,6 @@ handle_cast({send, #linc_pkt{packet = Packet, queue_id = QueueId}},
                         {undefined, _} ->
                             linc_us4_port_native:send(Socket, Ifindex, Frame);
                         {_, undefined} ->
-
-						
-							%%MK
-							ling:trace(0),
-							erlang:display(trace_off2),
-
                             port_command(Port, Frame)
                     end;
                 enabled ->
@@ -537,10 +526,6 @@ handle_info({Port, {data, Frame}}, #state{port = #ofp_port{port_no = PortNo,
                                                            config = PortConfig},
                                           erlang_port = Port,
                                           switch_id = SwitchId} = State) ->
-	%%MK
-	erlang:display(trace_on),
-	ling:trace(7),
-
     handle_frame(Frame, SwitchId, PortNo, PortConfig),
     {noreply, State};
 handle_info({'EXIT', _Pid, {port_terminated, 1}},
