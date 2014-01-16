@@ -93,3 +93,151 @@ counters.
 
 1. The frame is swallowed by the port. Done.
 
+----[01/16/2014]----------------------------------------------------------------
+
+The LING contains simple instrumentation that lets us measure the processing
+latency for ping. The instrumentation assumes that the ping packet first appears
+on eth1 then sent to eth2 then appears again on eth2 and sent to eth1. The time
+the packet spends in processing is recorded and averaged.
+
+# LINC switch baseline latency
+
+The following are observed processing latencies (PL) for ping packets. LING is
+configured for the full speed except that assertions are not suppressed. Each
+run is an average for 10 ping roundtrips.
+
+Run # | To/From | PL, us
+------|------------
+1 | --> | 189.1
+ | <-- | 218.5
+2 | --> | 192.1
+ | <-- | 215.7
+3 | --> | 178.5
+ | <-- | 223.7
+4 | --> | 197.5
+ | <-- | 210.7
+5 | --> | 196.8
+ | <-- | 209.4
+6 | --> | 184.7
+ | <-- | 209.1
+7 | --> | 185.7
+ | <-- | 224.3
+8 | --> | 208.8
+ | <-- | 219.7
+9 | --> | 205.7
+ | <-- | 227.8
+10 | --> | 165.7
+ | <-- | 220.3
+
+The summary of the above:
+
+PL (all) = 204.2 +/- 7.5 us (95%)
+PL (to) = 190.5 +/- 7.9 us (95%)
+PL (from) = 217.9 +/- 4.1 us (95%)
+
+The processing latency on the way back seems slightly higher. It looks like the
+port 1 get a better treatment.
+
+# nullx baseline latency (data as lists)
+
+NB: the port did not have `binary` option set. All data were represented as
+lists slowing things down
+
+The following are processing latencies similar to above observed for the nullx
+forwarding application.
+
+Run | To/From | PL, us
+----|---------|-------
+1 | --> | 5.92
+ | <-- | 6.85
+2 | --> | 4.49
+ | <-- | 10.21
+3 | --> | 5.89
+ | <-- | 10.14
+4 | --> | 5.72
+ | <-- | 9.59
+5 | --> | 5.77
+ | <-- | 10.02
+6 | --> | 5.55
+ | <-- | 9.71
+7 | --> | 5.83
+ | <-- | 9.53
+8 | --> | 5.63
+ | <-- | 10.05
+9 | --> | 7.07
+ | <-- | 8.61
+10 | --> | 6.06
+ | <-- | 7.80
+
+The summary of the above:
+
+PL (all) = 7.52 +/- 0.87 us (95%)
+PL (to) = 5.79 +/- 0.39 us (95%)
+PL (from) = 9.25 +/- 0.70 us (95%)
+
+Again the traffic from port1 to port2 is preffered. This must be the effect of
+the order of matching rules in the receive statement.
+
+# nullx baseline latency (data as binary)
+
+Similar to above but ports open with `binary` option.
+
+Run | To/From | PL, us
+----|---------|-------
+1 | --> | 2.92 
+ | <-- | 6.90
+2 | --> | 5.05
+ | <-- | 9.36
+3 | --> | 3.22
+ | <-- | 4.34
+4 | --> | 3.68
+ | <-- | 5.71
+5 | --> | 4.35
+ | <-- | 4.81
+6 | --> | 3.95
+ | <-- | 5.49
+7 | --> | 3.38
+ | <-- | 5.18
+8 | --> | 3.98
+ | <-- | 5.45
+9 | --> | 3.73 
+ | <-- | 5.29
+10 | --> | 2.91
+ | <-- | 4.40
+
+And the summary:
+
+PL (all) = 4.71 +/- 0.66 us (95%)
+PL (to) = 3.72 +/- 0.41 us (95%)
+PL (from) = 5.69 +/- 0.92 us (95%)
+
+The nullx figures give us the low bound of the latency we can ever achieve. The
+comparison with the similar test with the list representation shows a difference
+of about 3us.
+
+# Packet decapsulation/encapsulation
+
+The experiment assesses the latency introduced by
+pkt:encapsulate()/pkt:decapsulate() functions. The table shows the number of
+encapsulate() operations and the number of decapsulation done for each packet
+and the observed latency.
+
+# decap | # encap | PL, us
+10 | 10 | 332.5
+5 | 15 | 441.4
+15 | 5 | 210.0
+5 | 5 | 170.9
+5 | 10 | 307.0
+10 | 5 | 198.4
+
+The regression analysis shows that pkt:encapsulate() is much costlier than
+pkt:decapsulate():
+
+Function | Added latency, us
+---------|------------------
+pkt:decapsulate() | 4.1
+pkt:encapsulate() | 27.0
+
+If we continue to use the pkt:\* functions we need to look into
+pkt:encapsulate() implementation.
+
