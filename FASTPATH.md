@@ -241,3 +241,27 @@ pkt:encapsulate() | 27.0
 If we continue to use the pkt:\* functions we need to look into
 pkt:encapsulate() implementation.
 
+# Message passing (barebone process)
+
+nullx spawns a process per port and sends the frame to the peer process which in
+its turn forwards it to the port it controls. This add a single instance of
+'message passing' per frame.
+
+PL (all) = 8.11 +/- 1.09 us (95%)
+PL (to) = 6.93 +/- 1.57 us (95%)
+PL (from) = 9.29 +/- 1.11 us (95%)
+
+The observed latency says that the latency cost of message passing of a frame
+is 3.4us.
+
+# Message passing (gen_server)
+
+The experiment is the same a previous except the processes are gen_servers.
+
+PL (all) = 12.74 +/- 1.99 us (95%)
+PL (to) = 8.78 +/- 0.96 us (95%)
+PL (from) = 16.69 +/- 1.69 us (95%)
+
+The latency cost of message passing using gen_servers is 8.0us.
+
+
