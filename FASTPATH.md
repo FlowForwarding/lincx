@@ -264,4 +264,73 @@ PL (from) = 16.69 +/- 1.69 us (95%)
 
 The latency cost of message passing using gen_servers is 8.0us.
 
+# ETS lookup
+
+10 lookups to a table that contains 100 records added to the fast path.
+
+PL (all) = 33.81 +/- 2.68 us (95%)
+PL (to) = 30.38 +/- 1.95 us (95%)
+PL (from) = 37.24 +/- 3.98 us (95%)
+
+Thus the latency cost of a single small ETS table lookup is 2.9us.
+
+Let us increase the size of the test table to 10000 records.
+
+PL (all) = 51.64 +/- 3.05 us (95%)
+PL (to) = 45.66 +/- 2.50 us (95%)
+PL (from) = 57.62 +/- 1.90 us (95%)
+
+The bigger ETS table lookup has a latency cost of 4.7us.
+
+# ETS update_counter
+
+10 update_counter() calls to a table that contains 100 recored added to the
+forwarding path.
+
+PL (all) = 40.98 +/- 2.27 us (95%)
+PL (to) = 41.10 +/- 3.38 us (95%)
+PL (from) = 40.86 +/- 3.04 us (95%)
+
+The latency cost of the update_counter() on a small ETS table is 3.6us.
+ETS is generally fast.
+
+# ETS tab2list
+
+A tab2list() call for a table with 100 elements added to the fast path.
+
+PL (all) = 37.03 +/- 1.68 us (95%)
+PL (to) = 38.03 +/- 2.84 us (95%)
+PL (from) = 36.02 +/- 1.58 us (95%)
+
+The latency cost a single tab2list() operation on the table with 100 records is
+32.2us. This cost grows nearly linearly from the table size.
+
+# Pattern matching (routing table)
+
+A function constructed that does matching similar to Iternet routing. The
+function has 10 clauses similar to this:
+
+
+route(<<_Eth:14/binary,_Ip:12/binary,_Src:4/binary,128,91,_/binary>>) -> r1;
+route(<<_Eth:14/binary,_Ip:12/binary,_Src:4/binary,130,91,_/binary>>) -> r2;
+route(<<_Eth:14/binary,_Ip:12/binary,_Src:4/binary,158,130,19,_/binary>>) -> r3;
+route(<<_Eth:14/binary,_Ip:12/binary,_Src:4/binary,158,130,18,_/binary>>) -> r4;
+route(<<_Eth:14/binary,_Ip:12/binary,_Src:4/binary,158,130,17,_/binary>>) -> r5;
+route(<<_Eth:14/binary,_Ip:12/binary,_Src:4/binary,158,130,_/binary>>) -> r6;
+route(<<_Eth:14/binary,_Ip:12/binary,_Src:4/binary,165,123,243,_/binary>>) -> r7;
+route(<<_Eth:14/binary,_Ip:12/binary,_Src:4/binary,165,123,_/binary>>) -> r8;
+route(<<_Eth:14/binary,_Ip:12/binary,_Src:4/binary,192,5,44,_/binary>>) -> r9;
+route(<<_Eth:14/binary,_Ip:12/binary,_Src:4/binary,192,84,2,_/binary>>) -> r10;
+route(_) -> drop.
+
+The date has been taken from the real CIDR records published by University of
+Pennsylvania. 10 calls to the function added to the fast path.
+
+PL (all) = 7.45 +/- 1.39 us (95%)
+PL (to) = 4.95 +/- 0.21 us (95%)
+PL (from) = 9.95 +/- 1.68 us (95%)
+
+The calculation of the added latency reveals that the call is cheap - 0.3us.
+
+Let us construct a much longer 'routing table'.
 
