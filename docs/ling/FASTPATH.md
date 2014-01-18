@@ -77,7 +77,7 @@ linc\_us4\_actions:apply\_list() interprets the action and calls
 linc\_us4\_port:send().
 
 1. The matching clause of linc\_us4\_port:send() retrieves pid of the process
-associated with the port. This does to lookups in ETS tables. Bad.
+associated with the port. This does two lookups to ETS tables. Bad.
 
 1. The packets is sent to the process using gen\_server:cast(). The use of
 gen\_server is not justified here. The trace shows four layers of function calls
@@ -333,4 +333,15 @@ PL (from) = 9.95 +/- 1.68 us (95%)
 The calculation of the added latency reveals that the call is cheap - 0.3us.
 
 Let us construct a much longer 'routing table'.
+
+A new routing function generated from the real CIDR data of (a portion?) of
+CHINANET backbone. The function now contains 912 clauses.
+
+The results are encouraging:
+
+PL (all) = 8.74 +/- 0.92 us (95%)
+PL (to) = 7.15 +/- 1.11 us (95%)
+PL (from) = 10.33 +/- 0.46 us (95%)
+
+The cost of running the matching function for 912 'rules' is 4.0us.
 
