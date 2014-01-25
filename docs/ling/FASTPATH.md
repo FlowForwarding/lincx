@@ -345,3 +345,63 @@ PL (from) = 10.33 +/- 0.46 us (95%)
 
 The cost of running the matching function for 912 'rules' is 4.0us.
 
+# Is OpenFlow spec implementable?
+
+Below are the notes taken while reading the latest OpenFlow specification
+looking for parts applicable to the fast path of the switch. The notes discuss
+how to implement the applicable functions using the suggested approach and how
+much latency the implementation may add.
+
+* TBD: a flow table may get updated reactively (in response to the packet). This
+may add a lengthy recompilation to the fast path.
+
+* Multiple flow tables can be implemented as multiple functions. A flow table is
+a matching function.
+
+* Counters should be implemented as the arguments of the matching function. The
+same goes to the meatadata passed from one flow table to the other.
+
+* The switch should decrement TTL field and the checksum must be recalculated
+because of this. We cannot forward unmodified packets.
+
+* A meter can be mapped to a process that runs a dynamically-generated function.
+
+* "The ingress port can be used when matching packets"
+
+* The CONTROLLER port traffic should not be considered the fast path. Otherwise
+we have to reimplement the whole switch.
+
+* Forwarding to TABLE port is the same as calling the function of the topmost
+flow table.
+
+* What is the LOCAL port in the context of LINC/LING?
+
+* A table-miss entry of a flow table nicely maps to a function clause with
+underscore patterns for all arguments.
+
+* What are IEEE requirements with respect to packet reordering?
+
+* A priority of a flow entry influences the order of clauses of the matching
+function and not used explicitly later.
+
+* TBD: per-entry counters? These can not be mapped to arguments.
+
+* We have to detect the overlapping entries with same priority and not include
+these into the matching function. We may be able to use erl\_list for this.
+
+* The flow entry expiry can be implemented by amount of time left until the
+shortest-living entry expires and use this number as a timeout for the
+receive statement that handles incoming packets. Upon timeout matching functions
+should be recompiled to remove expired entries.
+
+* TBD: the idle timeouts are related to per-entry counters.
+
+* Group tables again maps nicely to functions.
+
+* TBD: group counters?
+
+* Meters should be implemented as processes that recalculate the current rate
+and make decisions depending on its bands. Most probably, there is no need to
+recompile the band table dynamically.
+
+
