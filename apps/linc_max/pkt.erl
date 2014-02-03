@@ -952,20 +952,20 @@ checksum(#ipv4{} = H) ->
 %compl(N) -> (N band 16#FFFF) + (N bsr 16).
 %compl(N,S) -> compl(N+S).
 
-%checksum(Bin) ->
-%	checksum1(Bin, 0).
-%
-%checksum1(<<>>, Acc) ->
-%	checksum_fix(Acc);
-%checksum1(<<W:16,More/binary>>, Acc) ->
-%    checksum1(More, W + Acc).
-%
-%checksum_fix(N) when N =< 16#ffff -> N;
-%checksum_fix(N) -> checksum_fix((N band 16#ffff) + (N bsr 16)).
+checksum(Bin) ->
+	checksum1(Bin, 0).
+
+checksum1(<<>>, Acc) ->
+	checksum_fix(Acc);
+checksum1(<<W:16,More/binary>>, Acc) ->
+    checksum1(More, W + Acc).
+
+checksum_fix(N) when N =< 16#ffff -> N;
+checksum_fix(N) -> checksum_fix((N band 16#ffff) + (N bsr 16)).
 
 %% Even better - use a BIF
-checksum(Bin) ->
-	binary:ip_checksum(Bin).
+%checksum(Bin) ->
+%	binary:ip_checksum(Bin).
 
 makesum(Hdr) -> 16#FFFF - checksum(Hdr).
 
