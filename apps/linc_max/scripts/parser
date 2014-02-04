@@ -1,0 +1,26 @@
+#!/usr/bin/env escript
+%%
+%%
+
+main([SrcFile]) ->
+	{ok,Bin} = file:read_file(SrcFile),
+	SrcCode = binary_to_list(Bin),
+	{ok,Ts,_} = erl_scan:string(SrcCode),
+	Forms = split_forms(Ts),
+	lists:foreach(fun(Form) ->
+		{ok,X} = erl_parse:parse_form(Form),
+		%io:format("~s~n", [erl_pp:form(X)])
+		io:format("~p~n", [X])
+	end, Forms).
+
+split_forms(Ts) ->
+	split_forms(Ts, [], []).
+
+split_forms([], [], Acc) ->
+	lists:reverse(Acc);
+split_forms([{dot,_} =Dot|Ts], Form, Acc) ->
+	split_forms(Ts, [], [lists:reverse([Dot|Form])|Acc]);
+split_forms([T|Ts], Form, Acc) ->
+	split_forms(Ts, [T|Form], Acc).
+
+%%EOF

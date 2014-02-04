@@ -1,16 +1,16 @@
 
 .PHONY: default
 
-BEAMS := $(patsubst %.erl,%.beam,$(wildcard *.erl))
+BEAMS := $(patsubst %.erl,%.beam,$(wildcard src/*.erl))
 
-#default: $(BEAMS)
-default: flow0.erl
+default: $(BEAMS)
+#default: flow0.erl
 
 flow0.erl: flow0.tab
 
 %.erl: %.tab
-	./generator $<
+	scripts/generator $<
 
 %.beam: %.erl
-	erlc $<
+	erlc -o ebin $<
 
