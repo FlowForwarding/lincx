@@ -11,4 +11,6 @@
                     {software_desc,<<"Dummy">>},
                     {serial_number,<<"Dummy">>},
                     {datapath_desc,<<"Dummy">>}]},
-              {modules,[linc_max_headers,linc_max_generator]}]}.
+              {modules,[linc_max_headers,
+						linc_max_generator,
+						linc_max]}]}.

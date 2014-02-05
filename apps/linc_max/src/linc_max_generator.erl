@@ -1,5 +1,6 @@
 -module(linc_max_generator).
 -export([update_flow_table/2]).
+-export([flow_table_forms/2]).
 
 -define(ETH_P_IP,			16#0800).
 -define(ETH_P_ARP,			16#0806).
@@ -8,21 +9,14 @@
 -define(VLAN_VID_NONE,		16#0000).
 -define(VLAN_VID_PRESENT,	16#1000).
 
+-record(instr, {meter,
+				apply,
+				clear_write,
+				metadata,
+				goto}).
+
 update_flow_table(TabName, FlowEnts) ->
-	EntsWithVersions = versions(FlowEnts),
-
-	F1 = {attribute,0,module,TabName},
-	F2 = {attribute,0,export,
-			[{FName,length(Args)}
-				|| {FName,Args} <- function_signatures()]},
-	Fs = [{function,0,FName,length(Args),
-						clauses(EntsWithVersions, Args)}
-				|| {FName,Args} <- function_signatures()],
-
-	Forms = [F1,F2|Fs],
-%	lists:foreach(fun(F) ->
-%		io:format("~s", [erl_pp:form(F)])
-%	end, Forms),
+	{ok,Forms} = flow_table_forms(TabName, FlowEnts),
 
 	{ok,TabName,Bin} = compile:forms(Forms, []),
 
@@ -35,29 +29,43 @@ update_flow_table(TabName, FlowEnts) ->
 	{module,_} = erlang:load_module(TabName, Bin),
 	ok.
 
+flow_table_forms(TabName, FlowEnts) ->
+	EntsWithVersions = versions(FlowEnts),
+
+	F1 = {attribute,0,module,TabName},
+	F2 = {attribute,0,export,
+			[{FName,length(Args)}
+				|| {FName,Args} <- function_signatures()]},
+	Fs = [{function,0,FName,length(Args),
+						clauses(EntsWithVersions, FName, Args)}
+				|| {FName,Args} <- function_signatures()],
+
+	Forms = [F1,F2|Fs],
+	{ok,Forms}.
+
 %% duplicate clauses that depend on IPv4/IPv6
 versions(Ents) ->
 	versions(Ents, []).
 
 versions([], Acc) ->
 	lists:reverse(Acc);
-versions([{Action,Matches}|Ents], Acc) ->
+versions([{flow,Matches,Action} =Flow|Ents], Acc) ->
 	case lists:keymember(ip_proto, 1, Matches) orelse
 		 lists:keymember(ip_dscp, 1, Matches) orelse
 		 lists:keymember(ip_ecn, 1, Matches) of
 	true ->
-		versions(Ents, [{Action,Matches,v4},
-						{Action,Matches,v6}|Acc]);
+		versions(Ents, [{flowv4,Matches,Action},
+						{flowv6,Matches,Action}|Acc]);
 	false ->
-		versions(Ents, [{Action,Matches,any}|Acc])
+		versions(Ents, [Flow|Acc])
 	end.
 
-clauses(Ents, Args) ->
-	clauses(Ents, Args, []).
+clauses(Ents, FName, Args) ->
+	clauses(Ents, FName, Args, []).
 
-clauses([], _, Acc) ->
+clauses([], _, _, Acc) ->
 	lists:reverse(Acc);
-clauses([{Action,Matches,Version}|Ents], Args, Acc) ->
+clauses([{Version,Matches,Instr}|Ents], FName, Args, Acc) ->
 	Specs = [spec(M, Version) || M <- Matches]
 				++
 			 match_version(Version),
@@ -72,8 +80,9 @@ clauses([{Action,Matches,Version}|Ents], Args, Acc) ->
 					combine(lists:keysort(1, Ys))
 				end}
 					|| Arg <- RefArgs],
+
 		Ps = lists:map(fun(A) ->
-			case lists:keyfind(A, 1, ArgZones) of
+			P = case lists:keyfind(A, 1, ArgZones) of
 			false ->
 				{var,0,'_'};
 			{_,[Value]} when is_integer(Value) ->
@@ -82,19 +91,104 @@ clauses([{Action,Matches,Version}|Ents], Args, Acc) ->
 				{atom,0,none};
 			{_,Zs} ->
 				{bin,0,bin_elems(Zs)}
-			end
+			end,
+			if Instr#instr.goto =/= undefined; A =:= actions ->
+				{match,0,P,{var,0,var_name(A)}};
+					true -> P end
 		end, Args),
-		C = {clause,0,Ps,[],[{atom,0,Action}]},
-		clauses(Ents, Args, [C|Acc]);
+
+		C = {clause,0,Ps,[],todo(Instr, FName, Args)},
+		clauses(Ents, FName, Args, [C|Acc]);
 	_Xs ->
 		%io:format("no chance: Xs = ~p\n", [Xs]),
 		%% no chance of a match
-		clauses(Ents, Args, Acc)
+		clauses(Ents, FName, Args, Acc)
 	end.
 
-match_version(v4) ->
+todo(#instr{meter =MI,
+			apply =_AI,
+			clear_write =CI,
+			metadata =DI,
+			goto =GI}, FName, Args) ->
+
+	Goto = goto_instr(GI, CI, DI, FName, Args),
+	Meter = meter_instr(MI, Goto),
+	Meter.
+
+goto_instr(undefined, CI, _DI, _FName, _Args) ->
+	[{tuple,0,[{atom,0,actions},
+			   updated_actions(CI)]}];
+goto_instr({goto,N}, CI, DI, FName, Args) ->
+	TabName = list_to_atom("flow" ++ integer_to_list(N)),
+
+	%% update metadata before calling the next flow table
+	As = lists:map(fun(actions) when CI =/= undefined ->
+		updated_actions(CI);
+	
+	(metadata) when DI =/= undefined ->
+		{_,Value,Mask} = DI,
+		{call,0,{remote,0,{atom,0,linc_max},
+						  {atom,0,update_metadata}},[{var,0,var_name(metadata)},
+												     {integer,0,(bnot Mask)},
+													 {integer,0,Value}]};
+	(A) ->
+		{var,0,var_name(A)}
+	end, Args),
+
+	Call = {call,0,{remote,0,{atom,0,TabName},{atom,0,FName}},As},
+	[Call].
+
+meter_instr(undefined, Inner) ->
+	Inner;
+meter_instr({meter,N}, Inner) ->
+	Call = {call,0,{remote,0,{atom,0,linc_max},
+						     {atom,0,meter}},[{integer,0,N},
+											  {var,0,var_name(state)}]},
+	C1 = {clause,0,[{atom,0,ok}],[],Inner},
+	C2 = {clause,0,[{var,0,'_'}],[],[{atom,0,drop}]},
+	Case = {'case',0,Call,[C1,C2]},
+	[Case].
+
+updated_actions({clear,Specs}) ->
+	Es = lists:map(fun({Fld,_VarName}) ->
+		case lists:keyfind(Fld, 1, Specs) of
+		false ->
+			{atom,0,undefined};
+		{_,Term} ->
+			erl_syntax:revert(erl_syntax:abstract(Term))
+		end
+	end, actions_fields()),
+	{tuple,0,Es};
+
+updated_actions({write,Specs}) ->
+	OldEs = lists:map(fun({Fld,VarName}) ->
+		case lists:keyfind(Fld, 1, Specs) of
+		false ->
+			{var,0,VarName};
+		_ ->
+			{var,0,'_'}
+		end
+	end, actions_fields()),
+
+	NewEs = lists:map(fun({Fld,VarName}) ->
+		case lists:keyfind(Fld, 1, Specs) of
+		false ->
+			{var,0,VarName};
+		{_,Term} ->
+			erl_syntax:revert(erl_syntax:abstract(Term))
+		end
+	end, actions_fields()),
+	{block,0,[{match,0,{tuple,0,OldEs},{var,0,var_name(actions)}},
+			  {tuple,0,NewEs}]}.
+
+actions_fields() ->
+	[{queue,'Queue'},
+	 {output,'Output'},
+	 {group,'Group'}].
+
+match_version(flowv4) ->
 	[{eth_type,[?ETH_P_IP]}];
-match_version(v6) ->
+match_version(flowv6) ->
 	[{eth_type,[?ETH_P_IPV6]}];
 match_version(_) ->
 	[].
@@ -284,9 +378,33 @@ split_mask(Mask, N, Probe, Ones, Acc) ->
 sub_mask(N, L) ->
 	((1 bsl L) -1) bsl N.
 
+var_name(packet) -> 'Packet';
+var_name(actions) -> 'Actions';
+var_name(vlan_tag) -> 'VlanTag';
+var_name(eth_type) -> 'EthType';
+var_name(pbb_tag) -> 'PbbTag';
+var_name(mpls_tag) -> 'MplsTag';
+var_name(ip4_hdr) -> 'Ip4Hdr';
+var_name(ip6_hdr) -> 'Ip6Hdr';
+var_name(ip6_ext) -> 'Ip6Ext';
+var_name(arp_msg) -> 'ArpMsg';
+var_name(icmp6_hdr) -> 'Icmp6Hdr';
+var_name(icmp6_sll) -> 'Icmp6OptSll';
+var_name(icmp6_tll) -> 'Icmp6OptTll';
+var_name(icmp_msg) -> 'IcmpMsg';
+var_name(tcp_hdr) -> 'TcpHdr';
+var_name(udp_hdr) -> 'UdpHdr';
+var_name(sctp_hdr) -> 'SctpHdr';
+var_name(in_port) -> 'InPort';
+var_name(in_phy_port) -> 'InPhyPort';
+var_name(metadata) -> 'Metadata';
+var_name(tunnel_id) -> 'TunnelId';
+var_name(state) -> 'St'.
+
 function_signatures() ->
 	[{arp,
 		[packet,
+		 actions,
 		 vlan_tag,
 		 eth_type,
 		 pbb_tag,
@@ -298,9 +416,11 @@ function_signatures() ->
 		 in_port,
 		 in_phy_port,
 		 metadata,
-		 tunnel_id]},
+		 tunnel_id,
+		 state]},
 	 {icmp,
 		[packet,
+		 actions,
 		 vlan_tag,
 		 eth_type,
 		 pbb_tag,
@@ -312,9 +432,11 @@ function_signatures() ->
 		 in_port,
 		 in_phy_port,
 		 metadata,
-		 tunnel_id]},
+		 tunnel_id,
+		 state]},
 	 {icmpv6,
 		[packet,
+		 actions,
 		 vlan_tag,
 		 eth_type,
 		 pbb_tag,
@@ -328,9 +450,11 @@ function_signatures() ->
 		 in_port,
 		 in_phy_port,
 		 metadata,
-		 tunnel_id]},
+		 tunnel_id,
+		 state]},
 	 {tcp,
 		[packet,
+		 actions,
 		 vlan_tag,
 		 eth_type,
 		 pbb_tag,
@@ -342,9 +466,11 @@ function_signatures() ->
 		 in_port,
 		 in_phy_port,
 		 metadata,
-		 tunnel_id]},
+		 tunnel_id,
+		 state]},
 	 {udp,
 		[packet,
+		 actions,
 		 vlan_tag,
 		 eth_type,
 		 pbb_tag,
@@ -356,9 +482,11 @@ function_signatures() ->
 		 in_port,
 		 in_phy_port,
 		 metadata,
-		 tunnel_id]},
+		 tunnel_id,
+		 state]},
 	 {sctp,
 		[packet,
+		 actions,
 		 vlan_tag,
 		 eth_type,
 		 pbb_tag,
@@ -370,9 +498,11 @@ function_signatures() ->
 		 in_port,
 		 in_phy_port,
 		 metadata,
-		 tunnel_id]},
+		 tunnel_id,
+		 state]},
 	 {nonext,
 		[packet,
+		 actions,
 		 vlan_tag,
 		 eth_type,
 		 pbb_tag,
@@ -383,6 +513,7 @@ function_signatures() ->
 		 in_port,
 		 in_phy_port,
 		 metadata,
-		 tunnel_id]}].
+		 tunnel_id,
+		 state]}].
 
 %%EOF
