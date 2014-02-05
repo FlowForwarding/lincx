@@ -2,6 +2,11 @@
 -export([update_metadata/3]).
 -export([meter/2]).
 
+%% Testing interface
+-export([start/0]).
+
+-include("linc_max.hrl").
+
 %% FAST PATH
 %%
 %% The function is needed because metadata are represented as binary in the
@@ -16,5 +21,45 @@ update_metadata(<<MetaInt:64>>, AndMe, OrMe) ->
 %% state and exchange messages with it to check that the packet fit the bands.
 %%
 meter(_MeterId, _St) -> ok.
+
+start() ->
+	%%spawn(fun() ->
+		{ok,P1} = net_vif:open(eth1, [binary]),
+		{ok,P2} = net_vif:open(eth2, [binary]),
+
+		io:format("plug: ~w|~w\n", [P1,P2]),
+		plug(P1, P2).
+	%%end).
+
+plug(P1, P2) ->
+	receive
+	{P1,{data,Frame}} ->
+		case linc_max_headers:split(Frame, #state{in_port =1}) of
+		{do,Actions} ->
+			do(Frame, Actions, P1, P2);
+		_ ->
+			drop
+		end,
+		plug(P1, P2);
+
+	{P2,{data,Frame}} ->
+		case linc_max_headers:split(Frame, #state{in_port =2}) of
+		{do,Actions} ->
+			do(Frame, Actions, P1, P2);
+		_ ->
+			drop
+		end,
+		plug(P1, P2)
+	
+	end.
+
+do(Frame, #actions{output =1}, P1, _P2) ->
+	port_command(P1, Frame);
+
+do(Frame, #actions{output =2}, _P1, P2) ->
+	port_command(P2, Frame);
+
+do(_Frame, Actions, _P1, _P2) ->
+	io:format("? ~p\n", [Actions]).
 
 %%EOF

@@ -129,7 +129,7 @@ split_eth(Packet, VlanTag, none, PbbTag, MplsTag, Ip4Hdr, Ip6Hdr, Ip6Ext,
 split_eth(Packet, VlanTag, none, PbbTag, MplsTag, Ip4Hdr, Ip6Hdr, Ip6Ext,
 		<<?ETH_P_ARP:16,ArpMsg/binary>>, St) ->
 	flow0:arp(Packet, #actions{}, VlanTag, ?ETH_P_ARP, PbbTag, MplsTag,
-			Ip4Hdr, Ip6Hdr, <<Ip6Ext:16>>, ArpMsg,
+			Ip4Hdr, Ip6Hdr, bin16(Ip6Ext), ArpMsg,
 			in_port(St),
 			in_phy_port(St),
 			metadata(St),
@@ -199,7 +199,7 @@ split_ip6_chain(Packet, VlanTag, EthType, PbbTag, MplsTag, Ip4Hdr, Ip6Hdr, Ip6Ex
 split_ip6_chain(Packet, VlanTag, EthType, PbbTag, MplsTag, Ip4Hdr, Ip6Hdr, Ip6Ext,
 		?IPV6_HDR_NONEXT, _Rest, St) ->
 	flow0:nonext(Packet, #actions{}, VlanTag, EthType, PbbTag, MplsTag,
-			Ip4Hdr, Ip6Hdr, <<Ip6Ext:16>>,
+			Ip4Hdr, Ip6Hdr, bin16(Ip6Ext),
 			in_port(St),
 			in_phy_port(St),
 			metadata(St),
@@ -268,6 +268,9 @@ out_of_order(Ip6Ext, Mask)
 	when Ip6Ext band (bnot Mask) band (bnot ?IPV6_EXT_NONEXT) =/= 0 -> ?IPV6_EXT_UNSEQ;
 out_of_order(_Ip6Ext, _Mask) -> 0.
 
+bin16(none) -> none;
+bin16(Int) -> <<Int:16>>.
+
 split_ip6_skip(Packet, VlanTag, EthType, PbbTag, MplsTag, Ip4Hdr, Ip6Hdr, Ip6Ext,
 		?IPV6_HDR_HOP, <<Next,Len,_:6/binary,_:(Len)/binary-unit:64,Rest/binary>>, St) ->
 	split_ip6_skip(Packet, VlanTag, EthType, PbbTag, MplsTag,
@@ -295,7 +298,7 @@ split_ip6_skip(Packet, VlanTag, EthType, PbbTag, MplsTag, Ip4Hdr, Ip6Hdr, Ip6Ext
 split_ip6_skip(Packet, VlanTag, EthType, PbbTag, MplsTag, Ip4Hdr, Ip6Hdr, Ip6Ext,
 		?IPV6_HDR_NONEXT, _Rest, St) ->
 	flow0:nonext(Packet, #actions{}, VlanTag, EthType, PbbTag, MplsTag,
-			Ip4Hdr, Ip6Hdr, <<Ip6Ext:16>>,
+			Ip4Hdr, Ip6Hdr, bin16(Ip6Ext),
 			in_port(St),
 			in_phy_port(St),
 			metadata(St),
@@ -315,7 +318,7 @@ split_proto(Packet, VlanTag, EthType, PbbTag, MplsTag, Ip4Hdr, Ip6Hdr, Ip6Ext,
 split_proto(Packet, VlanTag, EthType, PbbTag, MplsTag, Ip4Hdr, Ip6Hdr, Ip6Ext,
 		?IPPROTO_ICMP, IcmpMsg, St) ->
 	flow0:icmp(Packet, #actions{}, VlanTag, EthType, PbbTag, MplsTag,
-	  		Ip4Hdr, Ip6Hdr, <<Ip6Ext:16>>, IcmpMsg,
+	  		Ip4Hdr, Ip6Hdr, bin16(Ip6Ext), IcmpMsg,
 			in_port(St),
 			in_phy_port(St),
 			metadata(St),
@@ -327,7 +330,7 @@ split_proto(Packet, VlanTag, EthType, PbbTag, MplsTag, Ip4Hdr, Ip6Hdr, Ip6Ext,
 split_proto(Packet, VlanTag, EthType, PbbTag, MplsTag, Ip4Hdr, Ip6Hdr, Ip6Ext,
 		?IPPROTO_TCP, TcpPacket, St) ->
 	flow0:tcp(Packet, #actions{}, VlanTag, EthType, PbbTag, MplsTag,
-			Ip4Hdr, Ip6Hdr, <<Ip6Ext:16>>, TcpPacket,
+			Ip4Hdr, Ip6Hdr, bin16(Ip6Ext), TcpPacket,
 			in_port(St),
 			in_phy_port(St),
 			metadata(St),
@@ -336,7 +339,7 @@ split_proto(Packet, VlanTag, EthType, PbbTag, MplsTag, Ip4Hdr, Ip6Hdr, Ip6Ext,
 split_proto(Packet, VlanTag, EthType, PbbTag, MplsTag, Ip4Hdr, Ip6Hdr, Ip6Ext,
 		?IPPROTO_UDP, UdpPacket, St) ->
 	flow0:udp(Packet, #actions{}, VlanTag, EthType, PbbTag, MplsTag,
-			Ip4Hdr, Ip6Hdr, <<Ip6Ext:16>>, UdpPacket,
+			Ip4Hdr, Ip6Hdr, bin16(Ip6Ext), UdpPacket,
 			in_port(St),
 			in_phy_port(St),
 			metadata(St),
@@ -345,7 +348,7 @@ split_proto(Packet, VlanTag, EthType, PbbTag, MplsTag, Ip4Hdr, Ip6Hdr, Ip6Ext,
 split_proto(Packet, VlanTag, EthType, PbbTag, MplsTag, Ip4Hdr, Ip6Hdr, Ip6Ext,
 		?IPPROTO_SCTP, SctpPacket, St) ->
 	flow0:sctp(Packet, #actions{}, VlanTag, EthType, PbbTag, MplsTag,
-			Ip4Hdr, Ip6Hdr, <<Ip6Ext:16>>, SctpPacket,
+			Ip4Hdr, Ip6Hdr, bin16(Ip6Ext), SctpPacket,
 			in_port(St),
 			in_phy_port(St),
 			metadata(St),
@@ -359,7 +362,7 @@ split_icmpv6(Packet, VlanTag, EthType, PbbTag, MplsTag, Ip4Hdr, Ip6Hdr, Ip6Ext,
 		<<?ICMPV6_NDP_NS,_:23/binary,Opts/binary>> =Icmp6Hdr, St) ->
 	Icmp6OptSll = icmpv6_opt(?NDP_OPT_SLL, Opts),
 	flow0:icmpv6(Packet, #actions{}, VlanTag, EthType, PbbTag, MplsTag,
-			Ip4Hdr, Ip6Hdr, <<Ip6Ext:16>>, Icmp6Hdr, Icmp6OptSll, none,
+			Ip4Hdr, Ip6Hdr, bin16(Ip6Ext), Icmp6Hdr, Icmp6OptSll, none,
 			in_port(St),
 			in_phy_port(St),
 			metadata(St),
@@ -369,7 +372,7 @@ split_icmpv6(Packet, VlanTag, EthType, PbbTag, MplsTag, Ip4Hdr, Ip6Hdr, Ip6Ext,
 		<<?ICMPV6_NDP_NA,_:23/binary,Opts/binary>> =Icmp6Hdr, St) ->
 	Icmp6OptTll = icmpv6_opt(?NDP_OPT_TLL, Opts),
 	flow0:icmpv6(Packet, #actions{}, VlanTag, EthType, PbbTag, MplsTag,
-			Ip4Hdr, Ip6Hdr, <<Ip6Ext:16>>, Icmp6Hdr, none, Icmp6OptTll,
+			Ip4Hdr, Ip6Hdr, bin16(Ip6Ext), Icmp6Hdr, none, Icmp6OptTll,
 			in_port(St),
 			in_phy_port(St),
 			metadata(St),
@@ -377,7 +380,7 @@ split_icmpv6(Packet, VlanTag, EthType, PbbTag, MplsTag, Ip4Hdr, Ip6Hdr, Ip6Ext,
 			St);
 split_icmpv6(Packet, VlanTag, EthType, PbbTag, MplsTag, Ip4Hdr, Ip6Hdr, Ip6Ext, Icmp6Hdr, St) ->
 	flow0:icmpv6(Packet, #actions{}, VlanTag, EthType, PbbTag, MplsTag,
-			Ip4Hdr, Ip6Hdr, <<Ip6Ext:16>>, Icmp6Hdr, none, none,
+			Ip4Hdr, Ip6Hdr, bin16(Ip6Ext), Icmp6Hdr, none, none,
 			in_port(St),
 			in_phy_port(St),
 			metadata(St),

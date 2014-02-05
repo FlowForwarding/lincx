@@ -6,5 +6,10 @@
 	tunnel_id = <<0:64>>
 }).
 
--record(actions, {output}).
+-record(actions, {
+	queue,
+	output,
+	group
+}).
 
+%%EOF

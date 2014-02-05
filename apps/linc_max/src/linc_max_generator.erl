@@ -63,48 +63,57 @@ versions([{flow,Matches,Action} =Flow|Ents], Acc) ->
 clauses(Ents, FName, Args) ->
 	clauses(Ents, FName, Args, []).
 
-clauses([], _, _, Acc) ->
-	lists:reverse(Acc);
+clauses([], _, Args, Acc) ->
+	Miss = {clause,0,[{var,0,'_'} || _ <- Args],[],[{atom,0,miss}]},
+	lists:reverse([Miss|Acc]);
 clauses([{Version,Matches,Instr}|Ents], FName, Args, Acc) ->
+	case catch build_patterns(Version, Matches, Instr, FName, Args) of
+	nomatch ->
+		%% no chance of the match, suppress the clause
+		clauses(Ents, FName, Args, Acc);
+	Pats ->
+		Clause = {clause,0,Pats,[],todo(Instr, FName, Args)},
+		clauses(Ents, FName, Args, [Clause|Acc])
+	end.
+
+build_patterns(Version, Matches, Instr, _FName, Args) ->
 	Specs = [spec(M, Version) || M <- Matches]
 				++
 			 match_version(Version),
 	RefArgs = lists:usort([A || {A,_} <- Specs]),
-	case RefArgs -- Args of
-	[] ->
-		ArgZones = [
-			{Arg,
-		 		begin
-					Ys = lists:concat([Xs
-							|| {Arg1,Xs} <- Specs,Arg1 =:= Arg]),
-					combine(lists:keysort(1, Ys))
-				end}
-					|| Arg <- RefArgs],
+	XtraArgs = RefArgs -- Args,
+	if XtraArgs =/= [] ->
+		throw(nomatch);
+			true -> ok end,
 
-		Ps = lists:map(fun(A) ->
-			P = case lists:keyfind(A, 1, ArgZones) of
-			false ->
-				{var,0,'_'};
-			{_,[Value]} when is_integer(Value) ->
-				{integer,0,Value};
-			{_,[none]} ->
-				{atom,0,none};
-			{_,Zs} ->
-				{bin,0,bin_elems(Zs)}
-			end,
-			if Instr#instr.goto =/= undefined;
-						A =:= actions; A =:= state ->
-				{match,0,P,{var,0,var_name(A)}};
-					true -> P end
-		end, Args),
+	ArgZones = lists:foldr(fun(Arg, ArgZones) ->
+		Ys = lists:concat([Xs
+					|| {Arg1,Xs} <- Specs,Arg1 =:= Arg]),
+		Zones = combine(sort_zones(Ys)),
+		[{Arg,Zones}|ArgZones]
+	end, [], RefArgs),
 
-		C = {clause,0,Ps,[],todo(Instr, FName, Args)},
-		clauses(Ents, FName, Args, [C|Acc]);
-	_Xs ->
-		%io:format("no chance: Xs = ~p\n", [Xs]),
-		%% no chance of a match
-		clauses(Ents, FName, Args, Acc)
-	end.
+	lists:map(fun(A) ->
+		P = case lists:keyfind(A, 1, ArgZones) of
+		false ->
+			{var,0,'_'};
+		{_,[Value]} when is_integer(Value) ->
+			{integer,0,Value};
+		{_,[none]} ->
+			{atom,0,none};
+		{_,Zs} ->
+			{bin,0,bin_elems(Zs)}
+		end,
+		if Instr#instr.goto =/= undefined;
+					A =:= actions; A =:= state ->
+			{match,0,P,{var,0,var_name(A)}};
+				true -> P end
+	end, Args).
+
+sort_zones([T|_] =Ts) when is_tuple(T) ->
+	lists:keysort(1, Ts);
+sort_zones(Ts) ->
+	lists:sort(Ts).
 
 todo(#instr{meter =MI,
 			apply =_AI,
@@ -117,7 +126,7 @@ todo(#instr{meter =MI,
 	Meter.
 
 goto_instr(undefined, CI, _DI, _FName, _Args) ->
-	[{tuple,0,[{atom,0,actions},
+	[{tuple,0,[{atom,0,do},
 			   updated_actions(CI)]}];
 goto_instr({goto,N}, CI, DI, FName, Args) ->
 	TabName = list_to_atom("flow" ++ integer_to_list(N)),
@@ -183,7 +192,8 @@ updated_actions({write,Specs}) ->
 			  {tuple,0,NewEs}]}.
 
 actions_fields() ->
-	[{queue,'Queue'},
+	[{tag,'Tag'},
+	 {queue,'Queue'},
 	 {output,'Output'},
 	 {group,'Group'}].
 
@@ -194,17 +204,15 @@ match_version(flowv6) ->
 match_version(_) ->
 	[].
 
-combine(Ts) ->
+combine(Ts) ->	%% can throw 'nomatch'
 	combine(Ts, []).
 
 combine([T], Acc) ->
 	lists:reverse([T|Acc]);
-combine([nomatch|_], _Acc) ->
-	nomatch;
-combine([Val,[Val|_] =Ts], Acc) when is_integer(Val) ->
+combine([Val|[Val|_] =Ts], Acc) when is_integer(Val) ->
 	combine(Ts, Acc);
-combine([Val1,[Val2|_]], _Acc) when is_integer(Val1), is_integer(Val2) ->
-	nomatch;
+combine([Val1,Val2|_], _Acc) when is_integer(Val1), is_integer(Val2) ->
+	throw(nomatch);
 combine([{Start1,Len1,_Val1} =T|[{Start2,_Len2,_Val2}|_] =Ts], Acc)
 		when Start1 +Len1 < Start2 ->
 	combine(Ts, [T|Acc]);
@@ -221,8 +229,7 @@ combine1({S1,L1,V1} =T1, {S2,L2,_V2} =T2) ->
 	TS = S1 +L1,
 	TL = S2 +L2 -TS,
 	if IV1 =/= IV2 ->
-		io:format("nomatch: ~p =/= ~p~n", [T1,T2]),
-		nomatch;
+		throw(nomatch);
 	TL =< 0 ->
 		T1;
 	true ->
@@ -273,25 +280,26 @@ spec({eth_src,Value,Mask}, _) ->
 spec({eth_type,Value}, _) ->
 	{eth_type,[Value]};
 spec({vlan_vid,?VLAN_VID_NONE,nomask}, _) ->
-	{vlan_vid,[none]};
+	{vlan_tag,[none]};
 spec({vlan_vid,?VLAN_VID_PRESENT,?VLAN_VID_PRESENT}, _) ->
-	{vlan_vid,[{0,0,0}]};
+	{vlan_tag,[{0,0,0}]};
 spec({vlan_vid,Value,nomask}, _) ->
 	masq(vlan_tag, 4, 12, Value, nomask);
 spec({vlan_pcp,Value}, _) ->
 	masq(vlan_tag, 0, 3, Value, nomask);
-spec({ip_dscp,Value}, v4) ->
+spec({ip_dscp,Value}, flowv4) ->
 	masq(ip4_hdr, 8, 6, Value, nomask);
-spec({ip_dscp,Value}, v6) ->
+spec({ip_dscp,Value}, flowv6) ->
 	masq(ip6_hdr, 4, 6, Value, nomask);
-spec({ip_ecn,Value}, v4) ->
+spec({ip_ecn,Value}, flowv4) ->
 	masq(ip4_hdr, 14, 2, Value, nomask);
-spec({ip_ecn,Value}, v6) ->
+spec({ip_ecn,Value}, flowv6) ->
 	masq(ip6_hdr, 10, 2, Value, nomask);
-spec({ip_proto,Value}, v4) ->
+spec({ip_proto,Value}, flowv4) ->
 	masq(ip4_hdr, 72, 8, Value, nomask);
-spec({ip_proto,Value}, v6) ->
-	%%TODO: this is the first header, not the last
+spec({ip_proto,Value}, flowv6) ->
+	%%TODO: this is the first header, not the last;
+	%% yet another argument is needed
 	masq(ip6_hdr, 48, 8, Value, nomask);
 spec({ipv4_src,Value,Mask}, _) ->
 	masq(ip4_hdr, 96, 32, Value, Mask);

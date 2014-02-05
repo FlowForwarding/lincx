@@ -5,19 +5,37 @@
 {flow,
 	[{in_port,1}],
 
-	{instr,{meter,12},
-		   undefined,				%% apply
-		   {clear,[{output,2}]},
-		   {metadata,16#003e,16#ff},
-		   {goto,1}}}.
+	{instr,undefined,
+		   undefined,
+		   {write,[{output,2}]},
+		   undefined,
+		   undefined}}.
 
 {flow,
 	[{in_port,2}],
-
-	{instr,{meter,12},
-		   undefined,				%% apply
+	
+	{instr,undefined,
+		   undefined,
 		   {write,[{output,1}]},
-		   {metadata,16#003e,16#ff},
+		   undefined,
 		   undefined}}.
+
+%{flow,
+%	[{in_port,1}],
+%
+%	{instr,{meter,12},
+%		   undefined,				%% apply
+%		   {clear,[{output,2}]},
+%		   {metadata,16#003e,16#ff},
+%		   {goto,1}}}.
+%
+%{flow,
+%	[{in_port,2}],
+%
+%	{instr,{meter,12},
+%		   undefined,				%% apply
+%		   {write,[{output,1}]},
+%		   {metadata,16#003e,16#ff},
+%		   undefined}}.
 
 %%EOF
