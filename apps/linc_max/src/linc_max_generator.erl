@@ -92,7 +92,8 @@ clauses([{Version,Matches,Instr}|Ents], FName, Args, Acc) ->
 			{_,Zs} ->
 				{bin,0,bin_elems(Zs)}
 			end,
-			if Instr#instr.goto =/= undefined; A =:= actions ->
+			if Instr#instr.goto =/= undefined;
+						A =:= actions; A =:= state ->
 				{match,0,P,{var,0,var_name(A)}};
 					true -> P end
 		end, Args),
