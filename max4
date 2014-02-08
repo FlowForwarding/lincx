@@ -1,0 +1,172 @@
+3> ling:b3().
+LINC latency stats:
+===================
+err: 26
+forwarded1: 11
+latency1: 9.129636us
+forwarded2: 11
+latency2: 42.873636us
+ok
+4> ling:b3().
+LINC latency stats:
+===================
+err: 0
+forwarded1: 10
+latency1: 3.099900us
+forwarded2: 10
+latency2: 4.682300us
+ok
+5> ling:b3().
+LINC latency stats:
+===================
+err: 2
+forwarded1: 11
+latency1: 1.916000us
+forwarded2: 11
+latency2: 5.220909us
+ok
+6> ling:b3().
+LINC latency stats:
+===================
+err: 0
+forwarded1: 10
+latency1: 1.685800us
+forwarded2: 10
+latency2: 2.964900us
+ok
+7> ling:b3().
+LINC latency stats:
+===================
+err: 2
+forwarded1: 11
+latency1: 1.856364us
+forwarded2: 11
+latency2: 4.087636us
+ok
+8> ling:b3().
+LINC latency stats:
+===================
+err: 0
+forwarded1: 10
+latency1: 1.692100us
+forwarded2: 10
+latency2: 7.390300us
+ok
+9> ling:b3().
+LINC latency stats:
+===================
+err: 2
+forwarded1: 11
+latency1: 3.789182us
+forwarded2: 11
+latency2: 10.861091us
+ok
+10> ling:b3().
+LINC latency stats:
+===================
+err: 0
+forwarded1: 10
+latency1: 4.757900us
+forwarded2: 10
+latency2: 10.603700us
+ok
+11> ling:b3().
+LINC latency stats:
+===================
+err: 0
+forwarded1: 10
+latency1: 2.960300us
+forwarded2: 10
+latency2: 11.425800us
+ok
+12> ling:b3().
+LINC latency stats:
+===================
+err: 2
+forwarded1: 11
+latency1: 2.631636us
+forwarded2: 11
+latency2: 9.633909us
+ok
+13> ling:b3().
+LINC latency stats:
+===================
+err: 0
+forwarded1: 10
+latency1: 4.049300us
+forwarded2: 10
+latency2: 12.583400us
+ok
+14> ling:b3().
+LINC latency stats:
+===================
+err: 0
+forwarded1: 0
+forwarded2: 0
+ok
+15> ling:b3().
+LINC latency stats:
+===================
+err: 0
+forwarded1: 10
+latency1: 2.801200us
+forwarded2: 10
+latency2: 10.376100us
+ok
+16> ling:b3().
+LINC latency stats:
+===================
+err: 2
+forwarded1: 11
+latency1: 2.736727us
+forwarded2: 11
+latency2: 10.624091us
+ok
+17> ling:b3().
+LINC latency stats:
+===================
+err: 2
+forwarded1: 11
+latency1: 2.647091us
+forwarded2: 11
+latency2: 10.747545us
+ok
+18> ling:b3().
+LINC latency stats:
+===================
+err: 0
+forwarded1: 10
+latency1: 4.603000us
+forwarded2: 10
+latency2: 12.360200us
+ok
+19> ling:b3().
+LINC latency stats:
+===================
+err: 0
+forwarded1: 10
+latency1: 2.593300us
+forwarded2: 10
+latency2: 12.777600us
+ok
+20> ling:b3().
+LINC latency stats:
+===================
+err: 2
+forwarded1: 11
+latency1: 2.678727us
+forwarded2: 11
+latency2: 13.418091us
+ok
+21> ling:b3().
+LINC latency stats:
+===================
+err: 0
+forwarded1: 10
+latency1: 2.885800us
+forwarded2: 10
+latency2: 12.539900us
+ok
+22> q().
+ok
+23>

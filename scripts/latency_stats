@@ -1,0 +1,55 @@
+#!/usr/bin/env escript
+
+-define(SAMPLE_SIZE, 10).
+
+main([RawStatsFile]) ->
+	{ok,Data} = file:read_file(RawStatsFile),
+	Lines = re:split(Data, <<"\n">>),
+	AllPairs = collect(Lines),
+	{SamplePairs,_} = lists:split(?SAMPLE_SIZE, AllPairs),
+	{Sample1,Sample2} = lists:unzip(SamplePairs),
+	LongSample = Sample1 ++ Sample2,
+	
+	stats(LongSample, "all"),
+	stats(Sample1, "to"),
+	stats(Sample2, "from");
+
+main(_) ->
+	io:format("usage: latency_stats raw_stats_file\n", []).
+
+%<<"LINC latency stats:">>,
+%<<"===================">>,
+%<<"err: 0">>,
+%<<"forwarded1: 10">>,
+%<<"latency1: 309.275100us">>,
+%<<"forwarded2: 10">>,
+%<<"latency2: 320.041700us">>,
+
+collect(Lines) ->
+	collect(Lines, []).
+
+collect([], Acc) ->
+	lists:reverse(Acc);
+collect([<<"====",_/binary>>,
+		 <<"err: 0">>,
+		 _, % forwarded1
+		 <<"latency1: ",LatBin1/binary>>,
+		 _, % forwarded2
+		 <<"latency2: ",LatBin2/binary>>|Lines], Acc) ->
+	Lat1 = decode_latency(LatBin1),
+	Lat2 = decode_latency(LatBin2),
+	collect(Lines, [{Lat1,Lat2}|Acc]);
+collect([_|Lines], Acc) ->
+	collect(Lines, Acc).
+
+decode_latency(Bin) ->
+	list_to_float(binary_to_list(binary:part(Bin, 0, byte_size(Bin) -2))).
+
+stats(Sample, Tag) ->
+	Avg = lists:sum(Sample) /length(Sample),
+	Var = lists:sum([(X -Avg) *(X -Avg) || X <- Sample]) /length(Sample),
+	SDev = math:sqrt(Var),
+	Conf = 1.96 *SDev /math:sqrt(length(Sample)),
+	io:format("PL (~s) = ~.2f +/- ~.2f us (95%)\n", [Tag,Avg,Conf]).
+
+%%EOF

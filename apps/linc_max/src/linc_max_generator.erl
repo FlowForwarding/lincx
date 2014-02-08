@@ -159,6 +159,9 @@ meter_instr({meter,N}, Inner) ->
 	Case = {'case',0,Call,[C1,C2]},
 	[Case].
 
+updated_actions(undefined) ->
+	{var,0,var_name(actions)};
+
 updated_actions({clear,Specs}) ->
 	Es = lists:map(fun({Fld,_VarName}) ->
 		case lists:keyfind(Fld, 1, Specs) of
