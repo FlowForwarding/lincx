@@ -246,3 +246,17 @@ PL (all) = 5.28 +/- 0.62 us (95%)
 PL (to) = 5.78 +/- 1.01 us (95%)
 PL (from) = 4.78 +/- 0.60 us (95%)
 
+----[09/02/2014 11:52]----------------------------------------------------------
+
+The generator is partially rewritten to decrease compilation time. Now it
+produces a single function with 24 arguments, not 7 functions with 13-17
+arguments.
+
+There is no noticable impact on the processing delay:
+
+PL (all) = 5.07 +/- 1.08 us (95%)
+PL (to) = 5.20 +/- 1.72 us (95%)
+PL (from) = 4.93 +/- 1.32 us (95%)
+
+The compilation of a fairly complex flow table (test3.tab) now takes 344ms.
+

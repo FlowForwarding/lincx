@@ -62,7 +62,8 @@ plug(P1, P2, ?RESTART_AFTER) ->
 plug(P1, P2, N) ->
 	receive
 	{P1,{data,Frame}} ->
-		case linc_max_headers:split(Frame, #state{in_port =1}) of
+		case linc_max_preparser:inject(Frame,
+				undefined, {1,10,undefined}, #actions{}, flow0) of
 		{do,Actions} ->
 			do(Frame, Actions, P1, P2);
 		miss ->
@@ -73,7 +74,8 @@ plug(P1, P2, N) ->
 		plug(P1, P2, N +1);
 
 	{P2,{data,Frame}} ->
-		case linc_max_headers:split(Frame, #state{in_port =2}) of
+		case linc_max_preparser:inject(Frame,
+				undefined, {2,20,undefined}, #actions{}, flow0) of
 		{do,Actions} ->
 			do(Frame, Actions, P1, P2);
 		miss ->

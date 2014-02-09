@@ -1,0 +1,137 @@
+LINC latency stats:
+===================
+err: 0
+forwarded1: 10
+latency1: 9.583400us
+forwarded2: 10
+latency2: 3.526600us
+ok
+9> ling:b3().
+LINC latency stats:
+===================
+err: 0
+forwarded1: 10
+latency1: 8.646500us
+forwarded2: 10
+latency2: 3.565400us
+ok
+10> ling:b3().
+LINC latency stats:
+===================
+err: 2
+forwarded1: 11
+latency1: 11.021455us
+forwarded2: 11
+latency2: 5.305909us
+ok
+11> ling:b3().
+LINC latency stats:
+===================
+err: 0
+forwarded1: 10
+latency1: 2.677300us
+forwarded2: 10
+latency2: 10.801200us
+ok
+12> ling:b3().
+LINC latency stats:
+===================
+err: 2
+forwarded1: 11
+latency1: 1.896091us
+forwarded2: 11
+latency2: 6.709818us
+ok
+13> ling:b3().
+LINC latency stats:
+===================
+err: 0
+forwarded1: 10
+latency1: 2.035600us
+forwarded2: 10
+latency2: 3.627300us
+ok
+14> ling:b3().
+LINC latency stats:
+===================
+err: 0
+forwarded1: 10
+latency1: 1.882100us
+forwarded2: 10
+latency2: 3.283600us
+ok
+15> ling:b3().
+LINC latency stats:
+===================
+err: 2
+forwarded1: 11
+latency1: 3.695182us
+forwarded2: 11
+latency2: 5.156273us
+ok
+16> ling:b3().
+LINC latency stats:
+===================
+err: 0
+forwarded1: 10
+latency1: 8.045600us
+forwarded2: 10
+latency2: 3.678900us
+ok
+17> ling:b3().
+LINC latency stats:
+===================
+err: 0
+forwarded1: 10
+latency1: 3.668400us
+forwarded2: 10
+latency2: 4.870400us
+ok
+18> ling:b3().
+LINC latency stats:
+===================
+err: 2
+forwarded1: 11
+latency1: 7.554273us
+forwarded2: 11
+latency2: 3.527091us
+ok
+19> ling:b3().
+LINC latency stats:
+===================
+err: 0
+forwarded1: 10
+latency1: 6.391100us
+forwarded2: 10
+latency2: 5.112200us
+ok
+20> ling:b3().
+LINC latency stats:
+===================
+err: 0
+forwarded1: 10
+latency1: 2.855800us
+forwarded2: 10
+latency2: 4.961600us
+ok
+21> ling:b3().
+LINC latency stats:
+===================
+err: 2
+forwarded1: 11
+latency1: 4.043182us
+forwarded2: 11
+latency2: 4.764455us
+ok
+22> ling:b3().
+LINC latency stats:
+===================
+err: 0
+forwarded1: 10
+latency1: 6.219600us
+forwarded2: 10
+latency2: 5.886500us
+ok
+23> q().
+ok
+24>

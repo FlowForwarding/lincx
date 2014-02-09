@@ -1,0 +1,4 @@
+
+{flow,[{in_port,1},{vlan_vid,16#1000,16#1000},{ip_proto,6},{ipv6_nd_target,123}],
+      {instr,undefined,undefined,undefined,undefined,{goto,1}}}.
+
