@@ -147,10 +147,12 @@ init(active, {Address, Port}, Scenario) ->
 
 accept(Parent, LSocket, Scenario) ->
     {ok, Socket} = gen_tcp:accept(LSocket),
+	Notify = self(),
     Pid = spawn_link(fun() ->
-                             handle_connection(Parent, Socket, Scenario)
+                             handle_connection(Parent, Socket, Scenario, Notify)
                      end),
     ok = gen_tcp:controlling_process(Socket, Pid),
+	receive {hello_sent,_} -> ok end, %%MK
     Parent ! {connected, passive, Socket, Pid},
     accept(Parent, LSocket, Scenario).
 
@@ -158,18 +160,26 @@ connect(Parent, Address, Port, Scenario) ->
     Opts = [binary, {packet, raw}, {active, once}, {reuseaddr, true}],
     case gen_tcp:connect(Address, Port, Opts) of
         {ok, Socket} ->
+			Notify = self(),
             Pid = spawn_link(fun() ->
-                                     handle_connection(Parent, Socket, Scenario)
+                                     handle_connection(Parent, Socket, Scenario, Notify)
                              end),
             ok = gen_tcp:controlling_process(Socket, Pid),
+			receive {hello_sent,_} -> ok end, %%MK
             Parent ! {connected, active, Socket, Pid};
         {error, Reason} ->
             lager:error("Cannot connect to controller ~p:~p. Reason: ~p.~n",
                         [Address, Port, Reason])
     end.
 
-handle_connection(Parent, Socket, Scenario) ->
+handle_connection(Parent, Socket, Scenario, Notify) ->
+
+	%%MK
+	%% In LING, two processes cannot send to the same TCP socket simultaneously.
+	%% Send synchronisation message to Notify to prevent this. 
     gen_tcp:send(Socket, encoded_hello_message(Scenario)),
+	Notify ! {hello_sent,self()},
+
     {ok, Parser} = ofp_parser:new(4),
     inet:setopts(Socket, [{active, once}]),
     handle(#cstate{parent = Parent, socket = Socket, parser = Parser}).

@@ -7,3 +7,35 @@ Bad input fd in erts_poll()! fd=16, port=#Port<0.10539>, driver=fd, name=16/16
 2013-12-27 03:08:05 =ERROR REPORT====
 Bad input fd in erts_poll()! fd=16, port=#Port<0.10539>, driver=fd, name=16/16
 
+2014-02-11 12:26:27 =CRASH REPORT====
+  crasher:
+    initial call: tuncer:init/1
+    pid: <0.107.0>
+    registered_name: []
+    exception exit: {{{badmatch,{error,eperm}},[{tuncer,init,1,[{file,"/home/mk/lincx/deps/tunctl/src/tuncer.erl"},{line,155}]},{gen_server,init_it,6,[{file,"gen_server.erl"},{line,304}]},{proc_lib,init_p_do_apply,3,[{file,"proc_lib.erl"},{line,239}]}]},[{gen_server,init_it,6,[{file,"gen_server.erl"},{line,328}]},{proc_lib,init_p_do_apply,3,[{file,"proc_lib.erl"},{line,239}]}]}
+    ancestors: [<0.106.0>,<0.105.0>,<0.103.0>,<0.100.0>,<0.90.0>,<0.89.0>]
+    messages: []
+    links: [<0.106.0>]
+    dictionary: []
+    trap_exit: true
+    status: running
+    heap_size: 1598
+    stack_size: 27
+    reductions: 1496
+  neighbours:
+2014-02-11 12:26:27 =CRASH REPORT====
+  crasher:
+    initial call: tuncer:init/1
+    pid: <0.113.0>
+    registered_name: []
+    exception exit: {{{badmatch,{error,eperm}},[{tuncer,init,1,[{file,"/home/mk/lincx/deps/tunctl/src/tuncer.erl"},{line,155}]},{gen_server,init_it,6,[{file,"gen_server.erl"},{line,304}]},{proc_lib,init_p_do_apply,3,[{file,"proc_lib.erl"},{line,239}]}]},[{gen_server,init_it,6,[{file,"gen_server.erl"},{line,328}]},{proc_lib,init_p_do_apply,3,[{file,"proc_lib.erl"},{line,239}]}]}
+    ancestors: [<0.112.0>,<0.105.0>,<0.103.0>,<0.100.0>,<0.90.0>,<0.89.0>]
+    messages: []
+    links: [<0.112.0>]
+    dictionary: []
+    trap_exit: true
+    status: running
+    heap_size: 1598
+    stack_size: 27
+    reductions: 1436
+  neighbours:

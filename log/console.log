@@ -122,3 +122,12 @@
 2013-12-27 03:08:05.062 [error] emulator Bad input fd in erts_poll()! fd=16, port=#Port<0.10539>, driver=fd, name=16/16
 
 
+2014-02-11 12:26:27.518 [info] <0.7.0> Application lager started on node linc@den
+2014-02-11 12:26:27.532 [info] <0.7.0> Application enetconf started on node linc@den
+2014-02-11 12:26:27.546 [info] <0.7.0> Application linc started on node linc@den
+2014-02-11 12:26:27.570 [error] <0.106.0>@linc_us4_port_native:tap:72 Tuncer error {{badmatch,{error,eperm}},[{tuncer,init,1,[{file,"/home/mk/lincx/deps/tunctl/src/tuncer.erl"},{line,155}]},{gen_server,init_it,6,[{file,"gen_server.erl"},{line,304}]},{proc_lib,init_p_do_apply,3,[{file,"proc_lib.erl"},{line,239}]}]} for interface "tap-linc-port1"
+2014-02-11 12:26:27.570 [error] <0.107.0> CRASH REPORT Process <0.107.0> with 0 neighbours exited with reason: no match of right hand value {error,eperm} in tuncer:init/1 line 155 in gen_server:init_it/6 line 328
+2014-02-11 12:26:27.831 [error] <0.101.0>@linc_us4_port:add:575 Cannot create port {port,1,[{queues_status,disabled},{queues,[]},{config,{port_configuration,undefined,up,false,false,false}},{features,{features,undefined,'100Mb-FD',true,copper,unsupported}},{interface,"tap-linc-port1"}]}
+2014-02-11 12:26:27.947 [error] <0.113.0> CRASH REPORT Process <0.113.0> with 0 neighbours exited with reason: no match of right hand value {error,eperm} in tuncer:init/1 line 155 in gen_server:init_it/6 line 328
+2014-02-11 12:26:27.946 [error] <0.112.0>@linc_us4_port_native:tap:72 Tuncer error {{badmatch,{error,eperm}},[{tuncer,init,1,[{file,"/home/mk/lincx/deps/tunctl/src/tuncer.erl"},{line,155}]},{gen_server,init_it,6,[{file,"gen_server.erl"},{line,304}]},{proc_lib,init_p_do_apply,3,[{file,"proc_lib.erl"},{line,239}]}]} for interface "tap-linc-port2"
+2014-02-11 12:26:28.053 [error] <0.101.0>@linc_us4_port:add:575 Cannot create port {port,2,[{queues_status,disabled},{queues,[]},{config,{port_configuration,undefined,up,false,false,false}},{features,{features,undefined,'100Mb-FD',true,copper,unsupported}},{interface,"tap-linc-port2"}]}

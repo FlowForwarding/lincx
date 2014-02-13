@@ -142,7 +142,7 @@ VM statistics after 24 hours of testing:
  {ets,32768}]
 ```
 
-The lincx domain had 1G of RAM. 296M of it is in use.
+The lincx domain had 1G of RAM. 74M of it is in use.
 
 ```
 > i().
