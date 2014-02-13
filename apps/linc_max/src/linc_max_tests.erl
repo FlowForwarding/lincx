@@ -1,10 +1,65 @@
+%%
+%%
+%%
+
+%% @author Cloudozer, LLP. <info@cloudozer.com>
+%% @copyright 2014 FlowForwarding.org
 -module(linc_max_tests).
--export([all/0]).
 
 %% mock flow table interface
 -export([match/23]).
 
+-include_lib("eunit/include/eunit.hrl").
+-include_lib("pkt/include/pkt.hrl").
 -include("linc_max.hrl").
+
+port_info_test_() ->
+	AnyFrame = pkt:encapsulate([#ether{},#ipv4{},#udp{}]),
+	AnyMeta = <<0:64>>,
+
+	[fun() ->
+		PortInfo = {InPort,InPhyPort,TunnelId},
+		Ms = linc_max_preparser:inject(AnyFrame, AnyMeta, PortInfo,
+									  #actions{}, ?MODULE),
+		present(Present, Ms),
+		absent(Absent, Ms)
+	 end
+		|| {InPort,InPhyPort,TunnelId,Present,Absent} <-
+
+		[{42,undefined,undefined,[{in_port,42}],[in_phy_port,tunnel_id]},
+		 {1,42,undefined,[{in_phy_port,42}],[tunnel_id]},
+		 {undefined,undefined,undefined,[],[in_port,in_phy_port,tunnel_id]},
+		 {1,1,<<42:64>>,[{tunnel_id,<<42:64>>}],[]}]].
+
+metadata_test() ->
+	AnyFrame = pkt:encapsulate([#ether{},#ipv4{},#udp{}]),
+	AnyPortInfo = {1,1,undefined},
+	Ms = linc_max_preparser:inject(AnyFrame, <<42:64>>, AnyPortInfo,
+								  #actions{}, ?MODULE),
+	present([{metadata,<<42:64>>}], Ms).
+
+fields_test_() ->
+	[].
+
+%%TODO
+
+%% Utils -----------------------------------------------------------------------
+
+present(Present, Ms) ->
+	lists:foreach(fun(S) when is_atom(S) ->
+		true = lists:keymember(S, Ms);
+	(S) ->
+		true = lists:member(S, Ms)
+	end, Present).
+
+absent(Absent, Ms) ->
+	lists:foreach(fun(S) when is_atom(S) ->
+		false = lists:keymember(S, 1, Ms);
+	(S) ->
+		false = lists:member(S, Ms)
+	end, Absent).
+
+%% Mock flow table -------------------------------------------------------------
 
 match(_ = _Packet,
       _ = VlanTag,
@@ -24,10 +79,10 @@ match(_ = _Packet,
       _ = TcpHdr,
       _ = UdpHdr,
       _ = SctpHdr,
-      _ = _Metadata,
-      _ = _InPort,
-      _ = _InPhyPort,
-      _ = _TunnelId,
+      _ = Metadata,
+      _ = InPort,
+      _ = InPhyPort,
+      _ = TunnelId,
       _ = _Actions) ->
 	Hdrs = 
 		[{vlan_tag,VlanTag},
@@ -46,17 +101,12 @@ match(_ = _Packet,
 		 {icmp6_tll,Icmp6OptTll},
 		 {tcp_hdr,TcpHdr},
 		 {udp_hdr,UdpHdr},
-		 {sctp_hdr,SctpHdr}],
+		 {sctp_hdr,SctpHdr},
+		 {metadata,Metadata},
+		 {in_port,InPort},
+		 {in_phy_port,InPhyPort},
+		 {tunnel_id,TunnelId}],
 
 	lists:filter(fun({_,V}) -> V =/= undefined end, Hdrs).
-
-all() ->
-	Frame = <<224,105,149,59,163,24,0,22,182,181,62,198,8,0,69,0,0,54,2,108,64,
-          0,53,6,172,243,173,192,82,195,192,168,213,54,0,80,143,166,75,154,
-          212,181,116,33,53,92,128,24,0,126,60,199,0,0,1,1,8,10,92,104,96,
-          16,22,69,237,136,137,0>>,
-
-	linc_max_preparser:inject(Frame,
-			0, {1,10,<<0:64>>}, #actions{}, linc_max_tests).
 
 %%EOF

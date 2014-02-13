@@ -260,3 +260,13 @@ PL (from) = 4.93 +/- 1.32 us (95%)
 
 The compilation of a fairly complex flow table (test3.tab) now takes 344ms.
 
+----[14/02/2014 00:48]----------------------------------------------------------
+
+Let us add unit tests to the packet preparser.
+
+The spec demands that match on IN_PHY_PORT is only possible if IN_PORT is
+present. Let other module suppress the physical port info information before
+calling linc_max:inject(). This is *not checked* by the preparser.
+
+
+
