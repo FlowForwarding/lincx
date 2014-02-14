@@ -26,10 +26,10 @@ port_info_test_() ->
 	 end
 		|| {InPort,InPhyPort,TunnelId,Present,Absent} <-
 
-		[{42,undefined,undefined,[{in_port,42}],[in_phy_port,tunnel_id]},
-		 {1,42,undefined,[{in_phy_port,42}],[tunnel_id]},
-		 {undefined,undefined,undefined,[],[in_port,in_phy_port,tunnel_id]},
-		 {1,1,<<42:64>>,[{tunnel_id,<<42:64>>}],[]}]].
+	[{42,undefined,undefined,[{in_port,42}],[in_phy_port,tunnel_id]},
+	 {1,42,undefined,[{in_phy_port,42}],[tunnel_id]},
+	 {undefined,undefined,undefined,[],[in_port,in_phy_port,tunnel_id]},
+	 {1,1,<<42:64>>,[{tunnel_id,<<42:64>>}],[]}]].
 
 metadata_test() ->
 	AnyFrame = pkt:encapsulate([#ether{},#ipv4{},#udp{}]),
@@ -39,15 +39,97 @@ metadata_test() ->
 	present([{metadata,<<42:64>>}], Ms).
 
 fields_test_() ->
-	[].
+	AnyMeta = <<0:64>>,
+	AnyPortInfo = {1,1,undefined},
+	Ipv6 = #ipv6{saddr = <<0:128>>,daddr = <<0:128>>},
+	Mac = <<1,2,3,4,5,6>>,
 
-%%TODO
+	[fun() ->
+		Frame = pkt:encapsulate(Pkt),
+		io:format("~p: ~p\n", [Present,Frame]),
+		Ms = linc_max_preparser:inject(Frame, AnyMeta, AnyPortInfo,
+									  #actions{}, ?MODULE),
+		present(Present, Ms),
+		absent(Absent, Ms)
+	 end
+		|| {Pkt,Present,Absent} <-
+
+	[{[#ether{},#ipv4{},#udp{}],
+			[{eth_type,16#800}],[]},
+	 {[#ether{},Ipv6,#udp{}],
+			[{eth_type,16#86dd}],[]},
+
+	 %% Ethernet type of the OpenFlow packet payload, after VLAN tags.
+	 {[#ether{},#ieee802_1q_tag{},#ipv4{},#udp{}],
+			[{eth_type,16#800}],[]},
+
+	 %% pcp:3 cfi:1 vid:12
+	 {[#ether{},#ieee802_1q_tag{pcp =5,cfi =0,vid = <<42:12>>},#ipv4{},#udp{}],
+			[{vlan_tag,<<5:3,0:1,42:12>>}],[]},
+	 {[#ether{},#ipv4{},#udp{}],
+			[],[ieee802_1q_tag]},
+
+	 %% dscp:6 ecn:2
+	 {[#ether{},#ipv4{dscp =42,ecn =2},#udp{}],
+			[{ip_tclass,<<42:6,2:2>>}],[]},
+	 {[#ether{},Ipv6#ipv6{class =126},#udp{}],
+			[{ip_tclass,<<126>>}],[]},
+	 {[#ether{},#arp{}],
+			[],[ip_tclass]},
+
+	 %% IP protocol numbers
+	 {[#ether{},#ipv4{},#tcp{}],
+			[{ip_proto,6}],[]},
+	 {[#ether{},#ipv4{},#udp{}],
+			[{ip_proto,17}],[]},
+	 {[#ether{},Ipv6,#tcp{}],
+			[{ip_proto,6}],[]},
+	 {[#ether{},Ipv6,#udp{}],
+			[{ip_proto,17}],[]},
+	 {[#ether{},#arp{}],
+			[],[ip_proto]},
+
+	 %% IPv4/IPv6 headers
+	 {[#ether{},#ipv4{},#udp{}],
+			[ip4_hdr],[ip6_hdr]},
+	 {[#ether{},Ipv6,#udp{}],
+			[ip6_hdr],[ip4_hdr]},
+	 {[#ether{},#arp{}],
+			[],[ip4_hdr,ip6_hdr]},
+
+	 %% TCP/UDP/SCTP headers
+	 {[#ether{},#ipv4{},#tcp{}],
+			[tcp_hdr],[udp_hdr,sctp_hdr]},
+	 {[#ether{},#ipv4{},#udp{}],
+			[udp_hdr],[tcp_hdr,sctp_hdr]},
+	 {[#ether{},#ipv4{},#sctp{}],
+			[sctp_hdr],[tcp_hdr,udp_hdr]},
+
+	 %% ICMPv4/ICMPv6/ARP
+	 {[#ether{},#ipv4{},#icmp{}],
+			[icmp_msg],[icmp6_hdr,arp_msg]},
+	 {[#ether{},#ipv4{},#icmpv6{}],
+			[icmp6_hdr],[icmp_msg,arp_msg]},
+	 {[#ether{},#arp{}],
+			[arp_msg],[icmp_msg,icmp6_hdr]},
+
+	 %% ICMPv6 NDP
+	 {[#ether{},#ipv4{},#icmpv6{type=135},#ndp_ns{sll =Mac}],
+			[{icmp6_sll,Mac}],[icmp6_tll]},
+	 {[#ether{},#ipv4{},#icmpv6{type=136},#ndp_na{tll =Mac}],
+			[{icmp6_tll,Mac}],[icmp6_sll]},
+	 {[#ether{},#ipv4{},#icmpv6{}],
+			[],[icmp6_sll,icmp6_tll]}
+
+	%%TODO: MPLS, etc
+
+]].
 
 %% Utils -----------------------------------------------------------------------
 
 present(Present, Ms) ->
 	lists:foreach(fun(S) when is_atom(S) ->
-		true = lists:keymember(S, Ms);
+		true = lists:keymember(S, 1, Ms);
 	(S) ->
 		true = lists:member(S, Ms)
 	end, Present).

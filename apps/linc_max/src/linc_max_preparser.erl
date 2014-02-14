@@ -227,8 +227,8 @@ eth(Packet, VlanTag, EthType, PbbTag, MplsTag,
 		Rest,		%% ArpMsg
 		undefined,	%% IcmpMsg
 		undefined,	%% Icmp6Hdr
-		undefined,	%% Icmp6OptSll
-		undefined,	%% Icmp6OptTll
+		undefined,	%% Icmp6Sll
+		undefined,	%% Icmp6Tll
 		undefined,	%% TcpHdr
 		undefined,	%% UdpHdr
 		undefined,	%% SctpHdr
@@ -251,7 +251,7 @@ ipv4(Packet, VlanTag, EthType, PbbTag, MplsTag,
 ipv4(Packet, VlanTag, EthType, PbbTag, MplsTag,
 		undefined = _Ip4Hdr, Ip6Hdr, Ip6Ext, IpTclass, IpProto,
 		Metadata, PortInfo, Actions, FlowTab,
-		<<4:4,IHL:4,IpTclass1,_Skip:7/binary,IpProto1,_/binary>> =IpHdrRest) ->
+		<<4:4,IHL:4,IpTclass1:1/binary,_Skip:7/binary,IpProto1,_/binary>> =IpHdrRest) ->
 		HdrLen = IHL *4,
 		<<Ip4Hdr:(HdrLen)/binary,Rest/binary>> = IpHdrRest,
 		proto(Packet, VlanTag, EthType, PbbTag, MplsTag,
@@ -272,7 +272,7 @@ ipv4(Packet, VlanTag, EthType, PbbTag, MplsTag,
 ipv6(Packet, VlanTag, EthType, PbbTag, MplsTag,
 		Ip4Hdr, undefined = _Ip6Hdr, _Ip6Ext, IpTclass, IpProto,
 		Metadata, PortInfo, Actions, FlowTab,
-		<<_:4,IpTclass1:1/binary,_/binary>> =HdrRest) ->
+		<<_:4,IpTclass1:1/binary,_/bits>> =HdrRest) ->
 		%% IPv6 header first seen
 		<<Ip6Hdr:40/binary,Rest/binary>> =HdrRest,
 		Next = binary:at(Ip6Hdr, 6),
@@ -356,8 +356,8 @@ ipv6_chain(Packet, VlanTag, EthType, PbbTag, MplsTag,
 		undefined,	%% ArpMsg
 		undefined,	%% IcmpMsg
 		undefined,	%% Icmp6Hdr
-		undefined,	%% Icmp6OptSll
-		undefined,	%% Icmp6OptTll
+		undefined,	%% Icmp6Sll
+		undefined,	%% Icmp6Tll
 		undefined,	%% TcpHdr
 		undefined,	%% UdpHdr
 		undefined,	%% SctpHdr
@@ -441,8 +441,8 @@ ipv6_skip(Packet, VlanTag, EthType, PbbTag, MplsTag,
 		undefined,	%% ArpMsg
 		undefined,	%% IcmpMsg
 		undefined,	%% Icmp6Hdr
-		undefined,	%% Icmp6OptSll
-		undefined,	%% Icmp6OptTll
+		undefined,	%% Icmp6Sll
+		undefined,	%% Icmp6Tll
 		undefined,	%% TcpHdr
 		undefined,	%% UdpHdr
 		undefined,	%% SctpHdr
@@ -494,8 +494,8 @@ proto(Packet, VlanTag, EthType, PbbTag, MplsTag,
 		undefined,	%% ArpMsg
 		IcmpMsg,	%% IcmpMsg
 		undefined,	%% Icmp6Hdr
-		undefined,	%% Icmp6OptSll
-		undefined,	%% Icmp6OptTll
+		undefined,	%% Icmp6Sll
+		undefined,	%% Icmp6Tll
 		undefined,	%% TcpHdr
 		undefined,	%% UdpHdr
 		undefined,	%% SctpHdr
@@ -530,8 +530,8 @@ proto(Packet, VlanTag, EthType, PbbTag, MplsTag,
 		undefined,	%% ArpMsg
 		undefined,	%% IcmpMsg
 		undefined,	%% Icmp6Hdr
-		undefined,	%% Icmp6OptSll
-		undefined,	%% Icmp6OptTll
+		undefined,	%% Icmp6Sll
+		undefined,	%% Icmp6Tll
 		TcpHdrLoad,	%% TcpHdr
 		undefined,	%% UdpHdr
 		undefined,	%% SctpHdr
@@ -558,8 +558,8 @@ proto(Packet, VlanTag, EthType, PbbTag, MplsTag,
 		undefined,	%% ArpMsg
 		undefined,	%% IcmpMsg
 		undefined,	%% Icmp6Hdr
-		undefined,	%% Icmp6OptSll
-		undefined,	%% Icmp6OptTll
+		undefined,	%% Icmp6Sll
+		undefined,	%% Icmp6Tll
 		undefined,	%% TcpHdr
 		UdpHdrLoad,	%% UdpHdr
 		undefined,	%% SctpHdr
@@ -586,8 +586,8 @@ proto(Packet, VlanTag, EthType, PbbTag, MplsTag,
 		undefined,	%% ArpMsg
 		undefined,	%% IcmpMsg
 		undefined,	%% Icmp6Hdr
-		undefined,	%% Icmp6OptSll
-		undefined,	%% Icmp6OptTll
+		undefined,	%% Icmp6Sll
+		undefined,	%% Icmp6Tll
 		undefined,	%% TcpHdr
 		undefined,	%% UdpHdr
 		SctpHdrLoad,%% SctpHdr
@@ -618,8 +618,8 @@ icmpv6(Packet, VlanTag, EthType, PbbTag, MplsTag,
 		undefined,	%% ArpMsg
 		undefined,	%% IcmpMsg
 		Icmp6Hdr,	%% Icmp6Hdr
-		Icmp6Sll,	%% Icmp6OptSll
-		undefined,	%% Icmp6OptTll
+		Icmp6Sll,	%% Icmp6Sll
+		undefined,	%% Icmp6Tll
 		undefined,	%% TcpHdr
 		undefined,	%% UdpHdr
 		undefined,	%% SctpHdr
@@ -647,8 +647,8 @@ icmpv6(Packet, VlanTag, EthType, PbbTag, MplsTag,
 		undefined,	%% ArpMsg
 		undefined,	%% IcmpMsg
 		Icmp6Hdr,	%% Icmp6Hdr
-		undefined,	%% Icmp6OptSll
-		Icmp6Tll,	%% Icmp6OptTll
+		undefined,	%% Icmp6Sll
+		Icmp6Tll,	%% Icmp6Tll
 		undefined,	%% TcpHdr
 		undefined,	%% UdpHdr
 		undefined,	%% SctpHdr
@@ -661,7 +661,7 @@ icmpv6(Packet, VlanTag, EthType, PbbTag, MplsTag,
 	Ip4Hdr, Ip6Hdr, Ip6Ext, IpTclass, IpProto,
 	Metadata, {InPort,InPhyPort,TunnelId} = _PortInfo, Actions, FlowTab,
 	Icmp6Hdr) ->
-	%% ICMPv6 NDP frame
+	%% ICMPv6 frame
 	FlowTab:match(Packet,
 		VlanTag,
 		EthType,
@@ -675,8 +675,8 @@ icmpv6(Packet, VlanTag, EthType, PbbTag, MplsTag,
 		undefined,	%% ArpMsg
 		undefined,	%% IcmpMsg
 		Icmp6Hdr,	%% Icmp6Hdr
-		undefined,	%% Icmp6OptSll
-		undefined,	%% Icmp6OptTll
+		undefined,	%% Icmp6Sll
+		undefined,	%% Icmp6Tll
 		undefined,	%% TcpHdr
 		undefined,	%% UdpHdr
 		undefined,	%% SctpHdr
