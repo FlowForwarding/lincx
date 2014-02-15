@@ -2,6 +2,8 @@
 -export([update_flow_table/2]).
 -export([flow_table_forms/2]).
 
+-include("linc_max.hrl").
+
 -define(ETH_P_IP,			16#0800).
 -define(ETH_P_ARP,			16#0806).
 -define(ETH_P_IPV6,			16#86dd).
@@ -9,16 +11,10 @@
 -define(VLAN_VID_NONE,		16#0000).
 -define(VLAN_VID_PRESENT,	16#1000).
 
--record(instr, {meter,
-				apply,
-				clear_write,
-				metadata,
-				goto}).
-
 update_flow_table(TabName, FlowEnts) ->
 	{ok,Forms} = flow_table_forms(TabName, FlowEnts),
 
-	{ok,TabName,Bin} = compile:forms(Forms, []),
+	{ok,TabName,Bin} = compile:forms(Forms, [report_errors]),
 
 	case erlang:check_old_code(TabName) of
 	true ->

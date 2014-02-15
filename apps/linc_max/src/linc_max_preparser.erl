@@ -136,7 +136,7 @@ eth(Packet, VlanTag, EthType, PbbTag, MplsTag,
 eth(Packet, VlanTag, EthType, undefined = _PbbTag, MplsTag,
 	Ip4Hdr, Ip6Hdr, Ip6Ext, IpTclass, IpProto,
 	Metadata, PortInfo, Actions, FlowTab,
-	<<?ETH_P_PBB_I:16,PbbTag:4/binary,_Skip:(6+6+4+4)/binary,Rest/binary>>) ->
+	<<?ETH_P_PBB_I:16,PbbTag:4/binary,_Skip:(6+6)/binary,Rest/binary>>) ->
 	%% 802.1ah frame, keep I-TAG
 	eth(Packet, VlanTag, up(EthType, ?ETH_P_PBB_I), PbbTag, MplsTag,
 		Ip4Hdr, Ip6Hdr, Ip6Ext, IpTclass, IpProto,
@@ -145,7 +145,7 @@ eth(Packet, VlanTag, EthType, undefined = _PbbTag, MplsTag,
 eth(Packet, VlanTag, EthType, PbbTag, MplsTag,
 	Ip4Hdr, Ip6Hdr, Ip6Ext, IpTclass, IpProto,
 	Metadata, PortInfo, Actions, FlowTab,
-	<<?ETH_P_PBB_I:16,_Skip:(4+6+6+4+4)/binary,Rest/binary>>) ->
+	<<?ETH_P_PBB_I:16,_Skip:(4+6+6)/binary,Rest/binary>>) ->
 	%% 802.1ah frame, skip
 	eth(Packet, VlanTag, up(EthType, ?ETH_P_PBB_I), PbbTag, MplsTag,
 		Ip4Hdr, Ip6Hdr, Ip6Ext, IpTclass, IpProto,
@@ -154,12 +154,15 @@ eth(Packet, VlanTag, EthType, PbbTag, MplsTag,
 
 %% http://en.wikipedia.org/wiki/Multiprotocol_Label_Switching
 
+%%
+%% MPLS encapsulates IP datagrams only (no eth_type)?
+%% 
 eth(Packet, VlanTag, EthType, PbbTag, undefined = _MplsTag,
 	Ip4Hdr, Ip6Hdr, Ip6Ext, IpTclass, IpProto,
 	Metadata, PortInfo, Actions, FlowTab,
 	<<?ETH_P_MPLS_UNI:16,MplsTag:4/binary,Rest/binary>>) ->
 	%% MPLS unicast frame, keep
-	eth(Packet, VlanTag, up(EthType, ?ETH_P_MPLS_UNI), PbbTag, MplsTag,
+	ip(Packet, VlanTag, up(EthType, ?ETH_P_MPLS_UNI), PbbTag, MplsTag,
 		Ip4Hdr, Ip6Hdr, Ip6Ext, IpTclass, IpProto,
 		Metadata, PortInfo, Actions, FlowTab,
 		Rest);
@@ -168,7 +171,7 @@ eth(Packet, VlanTag, EthType, PbbTag, MplsTag,
 	Metadata, PortInfo, Actions, FlowTab,
 	<<?ETH_P_MPLS_UNI:16,_SkipTag:4/binary,Rest/binary>>) ->
 	%% MPLS unicast frame, skip
-	eth(Packet, VlanTag, up(EthType, ?ETH_P_MPLS_UNI), PbbTag, MplsTag,
+	ip(Packet, VlanTag, up(EthType, ?ETH_P_MPLS_UNI), PbbTag, MplsTag,
 		Ip4Hdr, Ip6Hdr, Ip6Ext, IpTclass, IpProto,
 		Metadata, PortInfo, Actions, FlowTab,
 		Rest);
@@ -177,7 +180,7 @@ eth(Packet, VlanTag, EthType, PbbTag, undefined = _MplsTag,
 	Metadata, PortInfo, Actions, FlowTab,
 	<<?ETH_P_MPLS_MULTI:16,MplsTag:4/binary,Rest/binary>>) ->
 	%% MPLS multicast frame, keep
-	eth(Packet, VlanTag, up(EthType, ?ETH_P_MPLS_MULTI), PbbTag, MplsTag,
+	ip(Packet, VlanTag, up(EthType, ?ETH_P_MPLS_MULTI), PbbTag, MplsTag,
 		Ip4Hdr, Ip6Hdr, Ip6Ext, IpTclass, IpProto,
 		Metadata, PortInfo, Actions, FlowTab,
 		Rest);
@@ -186,7 +189,7 @@ eth(Packet, VlanTag, EthType, PbbTag, MplsTag,
 	Metadata, PortInfo, Actions, FlowTab,
 	<<?ETH_P_MPLS_MULTI:16,_SkipTag:4/binary,Rest/binary>>) ->
 	%% MPLS multicast frame, skip
-	eth(Packet, VlanTag, up(EthType, ?ETH_P_MPLS_MULTI), PbbTag, MplsTag,
+	ip(Packet, VlanTag, up(EthType, ?ETH_P_MPLS_MULTI), PbbTag, MplsTag,
 		Ip4Hdr, Ip6Hdr, Ip6Ext, IpTclass, IpProto,
 		Metadata, PortInfo, Actions, FlowTab,
 		Rest);
@@ -238,6 +241,24 @@ eth(Packet, VlanTag, EthType, PbbTag, MplsTag,
 		TunnelId,
 		Actions).
 
+%% IPv4 of IPv6 - MPLS only
+ip(Packet, VlanTag, EthType, PbbTag, MplsTag,
+		Ip4Hdr, Ip6Hdr, Ip6Ext, IpTclass, IpProto,
+		Metadata, PortInfo, Actions, FlowTab,
+		<<4:4,_/bits>> =Rest) ->
+		ipv4(Packet, VlanTag, EthType, PbbTag, MplsTag,
+			Ip4Hdr, Ip6Hdr, Ip6Ext, IpTclass, IpProto,
+			Metadata, PortInfo, Actions, FlowTab,
+			Rest);
+ip(Packet, VlanTag, EthType, PbbTag, MplsTag,
+		Ip4Hdr, Ip6Hdr, Ip6Ext, IpTclass, IpProto,
+		Metadata, PortInfo, Actions, FlowTab,
+		<<6:4,_/bits>> =Rest) ->
+		ipv6(Packet, VlanTag, EthType, PbbTag, MplsTag,
+			Ip4Hdr, Ip6Hdr, Ip6Ext, IpTclass, IpProto,
+			Metadata, PortInfo, Actions, FlowTab,
+			Rest).
+
 ipv4(Packet, VlanTag, EthType, PbbTag, MplsTag,
 		undefined = _Ip4Hdr, Ip6Hdr, Ip6Ext, IpTclass, IpProto,
 		Metadata, PortInfo, Actions, FlowTab,
@@ -277,7 +298,7 @@ ipv6(Packet, VlanTag, EthType, PbbTag, MplsTag,
 		<<Ip6Hdr:40/binary,Rest/binary>> =HdrRest,
 		Next = binary:at(Ip6Hdr, 6),
 		ipv6_chain(Packet, VlanTag, EthType, PbbTag, MplsTag,
-			Ip4Hdr, Ip6Hdr, ?IPV6_EXT_NONEXT, up(IpTclass, IpTclass1), IpProto,
+			Ip4Hdr, Ip6Hdr, 0, up(IpTclass, IpTclass1), IpProto,
 			Metadata, PortInfo, Actions, FlowTab,
 			Next, Rest);
 ipv6(Packet, VlanTag, EthType, PbbTag, MplsTag,
@@ -350,7 +371,7 @@ ipv6_chain(Packet, VlanTag, EthType, PbbTag, MplsTag,
 		MplsTag,
 		Ip4Hdr,
 		Ip6Hdr,
-		bin16(Ip6Ext),
+		bin16(ext_flags(Ip6Ext, Q)),
 		IpTclass,
 		up(IpProto, Q),
 		undefined,	%% ArpMsg
@@ -709,50 +730,51 @@ icmpv6_opt(OptType, <<_,Len,Rest/binary>>) ->
 %%   Destination Options header
 %%
 
-%% reset IPV6_EXT_NONEXT flag
 %% set IPV6_EXT_UNREP flag if repeated
 %% set IPV6_EXT_UNSEQ flag if out of order
-ext_flags(Ip6Ext, ?IPV6_EXT_HOP) ->
-	Ip6Ext band (bnot ?IPV6_EXT_NONEXT)
-		bor ?IPV6_EXT_HOP
+ext_flags(Ip6Ext, ?IPV6_HDR_NONEXT) ->
+	%% NB: order or repeatition not checked
+	Ip6Ext bor ?IPV6_EXT_NONEXT;
+ext_flags(Ip6Ext, ?IPV6_HDR_HOP) ->
+	Ip6Ext bor ?IPV6_EXT_HOP
 		bor repeated(Ip6Ext, ?IPV6_EXT_HOP)
-		bor out_of_order(Ip6Ext, 0);
-ext_flags(Ip6Ext, ?IPV6_EXT_DEST) ->
+		bor out_of_order(Ip6Ext, ?IPV6_EXT_HOP);
+ext_flags(Ip6Ext, ?IPV6_HDR_DEST) ->
 	%% Destination Options header can be repeated
 	%% NB: order not checked strictly
-	Ip6Ext band (bnot ?IPV6_EXT_NONEXT)
-		bor ?IPV6_EXT_HOP;
-ext_flags(Ip6Ext, ?IPV6_EXT_ROUTER) ->
-	Ip6Ext band (bnot ?IPV6_EXT_NONEXT)
-		bor ?IPV6_EXT_ROUTER
+	Ip6Ext bor ?IPV6_EXT_DEST;
+ext_flags(Ip6Ext, ?IPV6_HDR_ROUTER) ->
+	Ip6Ext bor ?IPV6_EXT_ROUTER
 		bor repeated(Ip6Ext, ?IPV6_EXT_ROUTER)
-		bor out_of_order(Ip6Ext, ?IPV6_EXT_HOP bor
-								 ?IPV6_EXT_DEST);
-ext_flags(Ip6Ext, ?IPV6_EXT_FRAG) ->
-	Ip6Ext band (bnot ?IPV6_EXT_NONEXT)
-		bor ?IPV6_EXT_FRAG
-		bor repeated(Ip6Ext, ?IPV6_EXT_FRAG)
 		bor out_of_order(Ip6Ext, ?IPV6_EXT_HOP bor
 								 ?IPV6_EXT_DEST bor
 								 ?IPV6_EXT_ROUTER);
-ext_flags(Ip6Ext, ?IPV6_EXT_AUTH) ->
-	Ip6Ext band (bnot ?IPV6_EXT_NONEXT)
-		bor ?IPV6_EXT_AUTH
-		bor repeated(Ip6Ext, ?IPV6_EXT_AUTH)
+ext_flags(Ip6Ext, ?IPV6_HDR_FRAG) ->
+	Ip6Ext bor ?IPV6_EXT_FRAG
+		bor repeated(Ip6Ext, ?IPV6_EXT_FRAG)
 		bor out_of_order(Ip6Ext, ?IPV6_EXT_HOP bor
 								 ?IPV6_EXT_DEST bor
 								 ?IPV6_EXT_ROUTER bor
 								 ?IPV6_EXT_FRAG);
-ext_flags(Ip6Ext, ?IPV6_EXT_ESP) ->
-	Ip6Ext band (bnot ?IPV6_EXT_NONEXT)
-		bor ?IPV6_EXT_ESP
+ext_flags(Ip6Ext, ?IPV6_HDR_AUTH) ->
+	Ip6Ext bor ?IPV6_EXT_AUTH
+		bor repeated(Ip6Ext, ?IPV6_EXT_AUTH)
+		bor out_of_order(Ip6Ext, ?IPV6_EXT_HOP bor
+								 ?IPV6_EXT_DEST bor
+								 ?IPV6_EXT_ROUTER bor
+								 ?IPV6_EXT_FRAG bor
+								 ?IPV6_EXT_AUTH);
+ext_flags(Ip6Ext, ?IPV6_HDR_ESP) ->
+	Ip6Ext bor ?IPV6_EXT_ESP
 		bor repeated(Ip6Ext, ?IPV6_EXT_ESP).
 
 repeated(Ip6Ext, Mask) when Ip6Ext band Mask =/= 0 -> ?IPV6_EXT_UNREP;
 repeated(_Ip6Ext, _Mask) -> 0.
 
 out_of_order(Ip6Ext, Mask)
-	when Ip6Ext band (bnot Mask) band (bnot ?IPV6_EXT_NONEXT) =/= 0 -> ?IPV6_EXT_UNSEQ;
+	when Ip6Ext band (bnot Mask)
+				band (bnot ?IPV6_EXT_UNREP)
+				band (bnot ?IPV6_EXT_UNSEQ) =/= 0 -> ?IPV6_EXT_UNSEQ;
 out_of_order(_Ip6Ext, _Mask) -> 0.
 
 up(undefined, New) -> New;

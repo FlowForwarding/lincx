@@ -4,7 +4,7 @@
 
 %% @author Cloudozer, LLP. <info@cloudozer.com>
 %% @copyright 2014 FlowForwarding.org
--module(linc_max_tests).
+-module(linc_max_preparser_tests).
 
 %% mock flow table interface
 -export([match/23]).
@@ -26,10 +26,14 @@ port_info_test_() ->
 	 end
 		|| {InPort,InPhyPort,TunnelId,Present,Absent} <-
 
-	[{42,undefined,undefined,[{in_port,42}],[in_phy_port,tunnel_id]},
-	 {1,42,undefined,[{in_phy_port,42}],[tunnel_id]},
-	 {undefined,undefined,undefined,[],[in_port,in_phy_port,tunnel_id]},
-	 {1,1,<<42:64>>,[{tunnel_id,<<42:64>>}],[]}]].
+	[{42,undefined,undefined,
+			[{in_port,42}],[in_phy_port,tunnel_id]},
+	 {1,42,undefined,
+			[{in_phy_port,42}],[tunnel_id]},
+	 {undefined,undefined,undefined,
+			[],[in_port,in_phy_port,tunnel_id]},
+	 {1,1,<<42:64>>,
+			[{tunnel_id,<<42:64>>}],[]}]].
 
 metadata_test() ->
 	AnyFrame = pkt:encapsulate([#ether{},#ipv4{},#udp{}]),
@@ -119,11 +123,76 @@ fields_test_() ->
 	 {[#ether{},#ipv4{},#icmpv6{type=136},#ndp_na{tll =Mac}],
 			[{icmp6_tll,Mac}],[icmp6_sll]},
 	 {[#ether{},#ipv4{},#icmpv6{}],
-			[],[icmp6_sll,icmp6_tll]}
+			[],[icmp6_sll,icmp6_tll]},
 
-	%%TODO: MPLS, etc
+	 %% MPLS
+	 {[#ether{},#mpls_tag{},#ipv4{},#udp{}],
+			[mpls_tag],[]},
+	 {[#ether{},#ipv4{},#udp{}],
+			[],[mpls_tag]},
 
-]].
+	 %% PBB
+	 {[#pbb{},#ether{},#ipv4{},#udp{}],
+			[pbb_tag],[]},
+	 {[#ether{},#ipv4{},#udp{}],
+			[],[pbb_tag]} ]].
+
+exthdr_test_() ->
+	AnyMeta = <<0:64>>,
+	Ipv6 = #ipv6{saddr = <<0:128>>,daddr = <<0:128>>},
+	AnyPortInfo = {1,1,undefined},
+
+	AnyOpt = <<1,2,3,4,5,6>>,	%% size matters
+	%%H0 = #ipv6_header{type=ipv6_hdr_no_next,content= AnyOpt},
+	H3 = #ipv6_header{type= ipv6_hdr_dest_opts,content= AnyOpt},
+	H4 = #ipv6_header{type= ipv6_hdr_fragments,content= AnyOpt},
+	H5 = #ipv6_header{type= ipv6_hdr_routing,content= AnyOpt},
+	H6 = #ipv6_header{type= ipv6_hdr_hop_by_hop,content= AnyOpt},
+
+	[fun() ->
+		Frame = pkt:encapsulate(Pkt),
+		io:format("Frame = ~p\n", [Frame]),
+		Ms = linc_max_preparser:inject(Frame, AnyMeta, AnyPortInfo,
+									  #actions{}, ?MODULE),
+		io:format("Ms = ~p\n", [Ms]),
+		io:format("Present/Absent = ~p/~p\n", [Present,Absent]),
+		present(Present, Ms),
+		absent(Absent, Ms)
+	 end
+		|| {Pkt,Present,Absent} <-
+
+	[{[#ether{},Ipv6#ipv6{next =59}],
+			[{ip6_ext,<<0:15,1:1>>}],[]},
+	 {[#ether{},Ipv6,H3,#udp{}],
+			[{ip6_ext,<<0:12,1:1,0:3>>}],[]},
+	 {[#ether{},Ipv6,H4,#udp{}],
+			[{ip6_ext,<<0:11,1:1,0:4>>}],[]},
+	 {[#ether{},Ipv6,H5,#udp{}],
+			[{ip6_ext,<<0:10,1:1,0:5>>}],[]},
+	 {[#ether{},Ipv6,H6,#udp{}],
+			[{ip6_ext,<<0:9,1:1,0:6>>}],[]},
+
+	 %% multiple IPv6 headers
+	 {[#ether{},Ipv6,H6,H5,#udp{}],
+			[{ip6_ext,<<0:9,3:2,0:5>>}],[]},
+	 {[#ether{},Ipv6,H3,H5,#udp{}],
+			[{ip6_ext,<<0:10,1:1,0:1,1:1,0:3>>}],[]},
+
+	 %% repeated opts
+	 {[#ether{},Ipv6,H4,H4,#udp{}],
+			[{ip6_ext,<<0:8,1:1,0:2,1:1,0:4>>}],[]},
+	 {[#ether{},Ipv6,H5,H5,#udp{}],
+			[{ip6_ext,<<0:8,1:1,0:1,1:1,0:5>>}],[]},
+	 {[#ether{},Ipv6,H6,H6,#udp{}],
+			[{ip6_ext,<<0:8,1:1,1:1,0:6>>}],[]},
+
+	 %% out-of-order opts (H6 H5 H4)
+	 {[#ether{},Ipv6,H5,H6,#udp{}],
+			[{ip6_ext,<<0:7,1:1,0:1,3:2,0:5>>}],[]},
+	 {[#ether{},Ipv6,H4,H5,#udp{}],
+			[{ip6_ext,<<0:7,1:1,0:2,3:2,0:4>>}],[]},
+	 {[#ether{},Ipv6,H4,H6,#udp{}],
+			[{ip6_ext,<<0:7,1:1,0:1,1:1,0:1,1:1,0:4>>}],[]} ]].
 
 %% Utils -----------------------------------------------------------------------
 

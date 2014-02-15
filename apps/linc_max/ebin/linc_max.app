@@ -12,6 +12,7 @@
                     {serial_number,<<"Dummy">>},
                     {datapath_desc,<<"Dummy">>}]},
               {modules,[linc_max_preparser,
+						linc_max_preparser_tests,
 						linc_max_generator,
-						linc_max_tests,
+						linc_max_generator_tests,
 						linc_max]}]}.
