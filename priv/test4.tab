@@ -1,4 +1,4 @@
 
-{flow,[{in_port,1},{vlan_vid,16#1000,16#1000},{ip_proto,6},{ipv6_nd_target,123}],
+{flow,[{in_port,1},{icmpv4_type,3}],
       {instr,undefined,undefined,undefined,undefined,{goto,1}}}.
 

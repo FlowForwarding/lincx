@@ -50,8 +50,8 @@ clauses([{flow,Matches,Instr}|Ents], Acc) ->
 		%% no other field needs a guard
 		G = case lists:keymember(ipv6_nd_target, 1, Matches) of
 		true ->
-			[[{op,0,'=/=',{var,0,var_name(icmp6_sll)},{atom,0,none}}],
-             [{op,0,'=/=',{var,0,var_name(icmp6_tll)},{atom,0,none}}]];
+			[[{op,0,'=/=',{var,0,var_name(icmp6_sll)},{atom,0,undefined}}],
+             [{op,0,'=/=',{var,0,var_name(icmp6_tll)},{atom,0,undefined}}]];
 		false ->
 			[]
 		end,
@@ -80,8 +80,8 @@ build_patterns(Matches, Instr) ->
 			{var,0,'_'};
 		{_,[Value]} when is_integer(Value) ->
 			{integer,0,Value};
-		{_,[none]} ->
-			{atom,0,none};
+		{_,[undefined]} ->
+			{atom,0,undefined};
 		{_,Zs} ->
 			{bin,0,bin_elems(Zs)}
 		end,
@@ -257,7 +257,7 @@ spec({eth_src,Value,Mask}) ->
 spec({eth_type,Value}) ->
 	{eth_type,[Value]};
 spec({vlan_vid,?VLAN_VID_NONE,nomask}) ->
-	{vlan_tag,[none]};
+	{vlan_tag,[undefined]};
 spec({vlan_vid,?VLAN_VID_PRESENT,?VLAN_VID_PRESENT}) ->
 	{vlan_tag,[{0,0,0}]};
 spec({vlan_vid,Value,nomask}) ->
@@ -313,7 +313,7 @@ spec({icmpv6_code,Value}) ->
 spec({ipv6_nd_target,Value}) ->
 
 	%% ipv6_nd_target is the only field that uses guard in addition to the
-	%% pattern. The guard is icmp6_sll =/= none; icmp6_tll =/= none
+	%% pattern. The guard is icmp6_sll =/= undefined; icmp6_tll =/= undefined
 
 	masq(icmp6_hdr, 64, 128, Value, nomask);
 spec({ipv6_nd_sll,Value}) ->
