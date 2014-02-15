@@ -157,39 +157,23 @@ eth(Packet, VlanTag, EthType, PbbTag, MplsTag,
 %%
 %% MPLS encapsulates IP datagrams only (no eth_type)?
 %% 
-eth(Packet, VlanTag, EthType, PbbTag, undefined = _MplsTag,
+eth(Packet, VlanTag, EthType, PbbTag, _MplsTag,
 	Ip4Hdr, Ip6Hdr, Ip6Ext, IpTclass, IpProto,
 	Metadata, PortInfo, Actions, FlowTab,
-	<<?ETH_P_MPLS_UNI:16,MplsTag:4/binary,Rest/binary>>) ->
-	%% MPLS unicast frame, keep
-	ip(Packet, VlanTag, up(EthType, ?ETH_P_MPLS_UNI), PbbTag, MplsTag,
+	<<?ETH_P_MPLS_UNI:16,Rest/binary>>) ->
+	%% MPLS unicast frame
+	<<MplsTag:4/binary,_/binary>> =Rest,
+	mpls(Packet, VlanTag, up(EthType, ?ETH_P_MPLS_UNI), PbbTag, MplsTag,
 		Ip4Hdr, Ip6Hdr, Ip6Ext, IpTclass, IpProto,
 		Metadata, PortInfo, Actions, FlowTab,
 		Rest);
-eth(Packet, VlanTag, EthType, PbbTag, MplsTag,
+eth(Packet, VlanTag, EthType, PbbTag, _MplsTag,
 	Ip4Hdr, Ip6Hdr, Ip6Ext, IpTclass, IpProto,
 	Metadata, PortInfo, Actions, FlowTab,
-	<<?ETH_P_MPLS_UNI:16,_SkipTag:4/binary,Rest/binary>>) ->
-	%% MPLS unicast frame, skip
-	ip(Packet, VlanTag, up(EthType, ?ETH_P_MPLS_UNI), PbbTag, MplsTag,
-		Ip4Hdr, Ip6Hdr, Ip6Ext, IpTclass, IpProto,
-		Metadata, PortInfo, Actions, FlowTab,
-		Rest);
-eth(Packet, VlanTag, EthType, PbbTag, undefined = _MplsTag,
-	Ip4Hdr, Ip6Hdr, Ip6Ext, IpTclass, IpProto,
-	Metadata, PortInfo, Actions, FlowTab,
-	<<?ETH_P_MPLS_MULTI:16,MplsTag:4/binary,Rest/binary>>) ->
-	%% MPLS multicast frame, keep
-	ip(Packet, VlanTag, up(EthType, ?ETH_P_MPLS_MULTI), PbbTag, MplsTag,
-		Ip4Hdr, Ip6Hdr, Ip6Ext, IpTclass, IpProto,
-		Metadata, PortInfo, Actions, FlowTab,
-		Rest);
-eth(Packet, VlanTag, EthType, PbbTag, MplsTag,
-	Ip4Hdr, Ip6Hdr, Ip6Ext, IpTclass, IpProto,
-	Metadata, PortInfo, Actions, FlowTab,
-	<<?ETH_P_MPLS_MULTI:16,_SkipTag:4/binary,Rest/binary>>) ->
-	%% MPLS multicast frame, skip
-	ip(Packet, VlanTag, up(EthType, ?ETH_P_MPLS_MULTI), PbbTag, MplsTag,
+	<<?ETH_P_MPLS_MULTI:16,Rest/binary>>) ->
+	%% MPLS multicast frame
+	<<MplsTag:4/binary,_/binary>> =Rest,
+	mpls(Packet, VlanTag, up(EthType, ?ETH_P_MPLS_MULTI), PbbTag, MplsTag,
 		Ip4Hdr, Ip6Hdr, Ip6Ext, IpTclass, IpProto,
 		Metadata, PortInfo, Actions, FlowTab,
 		Rest);
@@ -241,20 +225,28 @@ eth(Packet, VlanTag, EthType, PbbTag, MplsTag,
 		TunnelId,
 		Actions).
 
-%% IPv4 of IPv6 - MPLS only
-ip(Packet, VlanTag, EthType, PbbTag, MplsTag,
+mpls(Packet, VlanTag, EthType, PbbTag, MplsTag,
 		Ip4Hdr, Ip6Hdr, Ip6Ext, IpTclass, IpProto,
 		Metadata, PortInfo, Actions, FlowTab,
-		<<4:4,_/bits>> =Rest) ->
-		ipv4(Packet, VlanTag, EthType, PbbTag, MplsTag,
-			Ip4Hdr, Ip6Hdr, Ip6Ext, IpTclass, IpProto,
-			Metadata, PortInfo, Actions, FlowTab,
-			Rest);
-ip(Packet, VlanTag, EthType, PbbTag, MplsTag,
+		<<_:23,1:1,_,Rest/binary>>) ->
+		%% bottom reached
+		case Rest of
+		<<4:4,_/bits>> ->
+			ipv4(Packet, VlanTag, EthType, PbbTag, MplsTag,
+				Ip4Hdr, Ip6Hdr, Ip6Ext, IpTclass, IpProto,
+				Metadata, PortInfo, Actions, FlowTab,
+				Rest);
+		<<6:4,_/bits>> ->
+			ipv6(Packet, VlanTag, EthType, PbbTag, MplsTag,
+				Ip4Hdr, Ip6Hdr, Ip6Ext, IpTclass, IpProto,
+				Metadata, PortInfo, Actions, FlowTab,
+				Rest)
+		end;
+mpls(Packet, VlanTag, EthType, PbbTag, MplsTag,
 		Ip4Hdr, Ip6Hdr, Ip6Ext, IpTclass, IpProto,
 		Metadata, PortInfo, Actions, FlowTab,
-		<<6:4,_/bits>> =Rest) ->
-		ipv6(Packet, VlanTag, EthType, PbbTag, MplsTag,
+		<<_SkipTag:4/binary,Rest/binary>>) ->
+		mpls(Packet, VlanTag, EthType, PbbTag, MplsTag,
 			Ip4Hdr, Ip6Hdr, Ip6Ext, IpTclass, IpProto,
 			Metadata, PortInfo, Actions, FlowTab,
 			Rest).

@@ -79,17 +79,28 @@ build_patterns(Matches, Instr) ->
 		false ->
 			{var,0,'_'};
 		{_,[Value]} when is_integer(Value) ->
-			{integer,0,Value};
+			value_pattern(Value, A);
 		{_,[undefined]} ->
 			{atom,0,undefined};
 		{_,Zs} ->
 			{bin,0,bin_elems(Zs)}
 		end,
 		if Instr#instr.goto =/= undefined;
-					A =:= actions; A =:= state ->
+					A =:= actions; A =:= icmp6_sll; A =:= icmp6_tll ->
 			{match,0,P,{var,0,var_name(A)}};
 				true -> P end
 	end, signature()).
+
+value_pattern(Value, icmp6_sll) ->
+	value_pattern_as_binary(Value, 48);
+value_pattern(Value, icmp6_tll) ->
+	value_pattern_as_binary(Value, 48);
+value_pattern(Value, _) ->
+	{integer,0,Value}.
+
+value_pattern_as_binary(Value, Bits) ->
+	Zs = [{0,Bits,Value}],
+	{bin,0,bin_elems(Zs)}.
 
 sort_zones([T|_] =Ts) when is_tuple(T) ->
 	lists:keysort(1, Ts);
@@ -287,7 +298,7 @@ spec({sctp_src,Value}) ->
 spec({sctp_dst,Value}) ->
 	masq(sctp_hdr, 16, 16, Value, nomask);
 spec({icmpv4_type,Value}) ->
-	masq(icmp_hdr, 0, 8, Value, nomask);
+	masq(icmp_msg, 0, 8, Value, nomask);
 spec({icmpv4_code,Value}) ->
 	masq(icmp_msg, 8, 8, Value, nomask);
 spec({arp_op,Value}) ->
@@ -297,7 +308,7 @@ spec({arp_spa,Value,Mask}) ->
 spec({arp_tpa,Value,Mask}) ->
 	masq(arp_msg, 192, 32, Value, Mask);
 spec({arp_sha,Value,Mask}) ->
-	masq(arp_msg, 48, 48, Value, Mask);
+	masq(arp_msg, 64, 48, Value, Mask);
 spec({arp_tha,Value,Mask}) ->
 	masq(arp_msg, 144, 48, Value, Mask);
 spec({ipv6_src,Value,Mask}) ->
@@ -361,7 +372,6 @@ sub_mask(N, L) ->
 	((1 bsl L) -1) bsl N.
 
 var_name(packet) -> 'Packet';
-var_name(actions) -> 'Actions';
 var_name(vlan_tag) -> 'VlanTag';
 var_name(eth_type) -> 'EthType';
 var_name(pbb_tag) -> 'PbbTag';
@@ -379,11 +389,11 @@ var_name(icmp_msg) -> 'IcmpMsg';
 var_name(tcp_hdr) -> 'TcpHdr';
 var_name(udp_hdr) -> 'UdpHdr';
 var_name(sctp_hdr) -> 'SctpHdr';
+var_name(metadata) -> 'Metadata';
 var_name(in_port) -> 'InPort';
 var_name(in_phy_port) -> 'InPhyPort';
-var_name(metadata) -> 'Metadata';
 var_name(tunnel_id) -> 'TunnelId';
-var_name(state) -> 'St'.
+var_name(actions) -> 'Actions'.
 
 signature() ->
 	[packet,

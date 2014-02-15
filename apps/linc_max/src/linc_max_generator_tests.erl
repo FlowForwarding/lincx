@@ -68,6 +68,41 @@ vlan_test_() ->
 	  ?_test(packet([#ether{},#ieee802_1q_tag{pcp =5},#ipv4{},#udp{}],
 			[{vlan_pcp,3}], miss)) ].
 
+pbb_test_() ->
+	[[?_test(packet([#pbb{i_sid =TVal},#ether{},#ipv4{},#udp{}],
+			[{pbb_isid,MVal,Mask}], Expected))
+		|| {MVal,Mask,TVal,Expected} <- masked(24)],
+	 ?_test(packet([#pbb{i_uca =1},#ether{},#ipv4{},#udp{}],
+			[{pbb_uca,1}], match)),
+	 ?_test(packet([#pbb{i_uca =1},#ether{},#ipv4{},#udp{}],
+			[{pbb_uca,0}], miss)) ].
+
+mpls_test_() ->
+	E0 = #mpls_stack_entry{label = <<1:20>>,qos =0,pri =1,ecn =0,bottom =1},
+	E1 = #mpls_stack_entry{label = <<42:20>>,bottom =0},
+	E2 = #mpls_stack_entry{label = <<126:20>>,bottom =1},
+
+	[?_test(packet([#ether{},#mpls_tag{stack =[E0]},#ipv4{},#udp{}],
+			[{mpls_label,1}], match)),
+	 ?_test(packet([#ether{},#mpls_tag{stack =[E0]},#ipv4{},#udp{}],
+			[{mpls_label,2}], miss)),
+	 ?_test(packet([#ether{},#mpls_tag{stack =[E1,E2]},#ipv4{},#udp{}],
+			[{mpls_label,42}], match)),
+	 ?_test(packet([#ether{},#mpls_tag{stack =[E1,E2]},#ipv4{},#udp{}],
+			[{mpls_label,126}], miss)),
+	 ?_test(packet([#ether{},#mpls_tag{stack =[E0]},#ipv4{},#udp{}],
+			[{mpls_tc,2}], match)),
+	 ?_test(packet([#ether{},#mpls_tag{stack =[E0]},#ipv4{},#udp{}],
+			[{mpls_tc,1}], miss)),
+	 ?_test(packet([#ether{},#mpls_tag{stack =[E0]},#ipv4{},#udp{}],
+			[{mpls_bos,1}], match)),
+	 ?_test(packet([#ether{},#mpls_tag{stack =[E0]},#ipv4{},#udp{}],
+			[{mpls_bos,0}], miss)),
+	 ?_test(packet([#ether{},#mpls_tag{stack =[E1,E2]},#ipv4{},#udp{}],
+			[{mpls_bos,0}], match)),
+	 ?_test(packet([#ether{},#mpls_tag{stack =[E1,E2]},#ipv4{},#udp{}],
+			[{mpls_bos,1}], miss)) ].
+
 traffic_class_test_() ->
 	Ipv6 = #ipv6{saddr = <<0:128>>,daddr = <<0:128>>},
 
@@ -161,7 +196,9 @@ trio_test_() ->
 			[{sctp_dst,42}], miss)) ].
 
 icmp_test_() ->
-	 %%x clause suppressed
+	NdpNs = #ndp_ns{tgt_addr = <<42:128>>,sll = <<1,2,3,4,5,6>>},
+	NdpNa = #ndp_na{src_addr = <<42:128>>,tll = <<1,2,3,4,5,6>>},
+
 	[?_test(packet([#ether{},#ipv4{},#icmp{type =3}],
 			[{icmpv4_type,3}], match)),
 	 ?_test(packet([#ether{},#ipv4{},#icmp{type =5}],
@@ -183,22 +220,55 @@ icmp_test_() ->
 
 	 %% ICMPv6 NDP
 	 %%x
-	 ?_test(packet([#ether{},#ipv4{},#icmpv6{},#ndp_ns{tgt_addr = <<42:128>>}],
+	 ?_test(packet([#ether{},#ipv4{},#icmpv6{},NdpNs],
 			[{ipv6_nd_target,42}], match)),
-	 ?_test(packet([#ether{},#ipv4{},#icmpv6{},#ndp_ns{tgt_addr = <<42:128>>}],
+	 ?_test(packet([#ether{},#ipv4{},#icmpv6{},NdpNs],
 			[{ipv6_nd_target,1}], miss)),
-	 ?_test(packet([#ether{},#ipv4{},#icmpv6{},#ndp_na{src_addr = <<42:128>>}],
+	 ?_test(packet([#ether{},#ipv4{},#icmpv6{},NdpNa],
 			[{ipv6_nd_target,42}], match)),
-	 ?_test(packet([#ether{},#ipv4{},#icmpv6{},#ndp_na{src_addr = <<42:128>>}],
+	 ?_test(packet([#ether{},#ipv4{},#icmpv6{},NdpNa],
 			[{ipv6_nd_target,1}], miss)),
-	 ?_test(packet([#ether{},#ipv4{},#icmpv6{},#ndp_ns{sll = <<1,2,3,4,5,6>>}],
+	 ?_test(packet([#ether{},#ipv4{},#icmpv6{},NdpNs],
 			[{ipv6_nd_sll,16#010203040506}], match)),
-	 ?_test(packet([#ether{},#ipv4{},#icmpv6{},#ndp_ns{sll = <<1,2,3,4,5,0>>}],
+	 ?_test(packet([#ether{},#ipv4{},#icmpv6{},NdpNs#ndp_ns{sll = <<1,2,3,4,5,0>>}],
 			[{ipv6_nd_sll,16#010203040506}], miss)),
-	 ?_test(packet([#ether{},#ipv4{},#icmpv6{},#ndp_na{tll = <<1,2,3,4,5,6>>}],
+	 ?_test(packet([#ether{},#ipv4{},#icmpv6{},NdpNa],
 			[{ipv6_nd_tll,16#010203040506}], match)),
-	 ?_test(packet([#ether{},#ipv4{},#icmpv6{},#ndp_na{tll = <<1,2,3,4,5,0>>}],
+	 ?_test(packet([#ether{},#ipv4{},#icmpv6{},NdpNa#ndp_na{tll = <<1,2,3,4,5,0>>}],
 			[{ipv6_nd_tll,16#010203040506}], miss)) ].
+
+arp_test_() ->
+	[?_test(packet([#ether{},#arp{op =1}],
+			[{arp_op,1}], match)),
+	 ?_test(packet([#ether{},#arp{op =2}],
+			[{arp_op,1}], miss)),
+	 [?_test(packet([#ether{},#arp{sip =TVal}],
+			[{arp_spa,MVal,Mask}], Expected))
+		|| {MVal,Mask,TVal,Expected} <- masked(32)],
+	 [?_test(packet([#ether{},#arp{tip =TVal}],
+			[{arp_tpa,MVal,Mask}], Expected))
+		|| {MVal,Mask,TVal,Expected} <- masked(32)],
+	 [?_test(packet([#ether{},#arp{sha =TVal}],
+			[{arp_sha,MVal,Mask}], Expected))
+		|| {MVal,Mask,TVal,Expected} <- masked(48)],
+	 [?_test(packet([#ether{},#arp{tha =TVal}],
+			[{arp_tha,MVal,Mask}], Expected))
+		|| {MVal,Mask,TVal,Expected} <- masked(48)] ].
+
+ipv6_test_() ->
+	Ipv6 = #ipv6{saddr = <<0:128>>,daddr = <<0:128>>},
+
+	[[?_test(packet([#ether{},Ipv6#ipv6{saddr =TVal},#udp{}],
+			[{ipv6_src,MVal,Mask}], Expected))
+		|| {MVal,Mask,TVal,Expected} <- masked(128)],
+	 [?_test(packet([#ether{},Ipv6#ipv6{daddr =TVal},#udp{}],
+			[{ipv6_dst,MVal,Mask}], Expected))
+		|| {MVal,Mask,TVal,Expected} <- masked(128)],
+	 [?_test(packet([#ether{},Ipv6#ipv6{flow =flow_label(TVal)},#udp{}],
+			[{ipv6_flabel,MVal,Mask}], Expected))
+		|| {MVal,Mask,TVal,Expected} <- masked(20)] ].
+
+flow_label(<<N:20>>) -> N.
 
 port_info(Matches, PortInfo, Expected) ->
 	AnyFrame = pkt:encapsulate([#ether{},#ipv4{},#udp{}]),
