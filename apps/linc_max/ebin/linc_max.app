@@ -15,4 +15,9 @@
 						linc_max_preparser_tests,
 						linc_max_generator,
 						linc_max_generator_tests,
+						linc_max_flow,
+						linc_max_port,
+						linc_max_meter_sup,
+						linc_max_sup,
+						linc_max_demo,
 						linc_max]}]}.

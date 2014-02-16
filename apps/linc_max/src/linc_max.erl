@@ -1,111 +1,419 @@
+%%------------------------------------------------------------------------------
+%% Copyright 2012 FlowForwarding.org
+%%
+%% Licensed under the Apache License, Version 2.0 (the "License");
+%% you may not use this file except in compliance with the License.
+%% You may obtain a copy of the License at
+%%
+%%     http://www.apache.org/licenses/LICENSE-2.0
+%%
+%% Unless required by applicable law or agreed to in writing, software
+%% distributed under the License is distributed on an "AS IS" BASIS,
+%% WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+%% See the License for the specific language governing permissions and
+%% limitations under the License.
+%%-----------------------------------------------------------------------------
+
+%% @author Erlang Solutions Ltd. <openflow@erlang-solutions.com>
+%% @author Cloduozer LLP. <info@cloudozer.com>
+%% @copyright 2012 FlowForwarding.org
+%% @doc Userspace implementation of the OpenFlow Switch logic.
 -module(linc_max).
--export([update_metadata/3]).
--export([meter/2]).
 
-%% Testing interface
--export([update/1]).
--export([start/0]).
+-behaviour(gen_switch).
 
+%% gen_switch callbacks
+-export([start/1,
+         stop/1,
+         handle_message/2]).
+
+%% Backend API
+-export([is_port_valid/2,
+         is_queue_valid/3,
+         set_datapath_mac/2,
+         log_message_sent/1]).
+
+%% Handle all message types
+-export([ofp_features_request/2,
+         ofp_flow_mod/2,
+         ofp_table_mod/2,
+         ofp_port_mod/2,
+         ofp_group_mod/2,
+         ofp_packet_out/2,
+         ofp_echo_request/2,
+         ofp_get_config_request/2,
+         ofp_set_config/2,
+         ofp_barrier_request/2,
+         ofp_queue_get_config_request/2,
+         ofp_desc_request/2,
+         ofp_flow_stats_request/2,
+         ofp_aggregate_stats_request/2,
+         ofp_table_stats_request/2,
+         ofp_table_features_request/2,
+         ofp_port_desc_request/2,
+         ofp_port_stats_request/2,
+         ofp_queue_stats_request/2,
+         ofp_group_stats_request/2,
+         ofp_group_desc_request/2,
+         ofp_group_features_request/2,
+         ofp_meter_mod/2,
+         ofp_meter_stats_request/2,
+         ofp_meter_config_request/2,
+         ofp_meter_features_request/2]).
+
+-include_lib("of_protocol/include/of_protocol.hrl").
+-include_lib("of_protocol/include/ofp_v4.hrl").
+-include_lib("linc/include/linc_logger.hrl").
 -include("linc_max.hrl").
 
-%% FAST PATH
-%%
-%% The function is needed because metadata are represented as binary in the
-%% argument list of a flow entry.
-%%
-update_metadata(<<MetaInt:64>>, AndMe, OrMe) ->
-	<<(MetaInt band AndMe bor OrMe):64>>.
+-record(state, {
+          flow_state,
+          buffer_state,
+          switch_id :: integer(),
+          datapath_mac :: binary(),
+          switch_config = [{flags, []}, {miss_send_len, no_buffer}] ::
+            [switch_config_opt()]
+         }).
+-type state() :: #state{}.
 
-%% FAST PATH
-%%
-%% Meters are processes. The call should lookup the meter process using the
-%% state and exchange messages with it to check that the packet fits the bands.
-%%
-meter(_MeterId, _St) -> ok.
+-type switch_config_opt() :: {flags, list(ofp_config_flags())} |
+                              {miss_send_len, ofp_packet_in_bytes()}.
 
-%%%%
-%%%% Testing
-%%%%
+%%%-----------------------------------------------------------------------------
+%%% gen_switch callbacks
+%%%-----------------------------------------------------------------------------
 
--define(RESTART_AFTER, 16384).
+%% @doc Start the switch.
+-spec start(any()) -> {ok, Version :: 4, state()}.
+start(BackendOpts) ->
+    try
+        {switch_id, SwitchId} = lists:keyfind(switch_id, 1, BackendOpts),
+        {datapath_mac, DatapathMac} = lists:keyfind(datapath_mac, 1, BackendOpts),
+        {config, Config} = lists:keyfind(config, 1, BackendOpts),
+        BufferState = linc_buffer:initialize(SwitchId),
+        {ok, _Pid} = linc_max_sup:start_backend_sup(SwitchId),
 
-update(N) ->
-	TestTabFile = "priv/test" ++ integer_to_list(N) ++ ".tab",
-	{ok,Ents} = file:consult(TestTabFile),
-	linc_max_generator:update_flow_table(flow0, Ents).
+		%%TODO
+        %linc_max_groups:initialize(SwitchId),
+        FlowState = linc_max_flow:initialize(SwitchId),
+        %linc_max_port:initialize(SwitchId, Config),
 
-start() ->
-	spawn(fun() ->
-		{ok,P1} = net_vif:open(eth1, [binary]),
-		{ok,P2} = net_vif:open(eth2, [binary]),
+        {ok, 4, #state{flow_state = FlowState,
+                       buffer_state = BufferState,
+                       switch_id = SwitchId,
+                       datapath_mac = DatapathMac}}
+    catch
+        _:Error ->
+            {error, Error}
+    end.
 
-		io:format("plug: ~w|~w\n", [P1,P2]),
-		plug(P1, P2)
-	end).
+%% @doc Stop the switch.
+-spec stop(state()) -> any().
+stop(#state{flow_state = FlowState,
+            buffer_state = BufferState,
+            switch_id = SwitchId}) ->
+
+	%%TODO
+    %linc_max_port:terminate(SwitchId),
+    %linc_max_flow:terminate(FlowState),
+    %linc_max_groups:terminate(SwitchId),
+
+    linc_buffer:terminate(BufferState),
+    ok;
+stop([]) ->
+    ok.
+
+-spec handle_message(ofp_message_body(), state()) ->
+                            {noreply, state()} |
+                            {reply, ofp_message(), state()}.
+handle_message(MessageBody, State) ->
+    MessageName = element(1, MessageBody),
+    erlang:apply(?MODULE, MessageName, [State, MessageBody]).
+
+%%%-----------------------------------------------------------------------------
+%%% Backend API
+%%%-----------------------------------------------------------------------------
+
+-spec is_port_valid(integer(), ofp_port_no()) -> boolean().
+is_port_valid(SwitchId, PortNo) ->
+    linc_max_port:is_valid(SwitchId, PortNo).
+
+-spec is_queue_valid(integer(), ofp_port_no(), ofp_queue_id()) -> boolean().
+is_queue_valid(SwitchId, PortNo, QueueId) ->
+    linc_max_queue:is_valid(SwitchId, PortNo, QueueId).
+
+set_datapath_mac(State, NewMac) ->
+    State#state{datapath_mac = NewMac}.
+
+-spec log_message_sent(ofp_message()) -> term().
+log_message_sent(#ofp_message{body = Body} = Message)
+  when is_record(Body, ofp_error_msg) ->
+    ?DEBUG("[OF_ERROR] Sent message to controller: ~w~n", [Message]);
+log_message_sent(Message) ->
+    ?DEBUG("Sent message to controller: ~w~n", [Message]).
 
 
-plug(P1, P2) ->
-	plug(P1, P2, 0).
+%%%-----------------------------------------------------------------------------
+%%% Handling of messages
+%%%-----------------------------------------------------------------------------
 
-plug(P1, P2, ?RESTART_AFTER) ->
-	NewPid = spawn(fun() ->
-		plug(P1, P2)
-	end),
+ofp_features_request(#state{switch_id = SwitchId,
+                            datapath_mac = DatapathMac} = State,
+                     #ofp_features_request{}) ->
+    FeaturesReply = #ofp_features_reply{datapath_mac = DatapathMac,
+                                        datapath_id = SwitchId,
+                                        n_buffers = 0,
+                                        n_tables = 255,
+                                        auxiliary_id = 0,
+                                        capabilities = ?CAPABILITIES},
+    {reply, FeaturesReply, State}.
 
-	erlang:port_connect(P1, NewPid),
-	erlang:port_connect(P2, NewPid),
-	unlink(P1),
-	unlink(P2),
+%% @doc Modify flow entry in the flow table.
+-spec ofp_flow_mod(state(), ofp_flow_mod()) ->
+                          {noreply, #state{}} |
+                          {reply, ofp_message(), #state{}}.
+ofp_flow_mod(#state{switch_id = SwitchId} = State,
+             #ofp_flow_mod{} = FlowMod) ->
+    case linc_max_flow:modify(SwitchId, FlowMod) of
+        ok ->
+            {noreply, State};
+        {error, {Type, Code}} ->
+            ErrorMsg = #ofp_error_msg{type = Type,
+                                      code = Code},
+            {reply, ErrorMsg, State}
+    end.
 
-	drain_packets(NewPid);
+%% @doc Modify flow table configuration.
+-spec ofp_table_mod(state(), ofp_table_mod()) ->
+                           {noreply, #state{}} |
+                           {reply, ofp_message(), #state{}}.
+ofp_table_mod(State, #ofp_table_mod{} = TableMod) ->
+    case linc_max_flow:table_mod(TableMod) of
+        ok ->
+            {noreply, State};
+        {error, {Type, Code}} ->
+            ErrorMsg = #ofp_error_msg{type = Type,
+                                      code = Code},
+            {reply, ErrorMsg, State}
+    end.
 
-plug(P1, P2, N) ->
-	receive
-	{P1,{data,Frame}} ->
-		case linc_max_preparser:inject(Frame,
-				undefined, {1,10,undefined}, #actions{}, flow0) of
-		{do,Actions} ->
-			do(Frame, Actions, P1, P2);
-		miss ->
-			io:format("MISS1: ~p\n", [pkt:decapsulate(Frame)]);
-		_ ->
-			drop
-		end,
-		plug(P1, P2, N +1);
+%% @doc Modify port configuration.
+-spec ofp_port_mod(state(), ofp_port_mod()) ->
+                          {noreply, #state{}} |
+                          {reply, ofp_message(), #state{}}.
+ofp_port_mod(#state{switch_id = SwitchId} = State,
+             #ofp_port_mod{} = PortMod) ->
+    case linc_max_port:modify(SwitchId, PortMod) of
+        ok ->
+            {noreply, State};
+        {error, {Type, Code}} ->
+            ErrorMsg = #ofp_error_msg{type = Type,
+                                      code = Code},
+            {reply, ErrorMsg, State}
+    end.
 
-	{P2,{data,Frame}} ->
-		case linc_max_preparser:inject(Frame,
-				undefined, {2,20,undefined}, #actions{}, flow0) of
-		{do,Actions} ->
-			do(Frame, Actions, P1, P2);
-		miss ->
-			io:format("MISS2: ~p\n", [pkt:decapsulate(Frame)]);
-		_ ->
-			drop
-		end,
-		plug(P1, P2, N +1)
-	
-	end.
+%% @doc Modify group entry in the group table.
+-spec ofp_group_mod(state(), ofp_group_mod()) ->
+                           {noreply, #state{}} |
+                           {reply, ofp_message(), #state{}}.
+ofp_group_mod(#state{switch_id = SwitchId} = State,
+              #ofp_group_mod{} = GroupMod) ->
+    case linc_max_groups:modify(SwitchId, GroupMod) of
+        ok ->
+            {noreply, State};
+        {error, ErrorMsg} ->
+            {reply, ErrorMsg, State}
+    end.
 
-do(Frame, #actions{output =1}, P1, _P2) ->
-	port_command(P1, Frame);
+%% @doc Handle a packet received from controller.
+-spec ofp_packet_out(state(), ofp_packet_out()) ->
+                            {noreply, #state{}} |
+                            {reply, ofp_message(), #state{}}.
+ofp_packet_out(#state{switch_id = SwitchId} = State,
+               #ofp_packet_out{buffer_id = no_buffer,
+                               actions = Actions,
+                               in_port = InPort,
+                               data = Data}) ->
+    Pkt = linc_max_packet:binary_to_record(Data, SwitchId, InPort),
+    linc_max_actions:apply_list(Pkt, Actions),
+    {noreply, State};
+ofp_packet_out(#state{switch_id = SwitchId} = State,
+               #ofp_packet_out{buffer_id = BufferId,
+                               actions = Actions}) ->
+    case linc_buffer:get_buffer(SwitchId, BufferId) of
+        #linc_pkt{} = Pkt ->
+            linc_max_actions:apply_list(Pkt, Actions);
+        not_found ->
+            %% Buffer has been dropped, ignore
+            ok
+    end,
+    {noreply, State}.
 
-do(Frame, #actions{output =2}, _P1, P2) ->
-	port_command(P2, Frame);
+%% @doc Reply to echo request.
+-spec ofp_echo_request(state(), ofp_echo_request()) ->
+                              {reply, ofp_echo_reply(), #state{}}.
+ofp_echo_request(State, #ofp_echo_request{data = Data}) ->
+    EchoReply = #ofp_echo_reply{data = Data},
+    {reply, EchoReply, State}.
 
-do(Frame, #actions{output =controller}, _P1, _P2) ->
-	io:format("Packet-in: ~p~n", [Frame]);
+%% @doc Reply to get config request.
+-spec ofp_get_config_request(state(), ofp_get_config_request()) ->
+                                    {reply, ofp_get_config_reply(), #state{}}.
+ofp_get_config_request(#state{switch_config = SwitchConfig} = State,
+                       #ofp_get_config_request{}) ->
+    ConfigReply = #ofp_get_config_reply{flags = proplists:get_value(
+                                                  flags,
+                                                  SwitchConfig),
+                                        miss_send_len = proplists:get_value(
+                                                          miss_send_len,
+                                                          SwitchConfig)},
+    {reply, ConfigReply, State}.
 
-do(_Frame, Actions, _P1, _P2) ->
-	io:format("? ~p\n", [Actions]).
+%% @doc Set switch configuration.
+-spec ofp_set_config(state(), ofp_set_config()) -> {noreply, state()}.
+ofp_set_config(State, #ofp_set_config{flags = Flags,
+                                      miss_send_len = MissSendLength}) ->
+    SwitchConfig = [{flags, Flags}, {miss_send_len, MissSendLength}],
+    {noreply, State#state{switch_config = SwitchConfig}}.
 
-drain_packets(NewPid) ->
-	receive
-	X ->
-		NewPid ! X,
-		drain_packets(NewPid)
-	after 0 ->
-		ok
-	end.
+%% @doc Reply to barrier request.
+-spec ofp_barrier_request(state(), ofp_barrier_request()) ->
+                                 {reply, ofp_barrier_reply(), #state{}}.
+ofp_barrier_request(State, #ofp_barrier_request{}) ->
+    BarrierReply = #ofp_barrier_reply{},
+    {reply, BarrierReply, State}.
 
-%%EOF
+%% @doc Reply to get queue config request.
+-spec ofp_queue_get_config_request(state(), ofp_queue_get_config_request()) ->
+                                          {reply, ofp_get_config_reply(),
+                                           #state{}}.
+ofp_queue_get_config_request(State,
+                             #ofp_queue_get_config_request{port = Port}) ->
+    QueueConfigReply = #ofp_queue_get_config_reply{port = Port,
+                                                   queues = []},
+    {reply, QueueConfigReply, State}.
+
+%% @doc Get switch description statistics.
+-spec ofp_desc_request(state(), ofp_desc_request()) ->
+                              {reply, ofp_desc_reply(), #state{}}.
+ofp_desc_request(State, #ofp_desc_request{}) ->
+    {reply, #ofp_desc_reply{flags = [],
+                            mfr_desc = get_env(manufacturer_desc),
+                            hw_desc = get_env(hardware_desc),
+                            sw_desc = get_env(software_desc),
+                            serial_num = get_env(serial_number),
+                            dp_desc = get_env(datapath_desc)
+                           }, State}.
+
+%% @doc Get flow entry statistics.
+-spec ofp_flow_stats_request(state(), ofp_flow_stats_request()) ->
+                                    {reply, ofp_flow_stats_reply(), #state{}}.
+ofp_flow_stats_request(#state{switch_id = SwitchId} = State,
+                       #ofp_flow_stats_request{} = Request) ->
+    Reply = linc_max_flow:get_stats(SwitchId, Request),
+    {reply, Reply, State}.
+
+%% @doc Get aggregated flow statistics.
+-spec ofp_aggregate_stats_request(state(), ofp_aggregate_stats_request()) ->
+                                         {reply, ofp_aggregate_stats_reply(),
+                                          #state{}}.
+ofp_aggregate_stats_request(#state{switch_id = SwitchId} = State,
+                            #ofp_aggregate_stats_request{} = Request) ->
+    Reply = linc_max_flow:get_aggregate_stats(SwitchId, Request),
+    {reply, Reply, State}.
+
+%% @doc Get flow table statistics.
+-spec ofp_table_stats_request(state(), ofp_table_stats_request()) ->
+                                     {reply, ofp_table_stats_reply(), #state{}}.
+ofp_table_stats_request(#state{switch_id = SwitchId} = State,
+                        #ofp_table_stats_request{} = Request) ->
+    Reply = linc_max_flow:get_table_stats(SwitchId, Request),
+    {reply, Reply, State}.
+
+-spec ofp_table_features_request(state(), #ofp_table_features_request{}) ->
+                                        {reply, #ofp_table_features_reply{},
+                                         #state{}}.
+ofp_table_features_request(#state{switch_id = SwitchId} = State,
+                           #ofp_table_features_request{} = Request) ->
+    Reply = linc_max_table_features:handle_req(SwitchId, Request),
+    {reply, Reply, State}.
+
+%% @doc Get port description.
+-spec ofp_port_desc_request(state(), ofp_port_desc_request()) ->
+                                   {reply, ofp_port_desc_reply(), #state{}}.
+ofp_port_desc_request(#state{switch_id = SwitchId} = State,
+                      #ofp_port_desc_request{}) ->
+    Reply = linc_max_port:get_desc(SwitchId),
+    {reply, Reply, State}.
+
+%% @doc Get port statistics.
+-spec ofp_port_stats_request(state(), ofp_port_stats_request()) ->
+                                    {reply, ofp_port_stats_reply(), #state{}}.
+ofp_port_stats_request(#state{switch_id = SwitchId} = State,
+                       #ofp_port_stats_request{} = Request) ->
+    Reply = linc_max_port:get_stats(SwitchId, Request),
+    {reply, Reply, State}.
+
+%% @doc Get queue statistics.
+-spec ofp_queue_stats_request(state(), ofp_queue_stats_request()) ->
+                                     {reply, ofp_queue_stats_reply(), #state{}}.
+ofp_queue_stats_request(#state{switch_id = SwitchId} = State,
+                        #ofp_queue_stats_request{} = Request) ->
+    Reply = linc_max_queue:get_stats(SwitchId, Request),
+    {reply, Reply, State}.
+
+%% @doc Get group statistics.
+-spec ofp_group_stats_request(state(), ofp_group_stats_request()) ->
+                                     {reply, ofp_group_stats_reply(), #state{}}.
+ofp_group_stats_request(#state{switch_id = SwitchId} = State,
+                        #ofp_group_stats_request{} = Request) ->
+    Reply = linc_max_groups:get_stats(SwitchId, Request),
+    {reply, Reply, State}.
+
+%% @doc Get group description statistics.
+-spec ofp_group_desc_request(state(), ofp_group_desc_request()) ->
+                                    {reply, ofp_group_desc_reply(), #state{}}.
+ofp_group_desc_request(#state{switch_id = SwitchId} = State,
+                       #ofp_group_desc_request{} = Request) ->
+    Reply = linc_max_groups:get_desc(SwitchId, Request),
+    {reply, Reply, State}.
+
+%% @doc Get group features statistics.
+-spec ofp_group_features_request(state(),
+                                 ofp_group_features_request()) ->
+                                        {reply, ofp_group_features_reply(),
+                                         #state{}}.
+ofp_group_features_request(State,
+                           #ofp_group_features_request{} = Request) ->
+    Reply = linc_max_groups:get_features(Request),
+    {reply, Reply, State}.
+
+%% Meters ----------------------------------------------------------------------
+
+ofp_meter_mod(#state{switch_id = SwitchId} = State,
+              #ofp_meter_mod{} = MeterMod) ->
+    case linc_max_meter:modify(SwitchId, MeterMod) of
+        noreply ->
+            {noreply, State};
+        {reply, Reply} ->
+            {reply, Reply, State}
+    end.
+
+ofp_meter_stats_request(#state{switch_id = SwitchId} = State,
+                        #ofp_meter_stats_request{meter_id = Id}) ->
+    {reply, linc_max_meter:get_stats(SwitchId, Id), State}.
+
+ofp_meter_config_request(#state{switch_id = SwitchId} = State,
+                         #ofp_meter_config_request{meter_id = Id}) ->
+    {reply, linc_max_meter:get_config(SwitchId, Id), State}.
+
+ofp_meter_features_request(State, #ofp_meter_features_request{}) ->
+    {reply, linc_max_meter:get_features(), State}.
+
+%%%-----------------------------------------------------------------------------
+%%% Helpers
+%%%-----------------------------------------------------------------------------
+
+get_env(Env) ->
+    {ok, Value} = application:get_env(linc, Env),
+    Value.

@@ -2,7 +2,7 @@
 -export([update_flow_table/2]).
 -export([flow_table_forms/2]).
 
--include("linc_max.hrl").
+-include("linc_max_demo.hrl").
 
 -define(ETH_P_IP,			16#0800).
 -define(ETH_P_ARP,			16#0806).
@@ -129,7 +129,7 @@ goto_instr({goto,N}, CI, DI) ->
 	
 	(metadata) when DI =/= undefined ->
 		{_,Value,Mask} = DI,
-		{call,0,{remote,0,{atom,0,linc_max},
+		{call,0,{remote,0,{atom,0,linc_max_demo},	%%TODO
 						  {atom,0,update_metadata}},[{var,0,var_name(metadata)},
 												     {integer,0,(bnot Mask)},
 													 {integer,0,Value}]};
@@ -143,7 +143,7 @@ goto_instr({goto,N}, CI, DI) ->
 meter_instr(undefined, Inner) ->
 	Inner;
 meter_instr({meter,N}, Inner) ->
-	Call = {call,0,{remote,0,{atom,0,linc_max},
+	Call = {call,0,{remote,0,{atom,0,linc_max_demo},	%%TODO
 						     {atom,0,meter}},[{integer,0,N},
 											  {var,0,var_name(state)}]},
 	C1 = {clause,0,[{atom,0,ok}],[],Inner},

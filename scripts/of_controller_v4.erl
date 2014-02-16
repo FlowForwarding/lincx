@@ -176,7 +176,7 @@ handle_connection(Parent, Socket, Scenario, Notify) ->
 
 	%%MK
 	%% In LING, two processes cannot send to the same TCP socket simultaneously.
-	%% Send synchronisation message to Notify to prevent this. 
+	%% Use a synchronisation message to prevent this. 
     gen_tcp:send(Socket, encoded_hello_message(Scenario)),
 	Notify ! {hello_sent,self()},
 

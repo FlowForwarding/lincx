@@ -11,7 +11,8 @@
 
 -include_lib("eunit/include/eunit.hrl").
 -include_lib("pkt/include/pkt.hrl").
--include("linc_max.hrl").
+
+-include("linc_max_demo.hrl").
 
 port_info_test_() ->
 	AnyFrame = pkt:encapsulate([#ether{},#ipv4{},#udp{}]),

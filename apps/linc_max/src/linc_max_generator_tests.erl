@@ -8,7 +8,8 @@
 
 -include_lib("eunit/include/eunit.hrl").
 -include_lib("pkt/include/pkt.hrl").
--include("linc_max.hrl").
+
+-include("linc_max_demo.hrl").
 
 ports_test() ->
 	port_info([{in_port,126}], {126,2,undefined}, match),

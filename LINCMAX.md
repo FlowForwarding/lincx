@@ -268,5 +268,13 @@ The spec demands that match on IN_PHY_PORT is only possible if IN_PORT is
 present. Let other module suppress the physical port info information before
 calling linc_max:inject(). This is *not checked* by the preparser.
 
+The preparser and generator test suites complete:
+
+1> eunit:test(linc_max_preparser).
+  All 47 tests passed.
+ok
+2> eunit:test(linc_max_generator).
+  All 302 tests passed.
+ok
 
 
