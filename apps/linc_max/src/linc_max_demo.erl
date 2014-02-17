@@ -6,7 +6,8 @@
 -export([update/1]).
 -export([start/0]).
 
--include("linc_max_demo.hrl").
+-include_lib("of_protocol/include/ofp_v4.hrl").
+-include("linc_max.hrl").
 
 %% FAST PATH
 %%
@@ -63,7 +64,7 @@ plug(P1, P2, N) ->
 	receive
 	{P1,{data,Frame}} ->
 		case linc_max_preparser:inject(Frame,
-				undefined, {1,10,undefined}, #actions{}, flow0) of
+				undefined, {1,10,undefined}, #fast_actions{}, flow0) of
 		{do,Actions} ->
 			do(Frame, Actions, P1, P2);
 		miss ->
@@ -75,7 +76,7 @@ plug(P1, P2, N) ->
 
 	{P2,{data,Frame}} ->
 		case linc_max_preparser:inject(Frame,
-				undefined, {2,20,undefined}, #actions{}, flow0) of
+				undefined, {2,20,undefined}, #fast_actions{}, flow0) of
 		{do,Actions} ->
 			do(Frame, Actions, P1, P2);
 		miss ->
@@ -87,13 +88,13 @@ plug(P1, P2, N) ->
 	
 	end.
 
-do(Frame, #actions{output =1}, P1, _P2) ->
+do(Frame, #fast_actions{output =1}, P1, _P2) ->
 	port_command(P1, Frame);
 
-do(Frame, #actions{output =2}, _P1, P2) ->
+do(Frame, #fast_actions{output =2}, _P1, P2) ->
 	port_command(P2, Frame);
 
-do(Frame, #actions{output =controller}, _P1, _P2) ->
+do(Frame, #fast_actions{output =controller}, _P1, _P2) ->
 	io:format("Packet-in: ~p~n", [Frame]);
 
 do(_Frame, Actions, _P1, _P2) ->

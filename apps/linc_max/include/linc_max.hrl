@@ -19,6 +19,12 @@
 %% @copyright 2012 FlowForwarding.org
 %% @doc Header file for userspace implementation of OpenFlow switch.
 
+-record(fast_actions, {
+			queue,
+			output,
+			group
+		}).
+
 -define(CAPABILITIES, [flow_stats,
                        table_stats,
                        port_stats,
