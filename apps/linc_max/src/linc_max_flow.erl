@@ -73,6 +73,11 @@ initialize(SwitchId) ->
     [create_flow_table(SwitchId, TableId)
      || TableId <- lists:seq(0, ?OFPTT_MAX)],
 
+	%%
+	%% Regenerate the module for the first flow table
+	%%
+	ok = linc_max_generator:update_flow_table(flow_table_name(0), []),
+
     FlowTimers = ets:new(flow_timers,
                          [public,
                           {keypos, #flow_timer.id},
@@ -113,17 +118,33 @@ table_mod(#ofp_table_mod{}) ->
 %% This may add/modify/delete one or more flows.
 -spec modify(integer(), #ofp_flow_mod{}) ->
                     ok | {error, {Type :: atom(), Code :: atom()}}.
-modify(_SwitchId, #ofp_flow_mod{command = Cmd, table_id = all})
+modify(SwitchId, #ofp_flow_mod{table_id = TableId} =FlowMod) ->
+	case do_modify(SwitchId, FlowMod) of
+	ok when is_integer(TableId) ->
+
+		%%
+		%% Regenerate flow table module(s)
+		%%
+
+		FlowEnts = get_flow_table(SwitchId, TableId),
+		TabName = flow_table_name(TableId),
+		ok = linc_max_generator:update_flow_table(TabName, FlowEnts);
+
+	Other ->
+		Other	
+	end.
+
+do_modify(_SwitchId, #ofp_flow_mod{command = Cmd, table_id = all})
   when Cmd == add orelse Cmd == modify orelse Cmd == modify_strict ->
     {error, {flow_mod_failed, bad_table_id}};
-modify(SwitchId, #ofp_flow_mod{command = Cmd, buffer_id = BufferId} = FlowMod)
+do_modify(SwitchId, #ofp_flow_mod{command = Cmd, buffer_id = BufferId} = FlowMod)
   when (Cmd == add orelse Cmd == modify orelse Cmd == modify_strict)
        andalso BufferId /= no_buffer ->
     %% A buffer_id is provided, we have to first do the flow_mod
     %% and then a packet_out to OFPP_TABLE. This actually means to first
     %% perform the flow_mod and then restart the processing of the buffered
     %% packet starting in flow_table=0.
-    case modify(SwitchId, FlowMod#ofp_flow_mod{buffer_id = no_buffer}) of
+    case do_modify(SwitchId, FlowMod#ofp_flow_mod{buffer_id = no_buffer}) of
         ok ->
             case linc_buffer:get_buffer(SwitchId, BufferId) of
                 #linc_pkt{} = OfsPkt ->
@@ -136,7 +157,7 @@ modify(SwitchId, #ofp_flow_mod{command = Cmd, buffer_id = BufferId} = FlowMod)
         Error ->
             Error
     end;
-modify(SwitchId, #ofp_flow_mod{command = add,
+do_modify(SwitchId, #ofp_flow_mod{command = add,
                                table_id = TableId,
                                priority = Priority,
                                flags = Flags,
@@ -169,7 +190,7 @@ modify(SwitchId, #ofp_flow_mod{command = add,
         Error ->
             Error
     end;
-modify(SwitchId, #ofp_flow_mod{command = modify,
+do_modify(SwitchId, #ofp_flow_mod{command = modify,
                                cookie = Cookie,
                                cookie_mask = CookieMask,
                                table_id = TableId,
@@ -185,7 +206,7 @@ modify(SwitchId, #ofp_flow_mod{command = modify,
         Error ->
             Error
     end;
-modify(SwitchId, #ofp_flow_mod{command = modify_strict,
+do_modify(SwitchId, #ofp_flow_mod{command = modify_strict,
                                table_id = TableId,
                                priority = Priority,
                                flags = Flags,
@@ -204,12 +225,12 @@ modify(SwitchId, #ofp_flow_mod{command = modify_strict,
         Error ->
             Error
     end;
-modify(SwitchId, #ofp_flow_mod{command = Cmd, table_id = all} = FlowMod)
+do_modify(SwitchId, #ofp_flow_mod{command = Cmd, table_id = all} = FlowMod)
   when Cmd == delete; Cmd == delete_strict ->
-    [modify(SwitchId, FlowMod#ofp_flow_mod{table_id = Id})
+    [do_modify(SwitchId, FlowMod#ofp_flow_mod{table_id = Id})
      || Id <- lists:seq(0, ?OFPTT_MAX)],
     ok;
-modify(SwitchId, #ofp_flow_mod{command = delete,
+do_modify(SwitchId, #ofp_flow_mod{command = delete,
                                table_id = TableId,
                                cookie = Cookie,
                                cookie_mask = CookieMask,
@@ -219,7 +240,7 @@ modify(SwitchId, #ofp_flow_mod{command = delete,
     delete_matching_flows(SwitchId, TableId, Cookie, CookieMask,
                           Match, OutPort, OutGroup),
     ok;
-modify(SwitchId, #ofp_flow_mod{command = delete_strict,
+do_modify(SwitchId, #ofp_flow_mod{command = delete_strict,
                                 table_id = TableId,
                                 priority = Priority,
                                 match = #ofp_match{fields = Match}}) ->

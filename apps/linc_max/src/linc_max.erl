@@ -93,10 +93,11 @@ start(BackendOpts) ->
         BufferState = linc_buffer:initialize(SwitchId),
         {ok, _Pid} = linc_max_sup:start_backend_sup(SwitchId),
 
-		%%TODO
+		%TODO
         %linc_max_groups:initialize(SwitchId),
+
         FlowState = linc_max_flow:initialize(SwitchId),
-        %linc_max_port:initialize(SwitchId, Config),
+        linc_max_port:initialize(SwitchId, Config),
 
         {ok, 4, #state{flow_state = FlowState,
                        buffer_state = BufferState,
@@ -113,9 +114,10 @@ stop(#state{flow_state = FlowState,
             buffer_state = BufferState,
             switch_id = SwitchId}) ->
 
-	%%TODO
-    %linc_max_port:terminate(SwitchId),
-    %linc_max_flow:terminate(FlowState),
+    linc_max_port:terminate(SwitchId),
+    linc_max_flow:terminate(FlowState),
+
+	%TODO
     %linc_max_groups:terminate(SwitchId),
 
     linc_buffer:terminate(BufferState),

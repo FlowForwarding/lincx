@@ -17,6 +17,8 @@
 						linc_max_generator_tests,
 						linc_max_flow,
 						linc_max_port,
+						linc_max_port_native,
+						linc_max_port_sup,
 						linc_max_meter_sup,
 						linc_max_sup,
 						linc_max_demo,

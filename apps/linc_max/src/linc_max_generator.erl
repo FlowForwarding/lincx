@@ -6,18 +6,9 @@
 -include_lib("linc/include/linc_logger.hrl").
 -include("linc_max.hrl").
 
--define(ETH_P_IP,			16#0800).
--define(ETH_P_ARP,			16#0806).
--define(ETH_P_IPV6,			16#86dd).
-
--define(VLAN_VID_NONE,		16#0000).
--define(VLAN_VID_PRESENT,	16#1000).
-
 update_flow_table(TabName, FlowEnts) ->
 	{ok,Forms} = flow_table_forms(TabName, FlowEnts),
-
 	{ok,TabName,Bin} = compile:forms(Forms, []), %% [report_errors]),
-
 	case erlang:check_old_code(TabName) of
 	true ->
 		erlang:purge_module(TabName);
@@ -517,7 +508,7 @@ updated_actions(write, [], Actions) ->
 
 updated_actions(Tag, [#ofp_action_set_queue{queue_id =Id}|Specs], Actions) ->
 	updated_actions(Tag, Specs, Actions#fast_actions{queue =Id});
-updated_actions(Tag, [#ofp_action_output{port = <<Port:32>>}|Specs], Actions) ->
+updated_actions(Tag, [#ofp_action_output{port = Port}|Specs], Actions) ->
 	updated_actions(Tag, Specs, Actions#fast_actions{output =Port});
 updated_actions(Tag, [#ofp_action_group{group_id =Id}|Specs], Actions) ->
 	updated_actions(Tag, Specs, Actions#fast_actions{group =Id}).

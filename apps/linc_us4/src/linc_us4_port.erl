@@ -128,7 +128,7 @@ send(#linc_pkt{} = Pkt, table) ->
     ok;
 send(#linc_pkt{}, normal) ->
     %% Normal port represents traditional non-OpenFlow pipeline of the switch
-    %% not supprted by LINC
+    %% not supported by LINC
     bad_port;
 send(#linc_pkt{} = Pkt, flood) ->
     %% Flood port represents traditional non-OpenFlow pipeline of the switch

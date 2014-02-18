@@ -184,13 +184,12 @@ handle_connection(Parent, Socket, Scenario, Notify) ->
     inet:setopts(Socket, [{active, once}]),
     handle(#cstate{parent = Parent, socket = Socket, parser = Parser}).
 
-
 %%MK
 scenario(simple_iperf_test) ->
 	[flow_mod_delete_all_flows,
-     	 flow_add([], [{in_port, <<1:32>>}], [{apply_actions,
+     	 flow_add([], [{in_port, <<1:32>>}], [{write_actions,
                                                [{output,2, no_buffer}]}]),
-     	 flow_add([], [{in_port, <<2:32>>}], [{apply_actions,
+     	 flow_add([], [{in_port, <<2:32>>}], [{write_actions,
                                                [{output,1, no_buffer}]}])];
 scenario(simple_iperf_stats) ->
 	[flow_stats_request];

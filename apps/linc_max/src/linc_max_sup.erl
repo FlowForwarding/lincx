@@ -56,7 +56,7 @@ init(SwitchId) ->
     MeterSup = {linc_max_meter_sup,
                 {linc_max_meter_sup, start_link, [SwitchId]},
                 permanent, 5000, supervisor, [linc_max_meter_sup]},
-%    PortSup = {linc_max_port_sup,
-%               {linc_max_port_sup, start_link, [SwitchId]},
-%               permanent, 5000, supervisor, [linc_max_port_sup]},
-    {ok, {{one_for_one, 5, 10}, [MeterSup]}}.
+    PortSup = {linc_max_port_sup,
+               {linc_max_port_sup, start_link, [SwitchId]},
+               permanent, 5000, supervisor, [linc_max_port_sup]},
+    {ok, {{one_for_one, 5, 10}, [PortSup,MeterSup]}}.

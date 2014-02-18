@@ -76,3 +76,10 @@ $(DOMCONF):
 x:	$(DOMCONF)
 	sudo xl create -c $(DOMCONF)
 
+em:
+	./rebar co skip_deps=true
+	./rebar ling-build-image
+me:
+	./rebar co skip_deps=true
+	./rebar ling-build-image
+
