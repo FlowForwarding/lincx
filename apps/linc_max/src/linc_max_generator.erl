@@ -5,6 +5,7 @@
 -include_lib("of_protocol/include/ofp_v4.hrl").
 -include_lib("linc/include/linc_logger.hrl").
 -include("linc_max.hrl").
+-include("fast_path.hrl").
 
 update_flow_table(TabName, FlowEnts) ->
 	{ok,Forms} = flow_table_forms(TabName, FlowEnts),

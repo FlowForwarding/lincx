@@ -9,6 +9,8 @@
 -include_lib("of_protocol/include/ofp_v4.hrl").
 -include("linc_max.hrl").
 
+-include("fast_path.hrl").
+
 %% FAST PATH
 %%
 %% The function is needed because metadata are represented as binary in the

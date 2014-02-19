@@ -11,6 +11,7 @@
 
 -include_lib("of_protocol/include/ofp_v4.hrl").
 -include("linc_max.hrl").
+-include("fast_path.hrl").
 
 ports_test() ->
 	port_info([{in_port,<<126:32>>}], {126,2,undefined}, match),

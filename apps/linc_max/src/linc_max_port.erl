@@ -89,6 +89,7 @@ initialize(SwitchId, Config) ->
         false ->
             ok
     end,
+
     UserspacePorts = ports_for_switch(SwitchId, Config),
     [add(physical, SwitchId, Port) || Port <- UserspacePorts],
     ok.
@@ -339,93 +340,117 @@ init([SwitchId, {port, PortNo, PortOpts}]) ->
                     eth
             end
     end,
-    case Type of
-		%% vif is a new interface type that maps to special vif ports found on
-		%% Erlang on Xen. vif ports provide a direct connection to low-level
-		%% virtual network interface drivers.
-		vif ->
-			case linc_max_port_native:vif(Interface) of
-			{ErlangPort,HwAddr} ->
-				%% copied for the 3rd time
-            	ets:insert(linc:lookup(SwitchId, linc_ports),
-                               #linc_port{port_no = PortNo, pid = self()}),
-                ets:insert(linc:lookup(SwitchId, linc_port_stats),
-                               #ofp_port_stats{port_no = PortNo,
-											   duration_sec = erlang:now()}),
-				case queues_config(SwitchId, PortOpts) of
-				disabled ->
-					disabled;
-				QueuesConfig ->
-					SendFun = fun(Frame) ->
-						port_command(ErlangPort, Frame)
-					end,
-					linc_max_queue:attach_all(SwitchId, PortNo,
-											  SendFun, QueuesConfig)
-				end,
-                {ok, State#state{erlang_port = ErlangPort,
-                                 port = Port#ofp_port{hw_addr = HwAddr}}}
-			end;
 
-        %% When switch connects to a tap interface, erlang receives file
-        %% descriptor to read/write ethernet frames directly from the
-        %% desired /dev/tapX character device. No socket communication
-        %% is involved.
-        tap ->
-            case linc_max_port_native:tap(Interface, PortOpts) of
-                {stop, shutdown} ->
-                    {stop, shutdown};
-                {ErlangPort, Pid, HwAddr} ->
-                    ets:insert(linc:lookup(SwitchId, linc_ports),
-                               #linc_port{port_no = PortNo, pid = self()}),
-                    ets:insert(linc:lookup(SwitchId, linc_port_stats),
-                               #ofp_port_stats{port_no = PortNo,
-                                               duration_sec = erlang:now()}),
-                    case queues_config(SwitchId, PortOpts) of
-                        disabled ->
-                            disabled;
-                        QueuesConfig ->
-                            SendFun = fun(Frame) ->
-                                              port_command(ErlangPort, Frame)
-                                      end,
-                            linc_max_queue:attach_all(SwitchId, PortNo,
-                                                      SendFun, QueuesConfig)
-                    end,
-                    {ok, State#state{erlang_port = ErlangPort,
-                                     port_ref = Pid,
-                                     port = Port#ofp_port{hw_addr = HwAddr}}}
-            end;
-        %% When switch connects to a hardware interface such as eth0
-        %% then communication is handled by two channels:
-        %% * receiving ethernet frames is done by libpcap wrapped-up by
-        %%   a epcap application
-        %% * sending ethernet frames is done by writing to
-        %%   a RAW socket binded with given network interface.
-        %%   Handling of RAW sockets differs between OSes.
-        eth ->
-            {Socket, IfIndex, EpcapPid, HwAddr} =
-                linc_max_port_native:eth(Interface),
-            case queues_config(SwitchId, PortOpts) of
-                disabled ->
-                    disabled;
-                QueuesConfig ->
-                    SendFun = fun(Frame) ->
-                                      linc_max_port_native:send(Socket,
-                                                                IfIndex,
-                                                                Frame)
-                              end,
-                    linc_max_queue:attach_all(SwitchId, PortNo,
-                                              SendFun, QueuesConfig)
-            end,
-            ets:insert(linc:lookup(SwitchId, linc_ports),
-                       #linc_port{port_no = PortNo, pid = self()}),
-            ets:insert(linc:lookup(SwitchId, linc_port_stats),
-                       #ofp_port_stats{port_no = PortNo,
-                                       duration_sec = erlang:now()}),
-            {ok, State#state{socket = Socket,
-                             ifindex = IfIndex,
-                             epcap_pid = EpcapPid,
-                             port = Port#ofp_port{hw_addr = HwAddr}}}
-    end.
+	%%
+	%% Do everything except actual opening of the port.
+	%% Ports are managed by linc_max_fast_path now.
+	%%
+
+	ets:insert(linc:lookup(SwitchId, linc_ports),
+				   #linc_port{port_no = PortNo, pid = self()}),
+	ets:insert(linc:lookup(SwitchId, linc_port_stats),
+				   #ofp_port_stats{port_no = PortNo,
+								   duration_sec = erlang:now()}),
+	case queues_config(SwitchId, PortOpts) of
+	disabled ->
+		disabled;
+	QueuesConfig ->
+		SendFun = fun(Frame) ->
+			?ERROR("SendFun() called: ~p\n", [Frame])
+		end,
+		linc_max_queue:attach_all(SwitchId, PortNo,
+								  SendFun, QueuesConfig)
+	end,
+	{ok, State#state{erlang_port = undefined,	%% Fake it
+					 port = Port#ofp_port{hw_addr = <<0,0,0,0,0,0>>}}}.
+
+%    case Type of
+%		%% vif is a new interface type that maps to special vif ports found on
+%		%% Erlang on Xen. vif ports provide a direct connection to low-level
+%		%% virtual network interface drivers.
+%		vif ->
+%			case linc_max_port_native:vif(Interface) of
+%			{ErlangPort,HwAddr} ->
+%				%% copied for the 3rd time
+%            	ets:insert(linc:lookup(SwitchId, linc_ports),
+%                               #linc_port{port_no = PortNo, pid = self()}),
+%                ets:insert(linc:lookup(SwitchId, linc_port_stats),
+%                               #ofp_port_stats{port_no = PortNo,
+%											   duration_sec = erlang:now()}),
+%				case queues_config(SwitchId, PortOpts) of
+%				disabled ->
+%					disabled;
+%				QueuesConfig ->
+%					SendFun = fun(Frame) ->
+%						port_command(ErlangPort, Frame)
+%					end,
+%					linc_max_queue:attach_all(SwitchId, PortNo,
+%											  SendFun, QueuesConfig)
+%				end,
+%                {ok, State#state{erlang_port = ErlangPort,
+%                                 port = Port#ofp_port{hw_addr = HwAddr}}}
+%			end;
+%
+%        %% When switch connects to a tap interface, erlang receives file
+%        %% descriptor to read/write ethernet frames directly from the
+%        %% desired /dev/tapX character device. No socket communication
+%        %% is involved.
+%        tap ->
+%            case linc_max_port_native:tap(Interface, PortOpts) of
+%                {stop, shutdown} ->
+%                    {stop, shutdown};
+%                {ErlangPort, Pid, HwAddr} ->
+%                    ets:insert(linc:lookup(SwitchId, linc_ports),
+%                               #linc_port{port_no = PortNo, pid = self()}),
+%                    ets:insert(linc:lookup(SwitchId, linc_port_stats),
+%                               #ofp_port_stats{port_no = PortNo,
+%                                               duration_sec = erlang:now()}),
+%                    case queues_config(SwitchId, PortOpts) of
+%                        disabled ->
+%                            disabled;
+%                        QueuesConfig ->
+%                            SendFun = fun(Frame) ->
+%                                              port_command(ErlangPort, Frame)
+%                                      end,
+%                            linc_max_queue:attach_all(SwitchId, PortNo,
+%                                                      SendFun, QueuesConfig)
+%                    end,
+%                    {ok, State#state{erlang_port = ErlangPort,
+%                                     port_ref = Pid,
+%                                     port = Port#ofp_port{hw_addr = HwAddr}}}
+%            end;
+%        %% When switch connects to a hardware interface such as eth0
+%        %% then communication is handled by two channels:
+%        %% * receiving ethernet frames is done by libpcap wrapped-up by
+%        %%   a epcap application
+%        %% * sending ethernet frames is done by writing to
+%        %%   a RAW socket binded with given network interface.
+%        %%   Handling of RAW sockets differs between OSes.
+%        eth ->
+%            {Socket, IfIndex, EpcapPid, HwAddr} =
+%                linc_max_port_native:eth(Interface),
+%            case queues_config(SwitchId, PortOpts) of
+%                disabled ->
+%                    disabled;
+%                QueuesConfig ->
+%                    SendFun = fun(Frame) ->
+%                                      linc_max_port_native:send(Socket,
+%                                                                IfIndex,
+%                                                                Frame)
+%                              end,
+%                    linc_max_queue:attach_all(SwitchId, PortNo,
+%                                              SendFun, QueuesConfig)
+%            end,
+%            ets:insert(linc:lookup(SwitchId, linc_ports),
+%                       #linc_port{port_no = PortNo, pid = self()}),
+%            ets:insert(linc:lookup(SwitchId, linc_port_stats),
+%                       #ofp_port_stats{port_no = PortNo,
+%                                       duration_sec = erlang:now()}),
+%            {ok, State#state{socket = Socket,
+%                             ifindex = IfIndex,
+%                             epcap_pid = EpcapPid,
+%                             port = Port#ofp_port{hw_addr = HwAddr}}}
+%    end.
 
 %% @private
 handle_call({port_mod, #ofp_port_mod{hw_addr = PMHwAddr,
@@ -516,18 +541,19 @@ handle_cast({send, #linc_pkt{packet = Packet, queue_id = QueueId}},
     {noreply, State}.
 
 %% @private
-handle_info({packet, _DataLinkType, _Time, _Length, Frame},
-            #state{port = #ofp_port{port_no = PortNo,
-                                    config = PortConfig},
-                   switch_id = SwitchId} = State) ->
-    handle_frame(Frame, SwitchId, PortNo, PortConfig),
-    {noreply, State};
-handle_info({Port, {data, Frame}}, #state{port = #ofp_port{port_no = PortNo,
-                                                           config = PortConfig},
-                                          erlang_port = Port,
-                                          switch_id = SwitchId} = State) ->
-    handle_frame(Frame, SwitchId, PortNo, PortConfig),
-    {noreply, State};
+%% replaced by_linc_max_fast_path
+%handle_info({packet, _DataLinkType, _Time, _Length, Frame},
+%            #state{port = #ofp_port{port_no = PortNo,
+%                                    config = PortConfig},
+%                   switch_id = SwitchId} = State) ->
+%    handle_frame(Frame, SwitchId, PortNo, PortConfig),
+%    {noreply, State};
+%handle_info({Port, {data, Frame}}, #state{port = #ofp_port{port_no = PortNo,
+%                                                           config = PortConfig},
+%                                          erlang_port = Port,
+%                                          switch_id = SwitchId} = State) ->
+%    handle_frame(Frame, SwitchId, PortNo, PortConfig),
+%    {noreply, State};
 handle_info({'EXIT', _Pid, {port_terminated, 1}},
             #state{interface = Interface} = State) ->
     ?ERROR("Port for interface ~p exited abnormally",
@@ -588,34 +614,21 @@ remove(SwitchId, PortNo) ->
             ok = supervisor:terminate_child(Sup, Pid)
     end.
 
-handle_frame(Frame, SwitchId, PortNo, PortConfig) ->
-
-	FlowTable = flow_table_0,	%%XXX: same for all switches
-
-	Metadata = <<0:64>>,
-	PortInfo = {PortNo,undefined,undefined}, %% {in_port,in_phy_port,tunnel_id}
-	case linc_max_preparser:inject(Frame,
-				Metadata, PortInfo, #fast_actions{}, FlowTable) of
-	{do,Actions} ->
-		io:format("Actions = ~p\n", [Actions]),
-		drop;
-	X ->
-		io:format("Result = ~p\n", [X]),
-		drop
-	end.
-
-%do(Frame, #fast_actions{output =1}, P1, _P2) ->
-%	send(
-%	port_command(P1, Frame);
-%
-%do(Frame, #fast_actions{output =2}, _P1, P2) ->
-%	port_command(P2, Frame);
-%
-%do(Frame, #fast_actions{output =controller}, _P1, _P2) ->
-%	io:format("Packet-in: ~p~n", [Frame]);
-%
-%do(_Frame, Actions, _P1, _P2) ->
-%	io:format("? ~p\n", [Actions]).
+%% replaced by linc_max_fast_path
+%handle_frame(Frame, SwitchId, PortNo, PortConfig) ->
+%    case check_port_config(no_recv, PortConfig) of
+%        true ->
+%            drop;
+%        false ->
+%            LincPkt = linc_max_packet:binary_to_record(Frame, SwitchId, PortNo),
+%            update_port_rx_counters(SwitchId, PortNo, byte_size(Frame)),
+%            case check_port_config(no_packet_in, PortConfig) of
+%                false ->
+%                    linc_max_routing:spawn_route(LincPkt);
+%                true ->
+%                    linc_max_routing:spawn_route(LincPkt#linc_pkt{no_packet_in = true})
+%            end
+%    end.
 
 -spec update_port_rx_counters(integer(), integer(), integer()) -> any().
 update_port_rx_counters(SwitchId, PortNum, Bytes) ->
@@ -726,5 +739,3 @@ ports_for_switch(SwitchId, Config) ->
 
 check_port_config(Flag, Config) ->
     lists:member(port_down, Config) orelse lists:member(Flag, Config).
-
-%%EOF

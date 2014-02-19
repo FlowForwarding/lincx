@@ -93,11 +93,16 @@ start(BackendOpts) ->
         BufferState = linc_buffer:initialize(SwitchId),
         {ok, _Pid} = linc_max_sup:start_backend_sup(SwitchId),
 
+        FlowState = linc_max_flow:initialize(SwitchId),
+        linc_max_port:initialize(SwitchId, Config),
+
 		%TODO
         %linc_max_groups:initialize(SwitchId),
 
-        FlowState = linc_max_flow:initialize(SwitchId),
-        linc_max_port:initialize(SwitchId, Config),
+		%%MK
+		{switch,_,SwitchConfig} = lists:keyfind(SwitchId, 2, Config),
+		FlowTab0 = flow_table_0,	%%TODO
+		linc_max_fast_path:start(SwitchConfig, FlowTab0),
 
         {ok, 4, #state{flow_state = FlowState,
                        buffer_state = BufferState,
@@ -105,6 +110,7 @@ start(BackendOpts) ->
                        datapath_mac = DatapathMac}}
     catch
         _:Error ->
+			io:format("ERROR:linc_max: ~p\n", [Error]),
             {error, Error}
     end.
 
