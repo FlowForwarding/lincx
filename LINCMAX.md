@@ -277,4 +277,30 @@ ok
   All 302 tests passed.
 ok
 
+----[20/02/2014 00:12]----------------------------------------------------------
+
+The initial integration of the new fast path into the LINC switch is complete.
+
+The following pieces of functionality are missing/not-working:
+
+* queues
+* meters
+* tx/rx counters
+* packet modification (Set-Field, etc)
+
+Other issues:
+
+* linc_max uses a single set of flow tables for all switches (flow_table_0,
+flow_table_1, ...).
+
+The Set-Field action asks for a faster implementation. The best approach is to
+use a scanner similar to linc_max_preparser to identify the range withing the
+packet that corresponding the the field being modified. The a new binary can be
+constructed by concatenating the beginning of the original packet, the new field
+value and the rest of the original.
+
+This rises an issue with checksum calculation. Checksums is a pain point for the
+LINC switch. Most probably, it can be optimized too to get the implementation of
+the Set-Field action that runs the fastest. This is a bit of work. For the time
+being, we will use the pkt module to perform Set-Field actions.
 

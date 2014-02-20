@@ -58,7 +58,7 @@ open_ports(PortConfig) ->
 		vif ->
 			case linc_max_port_native:vif(IfName) of
 			{ok,Outlet,Mac} ->
-				?INFO("blaze:open: ~p (~p)\n", [Outlet,Mac]),
+				?INFO("Open vif port ~p (~p)\n", [Outlet,Mac]),
 				[{PortNo,Outlet,[{mac,Mac}|Opts]}|Ports];
 			{error,Error} ->
 				?ERROR("Cannot open port: ~p", [Error]),

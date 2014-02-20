@@ -1,7 +1,0 @@
-%%
-%%
-%%
-
-{flow,[{in_port,1},{eth_type,16#806}],{instr,undefined,undefined,{write,[{output,2}]},
-											 undefined,{goto,1}}}.
-

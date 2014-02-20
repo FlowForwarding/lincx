@@ -117,10 +117,8 @@ start(BackendOpts) ->
 %% @doc Stop the switch.
 -spec stop(state()) -> any().
 stop(#state{flow_state = FlowState,
-            buffer_state = BufferState,
-            switch_id = SwitchId}) ->
+            buffer_state = BufferState}) ->
 
-    linc_max_port:terminate(SwitchId),
     linc_max_flow:terminate(FlowState),
 
 	%TODO

@@ -1,4 +1,0 @@
-
-{flow,[{in_port,1},{ipv6_nd_sll,16#010203040506}],
-      {instr,undefined,undefined,undefined,undefined,undefined}}.
-

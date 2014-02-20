@@ -127,9 +127,9 @@ modify(SwitchId, #ofp_flow_mod{table_id = TableId} =FlowMod) ->
 		%%
 
 		FlowEnts = get_flow_table(SwitchId, TableId),
-		io:format("FlowEnts = ~p\n", [FlowEnts]),
 		TabName = flow_table_name(TableId),
-		ok = linc_max_generator:update_flow_table(TabName, FlowEnts);
+		ok = linc_max_generator:update_flow_table(TabName, FlowEnts),
+		?INFO("Flow table ~w updated", [TabName]);
 
 	Other ->
 		Other	

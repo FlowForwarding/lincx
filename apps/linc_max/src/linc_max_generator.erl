@@ -371,8 +371,10 @@ body([], MeterInstr, ApplyInstr, ClearWriteInstr, MetadataInstr, GotoInstr) ->
 body([#ofp_instruction_meter{meter_id =Id}|InstrList],
 		_MeterInstr, ApplyInstr, ClearWriteInstr, MetadataInstr, GotoInstr) ->
 	body(InstrList, {meter,Id}, ApplyInstr, ClearWriteInstr, MetadataInstr, GotoInstr);
-%body([#ofp_instruction_apply_actions{}|InstrList],
-%		MeterInstr, ApplyInstr, ClearWriteInstr, MetadataInstr, GotoInstr) ->
+body([#ofp_instruction_apply_actions{actions =Actions}|InstrList],
+		MeterInstr, _ApplyInstr, ClearWriteInstr, MetadataInstr, GotoInstr) ->
+	?INFO("Actions: ~p", [Actions]),
+	body(InstrList, MeterInstr, {apply,Actions}, ClearWriteInstr, MetadataInstr, GotoInstr);
 body([#ofp_instruction_clear_actions{}|InstrList],
 		MeterInstr, ApplyInstr, undefined, MetadataInstr, GotoInstr) ->
 	body(InstrList, MeterInstr, ApplyInstr, clear, MetadataInstr, GotoInstr);

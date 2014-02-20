@@ -196,6 +196,14 @@ scenario(simple_iperf_stats) ->
 scenario(simple_iperf_stop) ->
 	[flow_mod_delete_all_flows];
 
+scenario(apply_actions_max) ->
+	[flow_add([], [{in_port,<<1:32>>}],
+			[{apply_actions,[{output,2,no_buffer}]}]),
+	 flow_add([], [{in_port,<<2:32>>}],
+			[{apply_actions,[{output,1,no_buffer}]}])];
+
+%%------------------------------------------------------------------------------
+
 scenario(all_messages) ->
     [flow_mod_table_miss,
      flow_mod_issue68,
