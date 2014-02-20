@@ -107,7 +107,7 @@ apply_list([decrement_mpls_ttl|ActionList], Frame, Blaze) ->
 	invalid_ttl ->
 		?INFO("Packet has invalid TTL"),
 		%%TODO: send packet-in message to controller
-		apply_list(ActionList, Frame, Blaze);
+		invalid_ttl;
 	Frame1 ->
 		apply_list(ActionList, Frame1, Blaze)
 	end;
@@ -120,7 +120,7 @@ apply_list([decrement_ip_ttl|ActionList], Frame, Blaze) ->
 	invalid_ttl ->
 		?INFO("Packet has invalid TTL"),
 		%%TODO: send packet-in message to controller
-		apply_list(ActionList, Frame, Blaze);
+		invalid_ttl;
 	Frame1 ->
 		apply_list(ActionList, Frame1, Blaze)
 	end;
@@ -135,21 +135,21 @@ apply_list([copy_ttl_inwards|ActionList], Frame, Blaze) ->
 %%------------------------------------------------------------------------------
 %% These are slow - the faster version should not use pkt:*
 %%
-%% Copied from linc_us4_actions.erl
+%% Copied from linc_max_actions.erl
 %%
 
 push_vlan(Frame, EthType) ->
 	P = pkt:decapsulate(Frame),
     %% When pushing, fields are based on existing tag if there is any
-    case linc_us4_packet:find(P, ieee802_1q_tag) of
+    case linc_max_packet:find(P, ieee802_1q_tag) of
         not_found ->
-            InheritVid = 1,
+            InheritVid = <<1:12>>,
             InheritPrio = 0;
         {_, BasedOnTag} ->
             InheritVid = BasedOnTag#ieee802_1q_tag.vid,
             InheritPrio = BasedOnTag#ieee802_1q_tag.pcp
     end,
-    P2 = linc_us4_packet:find_and_edit(
+    P2 = linc_max_packet:find_and_edit(
            P, ether,
            fun(T) -> 
                    NewTag = #ieee802_1q_tag{
@@ -164,7 +164,7 @@ push_vlan(Frame, EthType) ->
 
 pop_vlan(Frame) ->
 	P = pkt:decapsulate(Frame),
-    P2 = linc_us4_packet:find_and_edit(
+    P2 = linc_max_packet:find_and_edit(
            P, ieee802_1q_tag,
            %% returning 'delete' atom will work for first VLAN tag only
            fun(_) -> 'delete' end),
@@ -174,8 +174,8 @@ pop_vlan(Frame) ->
 push_mpls(Frame, _EthType) ->
 	P = pkt:decapsulate(Frame),
 	%% inherit IP or MPLS ttl value
-    FindOldMPLS = linc_us4_packet:find(P, mpls_tag),
-    SetTTL = case linc_us4_packet:find(P, ipv4) of
+    FindOldMPLS = linc_max_packet:find(P, mpls_tag),
+    SetTTL = case linc_max_packet:find(P, ipv4) of
                  not_found ->
                      case FindOldMPLS of
                          not_found ->
@@ -191,13 +191,13 @@ push_mpls(Frame, _EthType) ->
         not_found ->
             %% Must insert after ether or vlan tag,
             %% whichever is deeper in the packet
-            InsertAfter = case linc_us4_packet:find(P, ieee802_1q_tag) of
+            InsertAfter = case linc_max_packet:find(P, ieee802_1q_tag) of
                               not_found ->
                                   ether;
                               _ ->
                                   ieee802_1q_tag
                           end,
-            P2 = linc_us4_packet:find_and_edit(
+            P2 = linc_max_packet:find_and_edit(
                    P, InsertAfter,
                    fun(T) -> 
                            NewEntry = #mpls_stack_entry{ttl = SetTTL},
@@ -208,7 +208,7 @@ push_mpls(Frame, _EthType) ->
                    end);
         %% found an MPLS shim header, and will push tag into it
         _ ->
-            P2 = linc_us4_packet:find_and_edit(
+            P2 = linc_max_packet:find_and_edit(
                    P, mpls_tag,
                    fun(T) -> 
                            %% base the newly inserted entry on a previous one
@@ -240,32 +240,40 @@ pop_mpls(Frame, EthType) ->
                                       T#ieee802_1q_tag{ether_type = EthType}
                               end
                       end,
-    P2 = case linc_us4_packet:find_and_edit(P, mpls_tag, PopMPLSHeader) of
+    P2 = case linc_max_packet:find_and_edit(P, mpls_tag, PopMPLSHeader) of
              Unmodified when Unmodified =:= P ->
                  Unmodified;
              Modified ->
-                 BeforeMPLSTag = case linc_us4_packet:find(P, ieee802_1q_tag) of
+                 BeforeMPLSTag = case linc_max_packet:find(P, ieee802_1q_tag) of
                                      not_found ->
                                          ether;
                                      _ ->
                                          ieee802_1q_tag
                                  end,
-                 linc_us4_packet:find_and_edit(Modified, BeforeMPLSTag,
+                 linc_max_packet:find_and_edit(Modified, BeforeMPLSTag,
                                                ModifyEtherType)
          end,
 	pkt:encapsulate(P2).
 
 push_pbb(Frame, 16#88e7) ->
-	P = pkt:decapsulate(Frame),
+	%%
+	%% pkt module has separate entries for ether and pbb packets. Try pbb first.
+	%%
+	P =  try
+		pkt:decapsulate_pbb(Frame)
+	catch _:_ ->
+		pkt:decapsulate(Frame)
+	end,
+
     %% If there was PBB tag, copy isid from it
-    {ISID, IsPreviousPBB} = case linc_us4_packet:find(P, pbb) of
+    {ISID, IsPreviousPBB} = case linc_max_packet:find(P, pbb) of
                                 not_found ->
                                     {<<1:24>>, false};
                                 {_, PreviousPBB} ->
                                     {PreviousPBB#pbb.i_sid, true}
                             end,
     %% If there was VLAN tag, copy PCP from it
-    IPCP = case linc_us4_packet:find(P, ieee802_1q_tag) of
+    IPCP = case linc_max_packet:find(P, ieee802_1q_tag) of
                not_found ->
                    0;
                {_, PreviousVLAN} ->
@@ -287,7 +295,12 @@ push_pbb(Frame, 16#88e7) ->
 	pkt:encapsulate(NewPacket).
 
 pop_pbb(Frame) ->
-	P = pkt:decapsulate(Frame),
+	%% see comment above
+	P =  try
+		pkt:decapsulate_pbb(Frame)
+	catch _:_ ->
+		pkt:decapsulate(Frame)
+	end,
     P2 = case P of
              [#pbb{} | PRest] ->
                  PRest;
@@ -299,12 +312,12 @@ pop_pbb(Frame) ->
 set_field(Frame, Field, Value) ->
 	Packet = pkt:decapsulate(Frame),
 	F = #ofp_field{name =Field,value =Value},
-    Packet2 = linc_us4_packet:set_field(F, Packet),
+    Packet2 = linc_max_packet:set_field(F, Packet),
 	pkt:encapsulate(Packet2).
 
 set_mpls_ttl(Frame, NewTTL) ->
 	P = pkt:decapsulate(Frame),
-    P2 = linc_us4_packet:find_and_edit(
+    P2 = linc_max_packet:find_and_edit(
            P, mpls_tag,
            fun(T) ->
                    [TopTag | StackTail] = T#mpls_tag.stack,
@@ -316,7 +329,7 @@ set_mpls_ttl(Frame, NewTTL) ->
 decrement_mpls_ttl(Frame) ->
 	P = pkt:decapsulate(Frame),
     try 
-        P2 = linc_us4_packet:find_and_edit(
+        P2 = linc_max_packet:find_and_edit(
                P, mpls_tag,
                fun(#mpls_tag{stack=[#mpls_stack_entry{ttl=0} | _]}) ->
                        throw(invalid_ttl);
@@ -326,13 +339,13 @@ decrement_mpls_ttl(Frame) ->
                end),
 		pkt:encapsulate(P2)
     catch 
-        throw:invalid_ttl = Error ->
+        throw:invalid_ttl =Error ->
 		Error
 	end.
 
 set_ip_ttl(Frame, NewTTL) ->
 	P = pkt:decapsulate(Frame),
-    P2 = linc_us4_packet:find_and_edit(
+    P2 = linc_max_packet:find_and_edit(
            P, ipv4,
            fun(T) ->
                    T#ipv4{ ttl = NewTTL }
@@ -342,7 +355,7 @@ set_ip_ttl(Frame, NewTTL) ->
 decrement_ip_ttl(Frame) ->
 	P = pkt:decapsulate(Frame),
     try
-        P2 = linc_us4_packet:find_and_edit(
+        P2 = linc_max_packet:find_and_edit(
                P, ipv4,
                fun(#ipv4{ ttl = 0 }) ->
                        throw(invalid_ttl);
@@ -361,7 +374,7 @@ copy_ttl_outwards(Frame) ->
     P2 = case Tags of
              [#mpls_tag{stack = S}, #ipv4{ttl = NextOutermostTTL} | _]
                when length(S) == 1 ->
-                 linc_us4_packet:find_and_edit(
+                 linc_max_packet:find_and_edit(
                    P, mpls_tag,
                    fun(T) ->
                            [Stack1 | StackRest] = T#mpls_tag.stack,
@@ -373,7 +386,7 @@ copy_ttl_outwards(Frame) ->
                             }
                    end);
              [#mpls_tag{stack = S} | _] when length(S) > 1 ->
-                 linc_us4_packet:find_and_edit(
+                 linc_max_packet:find_and_edit(
                    P, mpls_tag,
                    fun(T) ->
                            [Stack1, Stack2 | StackRest] = T#mpls_tag.stack,
@@ -386,7 +399,7 @@ copy_ttl_outwards(Frame) ->
                             }
                    end);
              [#ipv4{}, #ipv4{ttl = NextOutermostTTL}] ->
-                 linc_us4_packet:find_and_edit(
+                 linc_max_packet:find_and_edit(
                    P, ipv4,
                    fun(T) ->
                            T#ipv4{ ttl = NextOutermostTTL }
@@ -400,13 +413,13 @@ copy_ttl_inwards(Frame) ->
     P2 = case Tags of
              [#mpls_tag{stack = S} = MPLS, #ipv4{} | _]
                when length(S) == 1 ->
-                 linc_us4_packet:find_and_edit(
+                 linc_max_packet:find_and_edit(
                    P, ipv4,
                    fun(T) ->
                            T#ipv4{ ttl = mpls_get_outermost_ttl(MPLS) }
                    end);
              [#mpls_tag{stack = S} | _] when length(S) > 1 ->
-                 linc_us4_packet:find_and_edit(
+                 linc_max_packet:find_and_edit(
                    P, mpls_tag,
                    fun(T) ->
                            [Stack1, Stack2 | StackRest] = T#mpls_tag.stack,
@@ -418,7 +431,7 @@ copy_ttl_inwards(Frame) ->
                             }
                    end);
              [#ipv4{ttl = OutermostTTL}, #ipv4{}] ->
-                 linc_us4_packet:find_and_edit_skip(
+                 linc_max_packet:find_and_edit_skip(
                    P, ipv4,
                    fun(T) ->
                            T#ipv4{ ttl = OutermostTTL }
@@ -432,7 +445,9 @@ mpls_get_outermost_ttl(T = #mpls_tag{}) ->
     H#mpls_stack_entry.ttl.
 
 filter_copy_fields(List) ->
-    lists:filter(fun(T) when is_tuple(T) ->
+    lists:filter(fun(B) when is_binary(B) ->
+					false;
+				 (T) when is_tuple(T) ->
                          element(1,T) =:= mpls_tag orelse
                              element(1,T) =:= ipv4
                  end, List).
