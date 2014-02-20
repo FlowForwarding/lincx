@@ -8,11 +8,6 @@
 %% Restart the fast path after this many packets to avoid GC
 -define(REIGNITE_AFTER, 16384).
 
--record(fp, {
-		ports		:: {integer(),port(),list()},
-		start_at	:: atom()
-	}).
-
 %[{switch,0,
 %  [{datapath_id,"00:16:3E:6E:71:B1:00:00"},
 %   {backend,linc_max},
@@ -48,7 +43,7 @@ start(SwitchConfig, FlowTab0) ->
 
 	spawn(fun() ->
 		Ports = open_ports(PortConfig),
-		blaze(#fp{ports =Ports,start_at =FlowTab0})
+		blaze(#blaze{ports =Ports,start_at =FlowTab0})
 	end).
 
 open_ports(PortConfig) ->
@@ -74,15 +69,15 @@ open_ports(PortConfig) ->
 %% blaze() loops hundreds thousand times per second
 %%
 
-blaze(St) ->
-	blaze(St, 0).	%% add restart counter
+blaze(Blaze) ->
+	blaze(Blaze, 0).	%% add restart counter
 
-blaze(St, ?REIGNITE_AFTER) ->
-	reignite(St);
-blaze(#fp{ports =Ports,start_at =FlowTab} =St, ReigniteCounter) ->
+blaze(Blaze, ?REIGNITE_AFTER) ->
+	reignite(Blaze);
+blaze(Blaze, ReigniteCounter) ->
 	receive
 	{Outlet,{data,Frame}} ->
-		{PortNo,_,_} = lists:keyfind(Outlet, 2, Ports),
+		{PortNo,_,_} = lists:keyfind(Outlet, 2, Blaze#blaze.ports),
 
 		Metadata = <<0:64>>,
 		%% in_phy_port and tunnel_id are undefined
@@ -90,22 +85,22 @@ blaze(#fp{ports =Ports,start_at =FlowTab} =St, ReigniteCounter) ->
 
 		%% Inject the frame into the pipeline
 		case linc_max_preparser:inject(Frame,
-				Metadata, PortInfo, #fast_actions{}, FlowTab) of
-		{do,Actions} ->
-			linc_max_fast_actions:apply_set(Actions, Frame, Ports);
+				Metadata, PortInfo, #fast_actions{}, Blaze) of
+		{do,Frame1,Actions} ->
+			linc_max_fast_actions:apply_set(Actions, Frame1, Blaze);
 		miss ->
 			io:format("MISS: ~p\n", [pkt:decapsulate(Frame)]);
 		_ ->
 			drop
 		end,
 
-		blaze(St, ReigniteCounter +1)
+		blaze(Blaze, ReigniteCounter +1)
 	end.
 
-reignite(#fp{ports =Ports} =St) ->
+reignite(#blaze{ports =Ports} =Blaze) ->
 	NewPid = spawn(fun() ->
 		try
-			blaze(St)
+			blaze(Blaze)
 		catch _:Error ->
 			?ERROR("blaze exception: ~p\n", Error)
 		end

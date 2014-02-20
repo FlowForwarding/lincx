@@ -961,7 +961,7 @@ flow_mod_issue90() ->
     Action1 = #ofp_action_push_vlan{ethertype = 16#8100},
     Action2 = #ofp_action_set_field{field = SetField},
     Action3 = #ofp_action_output{port = 2, max_len = no_buffer},
-    Instriction = #ofp_instruction_apply_actions{actions = [Action1,
+    Instruction = #ofp_instruction_apply_actions{actions = [Action1,
                                                             Action2,
                                                             Action3]},
     message(#ofp_flow_mod{
@@ -977,7 +977,7 @@ flow_mod_issue90() ->
                out_group = any,
                flags = [],
                match = #ofp_match{fields = []},
-               instructions = [Instriction]}).
+               instructions = [Instruction]}).
 
 %% Meter mod to test behaviour related with pull request repotred in:
 %% https://github.com/FlowForwarding/of_protocol/pull/28

@@ -7,12 +7,15 @@
 -module(linc_max_preparser_tests).
 
 %% mock flow table interface
--export([match/23]).
+-export([match/24]).
 
 -include_lib("eunit/include/eunit.hrl").
 -include_lib("pkt/include/pkt.hrl").
 
--include("linc_max_demo.hrl").
+-include_lib("of_protocol/include/ofp_v4.hrl").
+-include("linc_max.hrl").
+
+-include("fast_path.hrl").
 
 port_info_test_() ->
 	AnyFrame = pkt:encapsulate([#ether{},#ipv4{},#udp{}]),
@@ -21,7 +24,7 @@ port_info_test_() ->
 	[fun() ->
 		PortInfo = {InPort,InPhyPort,TunnelId},
 		Ms = linc_max_preparser:inject(AnyFrame, AnyMeta, PortInfo,
-									  #actions{}, ?MODULE),
+									  #fast_actions{}, #blaze{start_at =?MODULE}),
 		present(Present, Ms),
 		absent(Absent, Ms)
 	 end
@@ -40,7 +43,7 @@ metadata_test() ->
 	AnyFrame = pkt:encapsulate([#ether{},#ipv4{},#udp{}]),
 	AnyPortInfo = {1,1,undefined},
 	Ms = linc_max_preparser:inject(AnyFrame, <<42:64>>, AnyPortInfo,
-								  #actions{}, ?MODULE),
+								  #fast_actions{}, #blaze{start_at =?MODULE}),
 	present([{metadata,<<42:64>>}], Ms).
 
 fields_test_() ->
@@ -53,7 +56,7 @@ fields_test_() ->
 		Frame = pkt:encapsulate(Pkt),
 		io:format("~p: ~p\n", [Present,Frame]),
 		Ms = linc_max_preparser:inject(Frame, AnyMeta, AnyPortInfo,
-									  #actions{}, ?MODULE),
+									  #fast_actions{}, #blaze{start_at =?MODULE}),
 		present(Present, Ms),
 		absent(Absent, Ms)
 	 end
@@ -154,7 +157,7 @@ exthdr_test_() ->
 		Frame = pkt:encapsulate(Pkt),
 		io:format("Frame = ~p\n", [Frame]),
 		Ms = linc_max_preparser:inject(Frame, AnyMeta, AnyPortInfo,
-									  #actions{}, ?MODULE),
+									  #fast_actions{}, #blaze{start_at =?MODULE}),
 		io:format("Ms = ~p\n", [Ms]),
 		io:format("Present/Absent = ~p/~p\n", [Present,Absent]),
 		present(Present, Ms),
@@ -235,7 +238,8 @@ match(_ = _Packet,
       _ = InPort,
       _ = InPhyPort,
       _ = TunnelId,
-      _ = _Actions) ->
+      _ = _Actions,
+	  _ = _Blaze) ->
 	Hdrs = 
 		[{vlan_tag,VlanTag},
 		 {eth_type,EthType},

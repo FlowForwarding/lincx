@@ -1,0 +1,2 @@
+{ok, CtrlPid} = of_controller_v4:start_scenario(6633, apply_actions_max).
+lists:map(fun application:start/1, [crypto,asn1,public_key,ssh,compiler,syntax_tools,xmerl,mnesia,lager,linc]).

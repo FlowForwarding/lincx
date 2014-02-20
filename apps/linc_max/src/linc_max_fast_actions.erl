@@ -5,6 +5,8 @@
 %% @author Cloduozer LLP. <info@cloudozer.com>
 %% @copyright 2012 FlowForwarding.org
 -module(linc_max_fast_actions).
+-export([update_metadata/3]).
+-export([meter/2]).
 -export([apply_set/3]).
 -export([apply_list/3]).
 
@@ -16,100 +18,119 @@
 
 -include("fast_path.hrl").
 
+%% FAST PATH
+%%
+%% The function is needed because metadata are represented as binary in the
+%% argument list of a flow entry.
+%%
+update_metadata(<<MetaInt:64>>, AndMe, OrMe) ->
+	<<(MetaInt band AndMe bor OrMe):64>>.
+
+%% FAST PATH
+%%
+%% Meters are processes. The call should lookup the meter process using the
+%% state and exchange messages with it to check that the packet fits the bands.
+%%
+meter(_MeterId, _St) -> ok.
+
 %% Action Set
 
 %% FAST PATH
 %%
-apply_set(#fast_actions{output =PortNo}, Frame, Ports) when is_integer(PortNo) ->
-	{_,Outlet,_} = lists:keyfind(PortNo, 1, Ports),
+apply_set(#fast_actions{output =PortNo}, Frame, Blaze) when is_integer(PortNo) ->
+	{_,Outlet,_} = lists:keyfind(PortNo, 1, Blaze#blaze.ports),
 	erlang:port_command(Outlet, Frame);
 
-apply_set(#fast_actions{output =controller}, Frame, _Ports) ->
+apply_set(#fast_actions{output =controller}, Frame, _Blaze) ->
 	?INFO("TODO: Packet-in: ~p~n", [Frame]);
 
-apply_set(Actions, _Frame, _Ports) ->
+apply_set(#fast_actions{}, _Frame, _Blaze) ->
+	drop;	%% empty action set
+
+apply_set(Actions, _Frame, _Blaze) ->
 	io:format("? ~p\n", [Actions]).
+
 
 %% Apply-Actions
 
 %% FAST PATH
 %%
-apply_list([], Frame, _Ports) ->
+apply_list([], Frame, _Blaze) ->
 	Frame;
 
-apply_list([{output,PortNo}|ActionList], Frame, Ports) when is_integer(PortNo) ->
-	{_,Outlet,_} = lists:keyfind(PortNo, 1, Ports),
+apply_list([{output,PortNo}|ActionList], Frame, Blaze) when is_integer(PortNo) ->
+	{_,Outlet,_} = lists:keyfind(PortNo, 1, Blaze#blaze.ports),
 	erlang:port_command(Outlet, Frame),
-	apply_list(ActionList, Frame, Ports);
-apply_list([{output,controller}|ActionList], Frame, Ports) ->
+	apply_list(ActionList, Frame, Blaze);
+apply_list([{output,controller}|ActionList], Frame, Blaze) ->
 	?INFO("TODO: Packet-in: ~p~n", [Frame]),
-	apply_list(ActionList, Frame, Ports);
+	apply_list(ActionList, Frame, Blaze);
 
-apply_list([{set_queue,_Queue}|ActionList], Frame, Ports) ->
+apply_list([{set_queue,_Queue}|ActionList], Frame, Blaze) ->
 	?ERROR("Queues not supported"),
-	apply_list(ActionList, Frame, Ports);
+	apply_list(ActionList, Frame, Blaze);
 
-apply_list([{group,_Group}|ActionList], Frame, Ports) ->
+apply_list([{group,_Group}|ActionList], Frame, Blaze) ->
 	?ERROR("Groups not supported"),
-	apply_list(ActionList, Frame, Ports);
+	apply_list(ActionList, Frame, Blaze);
 
-apply_list([{push_vlan,EthType}|ActionList], Frame, Ports) ->
+apply_list([{push_vlan,EthType}|ActionList], Frame, Blaze) ->
 	Frame1 = push_vlan(Frame, EthType),
-	apply_list(ActionList, Frame1, Ports);
-apply_list([pop_vlan|ActionList], Frame, Ports) ->
+	apply_list(ActionList, Frame1, Blaze);
+apply_list([pop_vlan|ActionList], Frame, Blaze) ->
 	Frame1 = pop_vlan(Frame),
-	apply_list(ActionList, Frame1, Ports);
+	apply_list(ActionList, Frame1, Blaze);
 
-apply_list([{push_mpls,EthType}|ActionList], Frame, Ports) ->
+apply_list([{push_mpls,EthType}|ActionList], Frame, Blaze) ->
 	Frame1 = push_mpls(Frame, EthType),
-	apply_list(ActionList, Frame1, Ports);
-apply_list([{pop_mpls,EthType}|ActionList], Frame, Ports) ->
+	apply_list(ActionList, Frame1, Blaze);
+apply_list([{pop_mpls,EthType}|ActionList], Frame, Blaze) ->
 	Frame1 = pop_mpls(Frame, EthType),
-	apply_list(ActionList, Frame1, Ports);
+	apply_list(ActionList, Frame1, Blaze);
 
-apply_list([{push_pbb,EthType}|ActionList], Frame, Ports) ->
+apply_list([{push_pbb,EthType}|ActionList], Frame, Blaze) ->
 	Frame1 = push_pbb(Frame, EthType),
-	apply_list(ActionList, Frame1, Ports);
-apply_list([pop_pbb|ActionList], Frame, Ports) ->
+	apply_list(ActionList, Frame1, Blaze);
+apply_list([pop_pbb|ActionList], Frame, Blaze) ->
 	Frame1 = pop_pbb(Frame),
-	apply_list(ActionList, Frame1, Ports);
+	apply_list(ActionList, Frame1, Blaze);
 
-apply_list([{set_field,Field,Value}|ActionList], Frame, Ports) ->
+apply_list([{set_field,Field,Value}|ActionList], Frame, Blaze) ->
 	Frame1 = set_field(Frame, Field, Value),
-	apply_list(ActionList, Frame1, Ports);
+	apply_list(ActionList, Frame1, Blaze);
 
-apply_list([{set_mpls_ttl,TTL}|ActionList], Frame, Ports) ->
+apply_list([{set_mpls_ttl,TTL}|ActionList], Frame, Blaze) ->
 	Frame1  = set_mpls_ttl(Frame, TTL),
-	apply_list(ActionList, Frame1, Ports);
-apply_list([decrement_mpls_ttl|ActionList], Frame, Ports) ->
+	apply_list(ActionList, Frame1, Blaze);
+apply_list([decrement_mpls_ttl|ActionList], Frame, Blaze) ->
 	case decrement_mpls_ttl(Frame) of
 	invalid_ttl ->
 		?INFO("Packet has invalid TTL"),
 		%%TODO: send packet-in message to controller
-		apply_list(ActionList, Frame, Ports);
+		apply_list(ActionList, Frame, Blaze);
 	Frame1 ->
-		apply_list(ActionList, Frame1, Ports)
+		apply_list(ActionList, Frame1, Blaze)
 	end;
 
-apply_list([{set_ip_ttl,TTL}|ActionList], Frame, Ports) ->
+apply_list([{set_ip_ttl,TTL}|ActionList], Frame, Blaze) ->
 	Frame1  = set_ip_ttl(Frame, TTL),
-	apply_list(ActionList, Frame1, Ports);
-apply_list([decrement_ip_ttl|ActionList], Frame, Ports) ->
+	apply_list(ActionList, Frame1, Blaze);
+apply_list([decrement_ip_ttl|ActionList], Frame, Blaze) ->
 	case decrement_ip_ttl(Frame) of
 	invalid_ttl ->
 		?INFO("Packet has invalid TTL"),
 		%%TODO: send packet-in message to controller
-		apply_list(ActionList, Frame, Ports);
+		apply_list(ActionList, Frame, Blaze);
 	Frame1 ->
-		apply_list(ActionList, Frame1, Ports)
+		apply_list(ActionList, Frame1, Blaze)
 	end;
 
-apply_list([copy_ttl_outwards|ActionList], Frame, Ports) ->
+apply_list([copy_ttl_outwards|ActionList], Frame, Blaze) ->
 	Frame1  = copy_ttl_outwards(Frame),
-	apply_list(ActionList, Frame1, Ports);
-apply_list([copy_ttl_inwards|ActionList], Frame, Ports) ->
+	apply_list(ActionList, Frame1, Blaze);
+apply_list([copy_ttl_inwards|ActionList], Frame, Blaze) ->
 	Frame1  = copy_ttl_inwards(Frame),
-	apply_list(ActionList, Frame1, Ports).
+	apply_list(ActionList, Frame1, Blaze).
 
 %%------------------------------------------------------------------------------
 %% These are slow - the faster version should not use pkt:*

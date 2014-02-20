@@ -9,7 +9,7 @@
 
 update_flow_table(TabName, FlowEnts) ->
 	{ok,Forms} = flow_table_forms(TabName, FlowEnts),
-	{ok,TabName,Bin} = compile:forms(Forms, []), %% [report_errors]),
+	{ok,TabName,Bin} = compile:forms(Forms, [report_errors]),
 	case erlang:check_old_code(TabName) of
 	true ->
 		erlang:purge_module(TabName);
@@ -135,7 +135,11 @@ value_pattern_as_binary(Value, Bits) ->
 
 wrap_pattern(Pat, Arg, true) ->
 	wrap_pattern_1(Pat, Arg);
+wrap_pattern(Pat, packet =Arg, _) ->
+	wrap_pattern_1(Pat, Arg);
 wrap_pattern(Pat, actions =Arg, _) ->
+	wrap_pattern_1(Pat, Arg);
+wrap_pattern(Pat, blaze =Arg, _) ->
 	wrap_pattern_1(Pat, Arg);
 wrap_pattern(Pat, icmp6_sll =Arg, _) ->
 	wrap_pattern_1(Pat, Arg);
@@ -371,10 +375,9 @@ body([], MeterInstr, ApplyInstr, ClearWriteInstr, MetadataInstr, GotoInstr) ->
 body([#ofp_instruction_meter{meter_id =Id}|InstrList],
 		_MeterInstr, ApplyInstr, ClearWriteInstr, MetadataInstr, GotoInstr) ->
 	body(InstrList, {meter,Id}, ApplyInstr, ClearWriteInstr, MetadataInstr, GotoInstr);
-body([#ofp_instruction_apply_actions{actions =Actions}|InstrList],
+body([#ofp_instruction_apply_actions{actions =As}|InstrList],
 		MeterInstr, _ApplyInstr, ClearWriteInstr, MetadataInstr, GotoInstr) ->
-	?INFO("Actions: ~p", [Actions]),
-	body(InstrList, MeterInstr, {apply,Actions}, ClearWriteInstr, MetadataInstr, GotoInstr);
+	body(InstrList, MeterInstr, {apply,fast_action_list(As)}, ClearWriteInstr, MetadataInstr, GotoInstr);
 body([#ofp_instruction_clear_actions{}|InstrList],
 		MeterInstr, ApplyInstr, undefined, MetadataInstr, GotoInstr) ->
 	body(InstrList, MeterInstr, ApplyInstr, clear, MetadataInstr, GotoInstr);
@@ -393,16 +396,35 @@ body([#ofp_instruction_goto_table{table_id =Id}|InstrList],
 	body(InstrList, MeterInstr, ApplyInstr, ClearWriteInstr, MetadataInstr, {goto,Id}).
 
 
-compile_body(MeterInstr, _ApplyInstr, ClearWriteInstr, _MetadataInstr, undefined) ->
+compile_body(MeterInstr, undefined, ClearWriteInstr, _MetadataInstr, undefined) ->
 	%%
-	%% No goto table - return (updated) actions
+	%% No goto table - return (updated) action set
 	%%
-	%% match(...) ->
-	%%		{do,Actions}.
+	%% match(Packet,...) ->
+	%%		{do,Packet,Actions}.
 	%%
 	Goto = [{tuple,0,[{atom,0,do},
+					   {var,0,var_name(packet)},
 					   updated_actions(ClearWriteInstr)]}],
 	compile_meter(MeterInstr, Goto);
+
+compile_body(MeterInstr, {apply,ActionList}, ClearWriteInstr, _MetadataInstr, undefined) ->
+	%%
+	%% No goto table - apply action list and return (updated) action set
+	%%
+	%% match(Packet,...) ->
+	%%		Packet1 = linc_max_fast_actions:apply_list(ActionList, Frame, Blaze),
+	%%		{do,Packet1,Actions}.
+	%%
+	ApplyList = {call,0,{remote,0,{atom,0,linc_max_fast_actions},
+								  {atom,0,apply_list}},
+							[ast(ActionList),
+							 {var,0,var_name(packet)},
+							 {var,0,var_name(blaze)}]},
+	Return = [{tuple,0,[{atom,0,do},
+					   ApplyList,
+					   updated_actions(ClearWriteInstr)]}],
+	compile_meter(MeterInstr, Return);
 
 compile_body(MeterInstr, _ApplyInstr, ClearWriteInstr, MetadataInstr, {goto,Id}) ->
 	%%
@@ -419,7 +441,7 @@ compile_body(MeterInstr, _ApplyInstr, ClearWriteInstr, MetadataInstr, {goto,Id})
 	
 	(metadata) when MetadataInstr =/= undefined ->
 		{_,Value,Mask} = MetadataInstr,
-		{call,0,{remote,0,{atom,0,linc_max_demo},	%%TODO
+		{call,0,{remote,0,{atom,0,linc_max_fast_actions},
 						  {atom,0,update_metadata}},[{var,0,var_name(metadata)},
 												     {integer,0,(bnot Mask)},
 													 {integer,0,Value}]};
@@ -443,7 +465,7 @@ compile_meter({meter,Id}, Goto) ->
 	%%			drop
 	%%		end.
 	%%
-	Call = {call,0,{remote,0,{atom,0,linc_max_demo},	%%TODO
+	Call = {call,0,{remote,0,{atom,0,linc_max_fast_actions},
 						     {atom,0,meter}},[{integer,0,Id}]},
 	C1 = {clause,0,[{atom,0,ok}],[],Goto},
 	C2 = {clause,0,[{var,0,'_'}],[],[{atom,0,drop}]},
@@ -479,7 +501,7 @@ updated_actions({write,Specs}) ->
 	updated_actions(write, Specs, #fast_actions{}).
 
 updated_actions(clear, [], Actions) ->
-	erl_syntax:revert(erl_syntax:abstract(Actions));
+	ast(Actions);
 updated_actions(write, [], Actions) ->
 	Size = record_info(size, fast_actions),
 	Fields = record_info(fields, fast_actions), 
@@ -503,7 +525,7 @@ updated_actions(write, [], Actions) ->
 			undefined ->
 				{var,0,var_name(F)};
 			X ->
-				erl_syntax:revert(erl_syntax:abstract(X))
+				ast(X)
 			end
 		end, Rs),
 	{block,0,[{match,0,{tuple,0,OldElems},{var,0,var_name(actions)}},
@@ -515,6 +537,46 @@ updated_actions(Tag, [#ofp_action_output{port = Port}|Specs], Actions) ->
 	updated_actions(Tag, Specs, Actions#fast_actions{output =Port});
 updated_actions(Tag, [#ofp_action_group{group_id =Id}|Specs], Actions) ->
 	updated_actions(Tag, Specs, Actions#fast_actions{group =Id}).
+
+%% @doc convert from #ofp_action{} to the fast path layout
+fast_action_list(As) ->
+	fast_action_list(As, []).
+
+fast_action_list([], Acc) ->
+	lists:reverse(Acc);
+fast_action_list([#ofp_action_output{port =PortNo}|As], Acc) ->
+	fast_action_list(As, [{output,PortNo}|Acc]);
+fast_action_list([#ofp_action_set_queue{queue_id =Queue}|As], Acc) ->
+	fast_action_list(As, [{set_queue,Queue}|Acc]);
+fast_action_list([#ofp_action_group{group_id =Group}|As], Acc) ->
+	fast_action_list(As, [{group,Group}|Acc]);
+fast_action_list([#ofp_action_push_vlan{ethertype =EthType}|As], Acc) ->
+	fast_action_list(As, [{push_vlan,EthType}|Acc]);
+fast_action_list([#ofp_action_pop_vlan{}|As], Acc) ->
+	fast_action_list(As, [pop_vlan|Acc]);
+fast_action_list([#ofp_action_push_mpls{ethertype =EthType}|As], Acc) ->
+	fast_action_list(As, [{push_mpls,EthType}|Acc]);
+fast_action_list([#ofp_action_pop_mpls{ethertype =EthType}|As], Acc) ->
+	fast_action_list(As, [{pop_mpls,EthType}|Acc]);
+fast_action_list([#ofp_action_push_pbb{ethertype =EthType}|As], Acc) ->
+	fast_action_list(As, [{push_pbb,EthType}|Acc]);
+fast_action_list([#ofp_action_pop_pbb{}|As], Acc) ->
+	fast_action_list(As, [pop_pbb|Acc]);
+fast_action_list([#ofp_action_set_field{field =
+					#ofp_field{name =Name,value =Value}}|As], Acc) ->
+	fast_action_list(As, [{set_field,Name,Value}|Acc]);
+fast_action_list([#ofp_action_set_mpls_ttl{mpls_ttl =TTL}|As], Acc) ->
+	fast_action_list(As, [{set_mpls_ttl,TTL}|Acc]);
+fast_action_list([#ofp_action_dec_mpls_ttl{}|As], Acc) ->
+	fast_action_list(As, [decrement_mpls_ttl|Acc]);
+fast_action_list([#ofp_action_set_nw_ttl{nw_ttl =TTL}|As], Acc) ->
+	fast_action_list(As, [{set_ip_ttl,TTL}|Acc]);
+fast_action_list([#ofp_action_dec_nw_ttl{}|As], Acc) ->
+	fast_action_list(As, [decrement_ip_ttl|Acc]);
+fast_action_list([#ofp_action_copy_ttl_out{}|As], Acc) ->
+	fast_action_list(As, [copy_ttl_outwards|Acc]);
+fast_action_list([#ofp_action_copy_ttl_in{}|As], Acc) ->
+	fast_action_list(As, [copy_ttl_inwards|Acc]).
 
 var_name(packet) -> 'Packet';
 var_name(vlan_tag) -> 'VlanTag';
@@ -539,6 +601,7 @@ var_name(in_port) -> 'InPort';
 var_name(in_phy_port) -> 'InPhyPort';
 var_name(tunnel_id) -> 'TunnelId';
 var_name(actions) -> 'Actions';
+var_name(blaze) -> 'Blaze';
 %% fast_actions fields
 var_name(queue) -> 'Queue';
 var_name(output) -> 'Output';
@@ -567,6 +630,10 @@ match_arguments() ->
 	 in_port,
 	 in_phy_port,
 	 tunnel_id,
-	 actions].
+	 actions,
+	 blaze].
+
+ast(Term) ->
+	erl_syntax:revert(erl_syntax:abstract(Term)).
 
 %%EOF
