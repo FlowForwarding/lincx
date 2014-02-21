@@ -1,0 +1,28 @@
+%%
+%% packet-modifying actions
+%%
+
+{flow_entry,undefined,undefined,
+    {ofp_match,
+        [{ofp_field,openflow_basic,in_port,false,<<0,0,0,1>>,undefined}]},
+    <<0,0,0,0,0,0,0,0>>,
+    [],undefined,
+    {infinity,0,0},
+    {infinity,0,0},
+	[{ofp_instruction_apply_actions,2,
+         [{ofp_action_push_vlan,7,33024},
+          {ofp_action_pop_vlan,4}]},
+     {ofp_instruction_write_actions,4,
+         [{ofp_action_output,16,2,no_buffer}]}]}.
+{flow_entry,undefined,undefined,
+    {ofp_match,
+        [{ofp_field,openflow_basic,in_port,false,<<0,0,0,2>>,undefined}]},
+    <<0,0,0,0,0,0,0,0>>,
+    [],undefined,
+    {infinity,0,0},
+    {infinity,0,0},
+	[{ofp_instruction_apply_actions,2,
+         [{ofp_action_push_vlan,7,33024},
+          {ofp_action_pop_vlan,4}]},
+     {ofp_instruction_write_actions,4,
+         [{ofp_action_output,16,1,no_buffer}]}]}.

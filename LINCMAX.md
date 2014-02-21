@@ -304,3 +304,39 @@ LINC switch. Most probably, it can be optimized too to get the implementation of
 the Set-Field action that runs the fastest. This is a bit of work. For the time
 being, we will use the pkt module to perform Set-Field actions.
 
+----[21/02/2014]----------------------------------------------------------------
+
+The first iteration of packet-modifying actions is complete and covered with
+unit tests. The implementation uses pkt:decapsulate/encapsulate and thus is
+slow. How slow?
+
+A test pushes a VLAN tag and pops it immediately before forwarding the packet.
+The processing delay grows:
+
+5> ling:experimental(processing_delay, []).
+Processing delay statistics:
+Packets: 2000
+Delay: 13.842us +- 0.443 (95%)
+ok
+
+And iperf shows TCP throughput of ~200Mbit/s.
+The memory consumption stays low after the iperf run:
+
+9> memory().
+[{total,19007780},
+ {processes,2543616},
+ {system,16464164},
+ {processes_used,757812},
+ {atom,1033416},
+ {atom_used,839928},
+ {binary,10735616},
+ {code,4564060},
+ {ets,131072}]
+
+It looks like Linux networking code adapts to the speed of an interfaces. Higher
+processing delay decreases the throughput abruptly.
+
+Now that we have the test suite for the linc_max_fast_actions module and the
+performance figures, we are ready to make the packet-modification fast (by
+abandoning pkt:*).
+

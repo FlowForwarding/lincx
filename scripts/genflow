@@ -79,13 +79,13 @@ generate(InPort, OutPort, TabConf) ->
 							[#ofp_field{name =in_port,value = <<InPort:32>>},
 							 #ofp_field{name =eth_type,value = <<8,6>>}]},
 						 instructions =[#ofp_instruction_write_actions{actions =
-								[#ofp_action_output{port = <<OutPort:32>>}]}]}];
+								[#ofp_action_output{port = OutPort}]}]}];
 			true -> [] end
 
 		++ [#flow_entry{match =#ofp_match{fields =
 							[#ofp_field{name =in_port,value = <<InPort:32>>}]},
 						instructions =[#ofp_instruction_write_actions{actions =
-								[#ofp_action_output{port = <<OutPort:32>>}]}]}].
+								[#ofp_action_output{port = OutPort}]}]}].
 
 more_matches(Matches) ->
 	more_matches(Matches, []).

@@ -2,10 +2,18 @@
 -export([update_flow_table/2]).
 -export([flow_table_forms/2]).
 
+%%DBG
+-export([lt/1]).
+
 -include_lib("of_protocol/include/ofp_v4.hrl").
 -include_lib("linc/include/linc_logger.hrl").
 -include("linc_max.hrl").
 -include("fast_path.hrl").
+
+%%DBG
+lt(N) ->
+	{ok,Ents} = file:consult("priv/test" ++ integer_to_list(N) ++ ".tab"),
+	update_flow_table(flow_table_0, Ents).
 
 update_flow_table(TabName, FlowEnts) ->
 	{ok,Forms} = flow_table_forms(TabName, FlowEnts),
