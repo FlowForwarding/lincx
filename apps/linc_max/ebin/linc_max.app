@@ -13,6 +13,8 @@
                     {datapath_desc,<<"Dummy">>}]},
               {modules,[linc_max_preparser,
 						linc_max_preparser_tests,
+						linc_max_splicer,
+						linc_max_splicer_tests,
 						linc_max_generator,
 						linc_max_generator_tests,
 						linc_max_fast_actions,

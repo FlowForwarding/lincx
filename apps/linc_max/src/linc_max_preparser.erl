@@ -7,6 +7,9 @@
 %% @doc Packet preparser
 -module(linc_max_preparser).
 
+-include_lib("pkt/include/pkt.hrl").
+-include("pkt_max.hrl").
+
 -include("fast_path.hrl").
 
 %% public
@@ -29,52 +32,9 @@
 %% to support new packet types, etc. This is the price you pay for performance.
 %%
 
--define(ETH_P_IP,			16#0800).
--define(ETH_P_ARP,			16#0806).
--define(ETH_P_IPV6,			16#86dd).
--define(ETH_P_802_1Q,		16#8100).
--define(ETH_P_MPLS_UNI,		16#8847).
--define(ETH_P_MPLS_MULTI,	16#8848).
--define(ETH_P_PBB_B,		16#88a8).
--define(ETH_P_PBB_I,		16#88e7).
-
--define(IPV6_HDR_NONEXT,	59).
--define(IPV6_HDR_ESP,		50).
--define(IPV6_HDR_AUTH,		51).
--define(IPV6_HDR_DEST,		60).
--define(IPV6_HDR_FRAG,		44).
--define(IPV6_HDR_ROUTER,	43).
--define(IPV6_HDR_HOP,		0).
-
--define(IPV6_EXT_NONEXT,	1).
--define(IPV6_EXT_ESP,		2).
--define(IPV6_EXT_AUTH,		4).
--define(IPV6_EXT_DEST,		8).
--define(IPV6_EXT_FRAG,		16).
--define(IPV6_EXT_ROUTER,	32).
--define(IPV6_EXT_HOP,		64).
--define(IPV6_EXT_UNREP,		128).
--define(IPV6_EXT_UNSEQ,		256).
-
--define(IPPROTO_IP,		0).
--define(IPPROTO_ICMP,	1).
--define(IPPROTO_TCP,	6).
--define(IPPROTO_UDP,	17).
--define(IPPROTO_IPV6,	41).
--define(IPPROTO_GRE,	47).
--define(IPPROTO_ICMPV6,	58).
--define(IPPROTO_SCTP,	132).
--define(IPPROTO_RAW,	255).
-
--define(ICMPV6_NDP_NS,	135).
--define(ICMPV6_NDP_NA,	136).
-
--define(NDP_OPT_SLL,	1).
--define(NDP_OPT_TLL,	2).
-
 %% @doc Inject/reinject a packet into a flow pipeline.
 inject(<<_:12/binary,Rest/binary>> =Packet, Metadata, PortInfo, Actions, Blaze) ->
-	eth(Packet,
+	ether(Packet,
 		undefined,	%% VlanTag
 		undefined,	%% EthType
 		undefined,	%% PbbTag
@@ -94,62 +54,62 @@ inject(<<_:12/binary,Rest/binary>> =Packet, Metadata, PortInfo, Actions, Blaze) 
 %% "Ethernet type of the OpenFlow packet payload, after VLAN tags."
 
 %% @doc Consume VLAN/PBB/MPLS tags
-eth(Packet, undefined = _VlanTag, EthType, PbbTag, MplsTag,
+ether(Packet, undefined = _VlanTag, EthType, PbbTag, MplsTag,
 	Ip4Hdr, Ip6Hdr, Ip6Ext, IpTclass, IpProto,
 	Metadata, PortInfo, Actions, Blaze,
 	<<?ETH_P_802_1Q:16,VlanTag:2/binary,Rest/binary>>) ->
 	%% The first VLAN tag, keep
-	eth(Packet, VlanTag, EthType, PbbTag, MplsTag,
+	ether(Packet, VlanTag, EthType, PbbTag, MplsTag,
 		Ip4Hdr, Ip6Hdr, Ip6Ext, IpTclass, IpProto,
 		Metadata, PortInfo, Actions, Blaze,
 		Rest);
-eth(Packet, VlanTag, EthType, PbbTag, MplsTag,
+ether(Packet, VlanTag, EthType, PbbTag, MplsTag,
 	Ip4Hdr, Ip6Hdr, Ip6Ext, IpTclass, IpProto,
 	Metadata, PortInfo, Actions, Blaze,
 	<<?ETH_P_802_1Q:16,_SkipVlanTag:2/binary,Rest/binary>>) ->
 	%% The second/third VLAN Tag, ignore
-	eth(Packet, VlanTag, EthType, PbbTag, MplsTag,
+	ether(Packet, VlanTag, EthType, PbbTag, MplsTag,
 		Ip4Hdr, Ip6Hdr, Ip6Ext, IpTclass, IpProto,
 		Metadata, PortInfo, Actions, Blaze,
 		Rest);
 
 %% See https://sites.google.com/site/amitsciscozone/home/pbb/understanding-pbb 
 
-eth(Packet, undefined = _VlanTag, EthType, PbbTag, MplsTag,
+ether(Packet, undefined = _VlanTag, EthType, PbbTag, MplsTag,
 	Ip4Hdr, Ip6Hdr, Ip6Ext, IpTclass, IpProto,
 	Metadata, PortInfo, Actions, Blaze,
 	<<?ETH_P_PBB_B:16,VlanTag:2/binary,Rest/binary>>) ->
 	%% 802.1ad (or 802.1ah) frame, keep S-VLAN tag
 	%%NB: EthType not set
-	eth(Packet, VlanTag, EthType, PbbTag, MplsTag,
+	ether(Packet, VlanTag, EthType, PbbTag, MplsTag,
 		Ip4Hdr, Ip6Hdr, Ip6Ext, IpTclass, IpProto,
 		Metadata, PortInfo, Actions, Blaze,
 		Rest);
-eth(Packet, VlanTag, EthType, PbbTag, MplsTag,
+ether(Packet, VlanTag, EthType, PbbTag, MplsTag,
 	Ip4Hdr, Ip6Hdr, Ip6Ext, IpTclass, IpProto,
 	Metadata, PortInfo, Actions, Blaze,
 	<<?ETH_P_PBB_B:16,_Skip:2/binary,Rest/binary>>) ->
 	%% 802.1ad (or 802.1ah) frame, skip
 	%%NB: EthType not set
-	eth(Packet, VlanTag, EthType, PbbTag, MplsTag,
+	ether(Packet, VlanTag, EthType, PbbTag, MplsTag,
 		Ip4Hdr, Ip6Hdr, Ip6Ext, IpTclass, IpProto,
 		Metadata, PortInfo, Actions, Blaze,
 		Rest);
-eth(Packet, VlanTag, EthType, undefined = _PbbTag, MplsTag,
+ether(Packet, VlanTag, EthType, undefined = _PbbTag, MplsTag,
 	Ip4Hdr, Ip6Hdr, Ip6Ext, IpTclass, IpProto,
 	Metadata, PortInfo, Actions, Blaze,
 	<<?ETH_P_PBB_I:16,PbbTag:4/binary,_Skip:(6+6)/binary,Rest/binary>>) ->
 	%% 802.1ah frame, keep I-TAG
-	eth(Packet, VlanTag, up(EthType, ?ETH_P_PBB_I), PbbTag, MplsTag,
+	ether(Packet, VlanTag, up(EthType, ?ETH_P_PBB_I), PbbTag, MplsTag,
 		Ip4Hdr, Ip6Hdr, Ip6Ext, IpTclass, IpProto,
 		Metadata, PortInfo, Actions, Blaze,
 		Rest);
-eth(Packet, VlanTag, EthType, PbbTag, MplsTag,
+ether(Packet, VlanTag, EthType, PbbTag, MplsTag,
 	Ip4Hdr, Ip6Hdr, Ip6Ext, IpTclass, IpProto,
 	Metadata, PortInfo, Actions, Blaze,
 	<<?ETH_P_PBB_I:16,_Skip:(4+6+6)/binary,Rest/binary>>) ->
 	%% 802.1ah frame, skip
-	eth(Packet, VlanTag, up(EthType, ?ETH_P_PBB_I), PbbTag, MplsTag,
+	ether(Packet, VlanTag, up(EthType, ?ETH_P_PBB_I), PbbTag, MplsTag,
 		Ip4Hdr, Ip6Hdr, Ip6Ext, IpTclass, IpProto,
 		Metadata, PortInfo, Actions, Blaze,
 		Rest);
@@ -159,7 +119,7 @@ eth(Packet, VlanTag, EthType, PbbTag, MplsTag,
 %%
 %% MPLS encapsulates IP datagrams only (no eth_type)?
 %% 
-eth(Packet, VlanTag, EthType, PbbTag, _MplsTag,
+ether(Packet, VlanTag, EthType, PbbTag, _MplsTag,
 	Ip4Hdr, Ip6Hdr, Ip6Ext, IpTclass, IpProto,
 	Metadata, PortInfo, Actions, Blaze,
 	<<?ETH_P_MPLS_UNI:16,Rest/binary>>) ->
@@ -169,7 +129,7 @@ eth(Packet, VlanTag, EthType, PbbTag, _MplsTag,
 		Ip4Hdr, Ip6Hdr, Ip6Ext, IpTclass, IpProto,
 		Metadata, PortInfo, Actions, Blaze,
 		Rest);
-eth(Packet, VlanTag, EthType, PbbTag, _MplsTag,
+ether(Packet, VlanTag, EthType, PbbTag, _MplsTag,
 	Ip4Hdr, Ip6Hdr, Ip6Ext, IpTclass, IpProto,
 	Metadata, PortInfo, Actions, Blaze,
 	<<?ETH_P_MPLS_MULTI:16,Rest/binary>>) ->
@@ -182,7 +142,7 @@ eth(Packet, VlanTag, EthType, PbbTag, _MplsTag,
 
 %% More conventional Ethernet types
 
-eth(Packet, VlanTag, EthType, PbbTag, MplsTag,
+ether(Packet, VlanTag, EthType, PbbTag, MplsTag,
 	Ip4Hdr, Ip6Hdr, Ip6Ext, IpTclass, IpProto,
 	Metadata, PortInfo, Actions, Blaze,
 	<<?ETH_P_IP:16,Rest/binary>>) ->
@@ -190,7 +150,7 @@ eth(Packet, VlanTag, EthType, PbbTag, MplsTag,
 		Ip4Hdr, Ip6Hdr, Ip6Ext, IpTclass, IpProto,
 		Metadata, PortInfo, Actions, Blaze,
 		Rest);
-eth(Packet, VlanTag, EthType, PbbTag, MplsTag,
+ether(Packet, VlanTag, EthType, PbbTag, MplsTag,
 	Ip4Hdr, Ip6Hdr, Ip6Ext, IpTclass, IpProto,
 	Metadata, PortInfo, Actions, Blaze,
 	<<?ETH_P_IPV6:16,Rest/binary>>) ->
@@ -198,7 +158,7 @@ eth(Packet, VlanTag, EthType, PbbTag, MplsTag,
 		Ip4Hdr, Ip6Hdr, Ip6Ext, IpTclass, IpProto,
 		Metadata, PortInfo, Actions, Blaze,
 		Rest);
-eth(Packet, VlanTag, EthType, PbbTag, MplsTag,
+ether(Packet, VlanTag, EthType, PbbTag, MplsTag,
 	Ip4Hdr, Ip6Hdr, Ip6Ext, IpTclass, IpProto,
 	Metadata, {InPort,InPhyPort,TunnelId} = _PortInfo, Actions, #blaze{start_at =FlowTab} =Blaze,
 	<<?ETH_P_ARP:16,Rest/binary>>) ->
@@ -255,6 +215,36 @@ mpls(Packet, VlanTag, EthType, PbbTag, MplsTag,
 			Rest).
 
 ipv4(Packet, VlanTag, EthType, PbbTag, MplsTag,
+		Ip4Hdr, Ip6Hdr, Ip6Ext, IpTclass, IpProto,
+		Metadata, {InPort,InPhyPort,TunnelId}, Actions, #blaze{start_at =FlowTab} =Blaze,
+		<<_:51,FragOff:13,_/binary>>) when FragOff > 0 ->
+		%% not the first fragment - match as is
+	FlowTab:match(Packet,
+		VlanTag,
+		EthType,
+		PbbTag,
+		MplsTag,
+		Ip4Hdr,
+		Ip6Hdr,
+		bin16(Ip6Ext),
+		IpTclass,
+		IpProto,
+		undefined,	%% ArpMsg
+		undefined,	%% IcmpMsg
+		undefined,	%% Icmp6Hdr
+		undefined,	%% Icmp6Sll
+		undefined,	%% Icmp6Tll
+		undefined,	%% TcpHdr
+		undefined,	%% UdpHdr
+		undefined,	%% SctpHdr
+		Metadata,
+		InPort,
+		InPhyPort,
+		TunnelId,
+		Actions,
+		Blaze);
+
+ipv4(Packet, VlanTag, EthType, PbbTag, MplsTag,
 		undefined = _Ip4Hdr, Ip6Hdr, Ip6Ext, IpTclass, IpProto,
 		Metadata, PortInfo, Actions, Blaze,
 		<<(4 *16 +5),IpTclass1:1/binary,_Skip:7/binary,IpProto1,_/binary>> =IpHdrRest) ->
@@ -309,7 +299,7 @@ ipv6(Packet, VlanTag, EthType, PbbTag, MplsTag,
 ipv6_chain(Packet, VlanTag, EthType, PbbTag, MplsTag,
 		Ip4Hdr, Ip6Hdr, Ip6Ext, IpTclass, IpProto,
 		Metadata, PortInfo, Actions, Blaze,
-		?IPV6_HDR_HOP =Q, <<Next,Len,_:6/binary,_:(Len)/binary-unit:64,Rest/binary>>) ->
+		?IPV6_HDR_HOP_BY_HOP =Q, <<Next,Len,_:6/binary,_:(Len)/binary-unit:64,Rest/binary>>) ->
 		ipv6_chain(Packet, VlanTag, EthType, PbbTag, MplsTag,
 			Ip4Hdr, Ip6Hdr, ext_flags(Ip6Ext, Q), IpTclass, IpProto,
 			Metadata, PortInfo, Actions, Blaze,
@@ -317,7 +307,7 @@ ipv6_chain(Packet, VlanTag, EthType, PbbTag, MplsTag,
 ipv6_chain(Packet, VlanTag, EthType, PbbTag, MplsTag,
 		Ip4Hdr, Ip6Hdr, Ip6Ext, IpTclass, IpProto,
 		Metadata, PortInfo, Actions, Blaze,
-		?IPV6_HDR_DEST =Q, <<Next,Len,_:6/binary,_:(Len)/binary-unit:64,Rest/binary>>) ->
+		?IPV6_HDR_DEST_OPTS =Q, <<Next,Len,_:6/binary,_:(Len)/binary-unit:64,Rest/binary>>) ->
 		ipv6_chain(Packet, VlanTag, EthType, PbbTag, MplsTag,
 			Ip4Hdr, Ip6Hdr, ext_flags(Ip6Ext, Q), IpTclass, IpProto,
 			Metadata, PortInfo, Actions, Blaze,
@@ -325,7 +315,7 @@ ipv6_chain(Packet, VlanTag, EthType, PbbTag, MplsTag,
 ipv6_chain(Packet, VlanTag, EthType, PbbTag, MplsTag,
 		Ip4Hdr, Ip6Hdr, Ip6Ext, IpTclass, IpProto,
 		Metadata, PortInfo, Actions, Blaze,
-		?IPV6_HDR_ROUTER =Q, <<Next,Len,_:6/binary,_:(Len)/binary-unit:64,Rest/binary>>) ->
+		?IPV6_HDR_ROUTING =Q, <<Next,Len,_:6/binary,_:(Len)/binary-unit:64,Rest/binary>>) ->
 		ipv6_chain(Packet, VlanTag, EthType, PbbTag, MplsTag,
 			Ip4Hdr, Ip6Hdr, ext_flags(Ip6Ext, Q), IpTclass, IpProto,
 			Metadata, PortInfo, Actions, Blaze,
@@ -333,7 +323,7 @@ ipv6_chain(Packet, VlanTag, EthType, PbbTag, MplsTag,
 ipv6_chain(Packet, VlanTag, EthType, PbbTag, MplsTag,
 		Ip4Hdr, Ip6Hdr, Ip6Ext, IpTclass, IpProto,
 		Metadata, PortInfo, Actions, Blaze,
-		?IPV6_HDR_FRAG =Q, <<Next,Len,_:6/binary,_:(Len)/binary-unit:64,Rest/binary>>) ->
+		?IPV6_HDR_FRAGMENT =Q, <<Next,Len,_:6/binary,_:(Len)/binary-unit:64,Rest/binary>>) ->
 		ipv6_chain(Packet, VlanTag, EthType, PbbTag, MplsTag,
 			Ip4Hdr, Ip6Hdr, ext_flags(Ip6Ext, Q), IpTclass, IpProto,
 			Metadata, PortInfo, Actions, Blaze,
@@ -357,7 +347,7 @@ ipv6_chain(Packet, VlanTag, EthType, PbbTag, MplsTag,
 ipv6_chain(Packet, VlanTag, EthType, PbbTag, MplsTag,
 		Ip4Hdr, Ip6Hdr, Ip6Ext, IpTclass, IpProto,
 		Metadata, {InPort,InPhyPort,TunnelId} = _PortInfo, Actions, #blaze{start_at =FlowTab} =Blaze,
-		?IPV6_HDR_NONEXT =Q, _Rest) ->
+		?IPV6_HDR_NO_NEXT_HEADER =Q, _Rest) ->
 	%% Empty IPv6 frame
 	FlowTab:match(Packet,
 		VlanTag,
@@ -395,7 +385,7 @@ ipv6_chain(Packet, VlanTag, EthType, PbbTag, MplsTag,
 ipv6_skip(Packet, VlanTag, EthType, PbbTag, MplsTag,
 		Ip4Hdr, Ip6Hdr, Ip6Ext, IpTclass, IpProto,
 		Metadata, PortInfo, Actions, Blaze,
-		?IPV6_HDR_HOP, <<Next,Len,_:6/binary,_:(Len)/binary-unit:64,Rest/binary>>) ->
+		?IPV6_HDR_HOP_BY_HOP, <<Next,Len,_:6/binary,_:(Len)/binary-unit:64,Rest/binary>>) ->
 		ipv6_skip(Packet, VlanTag, EthType, PbbTag, MplsTag,
 			Ip4Hdr, Ip6Hdr, Ip6Ext, IpTclass, IpProto,
 			Metadata, PortInfo, Actions, Blaze,
@@ -403,7 +393,7 @@ ipv6_skip(Packet, VlanTag, EthType, PbbTag, MplsTag,
 ipv6_skip(Packet, VlanTag, EthType, PbbTag, MplsTag,
 		Ip4Hdr, Ip6Hdr, Ip6Ext, IpTclass, IpProto,
 		Metadata, PortInfo, Actions, Blaze,
-		?IPV6_HDR_DEST, <<Next,Len,_:6/binary,_:(Len)/binary-unit:64,Rest/binary>>) ->
+		?IPV6_HDR_DEST_OPTS, <<Next,Len,_:6/binary,_:(Len)/binary-unit:64,Rest/binary>>) ->
 		ipv6_skip(Packet, VlanTag, EthType, PbbTag, MplsTag,
 			Ip4Hdr, Ip6Hdr, Ip6Ext, IpTclass, IpProto,
 			Metadata, PortInfo, Actions, Blaze,
@@ -411,7 +401,7 @@ ipv6_skip(Packet, VlanTag, EthType, PbbTag, MplsTag,
 ipv6_skip(Packet, VlanTag, EthType, PbbTag, MplsTag,
 		Ip4Hdr, Ip6Hdr, Ip6Ext, IpTclass, IpProto,
 		Metadata, PortInfo, Actions, Blaze,
-		?IPV6_HDR_ROUTER, <<Next,Len,_:6/binary,_:(Len)/binary-unit:64,Rest/binary>>) ->
+		?IPV6_HDR_ROUTING, <<Next,Len,_:6/binary,_:(Len)/binary-unit:64,Rest/binary>>) ->
 		ipv6_skip(Packet, VlanTag, EthType, PbbTag, MplsTag,
 			Ip4Hdr, Ip6Hdr, Ip6Ext, IpTclass, IpProto,
 			Metadata, PortInfo, Actions, Blaze,
@@ -419,7 +409,7 @@ ipv6_skip(Packet, VlanTag, EthType, PbbTag, MplsTag,
 ipv6_skip(Packet, VlanTag, EthType, PbbTag, MplsTag,
 		Ip4Hdr, Ip6Hdr, Ip6Ext, IpTclass, IpProto,
 		Metadata, PortInfo, Actions, Blaze,
-		?IPV6_HDR_FRAG, <<Next,Len,_:6/binary,_:(Len)/binary-unit:64,Rest/binary>>) ->
+		?IPV6_HDR_FRAGMENT, <<Next,Len,_:6/binary,_:(Len)/binary-unit:64,Rest/binary>>) ->
 		ipv6_skip(Packet, VlanTag, EthType, PbbTag, MplsTag,
 			Ip4Hdr, Ip6Hdr, Ip6Ext, IpTclass, IpProto,
 			Metadata, PortInfo, Actions, Blaze,
@@ -443,7 +433,7 @@ ipv6_skip(Packet, VlanTag, EthType, PbbTag, MplsTag,
 ipv6_skip(Packet, VlanTag, EthType, PbbTag, MplsTag,
 		Ip4Hdr, Ip6Hdr, Ip6Ext, IpTclass, IpProto,
 		Metadata, {InPort,InPhyPort,TunnelId} = _PortInfo, Actions, #blaze{start_at =FlowTab} =Blaze,
-		?IPV6_HDR_NONEXT, _Rest) -> 
+		?IPV6_HDR_NO_NEXT_HEADER, _Rest) -> 
 	%% Empty IPv6 frame
 	FlowTab:match(Packet,
 		VlanTag,
@@ -736,24 +726,24 @@ icmpv6_opt(OptType, <<_,Len,Rest/binary>>) ->
 
 %% set IPV6_EXT_UNREP flag if repeated
 %% set IPV6_EXT_UNSEQ flag if out of order
-ext_flags(Ip6Ext, ?IPV6_HDR_NONEXT) ->
+ext_flags(Ip6Ext, ?IPV6_HDR_NO_NEXT_HEADER) ->
 	%% NB: order or repeatition not checked
 	Ip6Ext bor ?IPV6_EXT_NONEXT;
-ext_flags(Ip6Ext, ?IPV6_HDR_HOP) ->
+ext_flags(Ip6Ext, ?IPV6_HDR_HOP_BY_HOP) ->
 	Ip6Ext bor ?IPV6_EXT_HOP
 		bor repeated(Ip6Ext, ?IPV6_EXT_HOP)
 		bor out_of_order(Ip6Ext, ?IPV6_EXT_HOP);
-ext_flags(Ip6Ext, ?IPV6_HDR_DEST) ->
+ext_flags(Ip6Ext, ?IPV6_HDR_DEST_OPTS) ->
 	%% Destination Options header can be repeated
 	%% NB: order not checked strictly
 	Ip6Ext bor ?IPV6_EXT_DEST;
-ext_flags(Ip6Ext, ?IPV6_HDR_ROUTER) ->
+ext_flags(Ip6Ext, ?IPV6_HDR_ROUTING) ->
 	Ip6Ext bor ?IPV6_EXT_ROUTER
 		bor repeated(Ip6Ext, ?IPV6_EXT_ROUTER)
 		bor out_of_order(Ip6Ext, ?IPV6_EXT_HOP bor
 								 ?IPV6_EXT_DEST bor
 								 ?IPV6_EXT_ROUTER);
-ext_flags(Ip6Ext, ?IPV6_HDR_FRAG) ->
+ext_flags(Ip6Ext, ?IPV6_HDR_FRAGMENT) ->
 	Ip6Ext bor ?IPV6_EXT_FRAG
 		bor repeated(Ip6Ext, ?IPV6_EXT_FRAG)
 		bor out_of_order(Ip6Ext, ?IPV6_EXT_HOP bor

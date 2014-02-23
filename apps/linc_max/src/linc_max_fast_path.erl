@@ -42,8 +42,12 @@ start(SwitchConfig, FlowTab0) ->
 	PortConfig = proplists:get_value(ports, SwitchConfig, []),
 
 	spawn(fun() ->
-		Ports = open_ports(PortConfig),
-		blaze(#blaze{ports =Ports,start_at =FlowTab0})
+		try
+			Ports = open_ports(PortConfig),
+			blaze(#blaze{ports =Ports,start_at =FlowTab0})
+		catch _:Error ->
+			?ERROR("blaze dies: ~p\n", Error)
+		end
 	end).
 
 open_ports(PortConfig) ->
@@ -102,7 +106,7 @@ reignite(#blaze{ports =Ports} =Blaze) ->
 		try
 			blaze(Blaze)
 		catch _:Error ->
-			?ERROR("blaze exception: ~p\n", Error)
+			?ERROR("blaze extinguishes: ~p\n", Error)
 		end
 	end),
 
