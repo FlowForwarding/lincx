@@ -96,8 +96,12 @@ apply_list([pop_pbb|ActionList], Frame, Blaze) ->
 	apply_list(ActionList, Frame1, Blaze);
 
 apply_list([{set_field,Field,Value}|ActionList], Frame, Blaze) ->
-	Frame1 = set_field(Frame, Field, Value),
-	apply_list(ActionList, Frame1, Blaze);
+	case set_field(Frame, Field, Value) of
+	Error when is_atom(Error) ->
+		Error;	%% missing, protected, fragmented
+	Frame1 ->
+		apply_list(ActionList, Frame1, Blaze)
+	end;
 
 apply_list([{set_mpls_ttl,TTL}|ActionList], Frame, Blaze) ->
 	Frame1  = set_mpls_ttl(Frame, TTL),
@@ -131,6 +135,9 @@ apply_list([copy_ttl_outwards|ActionList], Frame, Blaze) ->
 apply_list([copy_ttl_inwards|ActionList], Frame, Blaze) ->
 	Frame1  = copy_ttl_inwards(Frame),
 	apply_list(ActionList, Frame1, Blaze).
+
+set_field(Frame, Field, FastValue) ->
+	linc_max_splicer:edit(Frame, Field, FastValue).
 
 %%------------------------------------------------------------------------------
 %% These are slow - the faster version should not use pkt:*
@@ -308,12 +315,6 @@ pop_pbb(Frame) ->
                  P
          end,
 	pkt:encapsulate(P2).
-
-set_field(Frame, Field, Value) ->
-	Packet = pkt:decapsulate(Frame),
-	F = #ofp_field{name =Field,value =Value},
-    Packet2 = linc_max_packet:set_field(F, Packet),
-	pkt:encapsulate(Packet2).
 
 set_mpls_ttl(Frame, NewTTL) ->
 	P = pkt:decapsulate(Frame),

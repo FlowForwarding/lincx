@@ -572,7 +572,7 @@ fast_action_list([#ofp_action_pop_pbb{}|As], Acc) ->
 	fast_action_list(As, [pop_pbb|Acc]);
 fast_action_list([#ofp_action_set_field{field =
 					#ofp_field{name =Name,value =Value}}|As], Acc) ->
-	fast_action_list(As, [{set_field,Name,Value}|Acc]);
+	fast_action_list(As, [{set_field,Name,fast_value(Value)}|Acc]);
 fast_action_list([#ofp_action_set_mpls_ttl{mpls_ttl =TTL}|As], Acc) ->
 	fast_action_list(As, [{set_mpls_ttl,TTL}|Acc]);
 fast_action_list([#ofp_action_dec_mpls_ttl{}|As], Acc) ->
@@ -585,6 +585,19 @@ fast_action_list([#ofp_action_copy_ttl_out{}|As], Acc) ->
 	fast_action_list(As, [copy_ttl_outwards|Acc]);
 fast_action_list([#ofp_action_copy_ttl_in{}|As], Acc) ->
 	fast_action_list(As, [copy_ttl_inwards|Acc]).
+
+%% linc_max_splicer uses integers if the bit size of the field is 28 bits or
+%% less. The rest of LINC switch always uses binaries and bitstrings.
+fast_value(Value) when is_bitstring(Value) ->
+	case bit_size(Value) of
+	N when N =< 28 ->
+		<<Int:N>> = Value,
+		Int;
+	_ ->
+		Value
+	end;
+fast_value(Value) ->
+	Value.
 
 var_name(packet) -> 'Packet';
 var_name(vlan_tag) -> 'VlanTag';

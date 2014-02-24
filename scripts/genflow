@@ -5,6 +5,7 @@
 -include_lib("lincx/apps/linc_max/include/linc_max.hrl").
 
 main(["-a"]) ->
+	random:seed(now()),
 	Flows = all_actions(),
 	TabFile = filename:join(["priv","apply.tab"]),
 	write_flows(TabFile, Flows);

@@ -1,0 +1,12 @@
+%%
+%% send all to the controller
+%%
+
+{flow_entry,undefined,undefined,
+    {ofp_match,
+        []},
+    <<0,0,0,0,0,0,0,0>>,
+    [],undefined,
+    {infinity,0,0},
+    {infinity,0,0},
+    [{ofp_instruction_write_actions,4,[{ofp_action_output,16,controller,no_buffer}]}]}.

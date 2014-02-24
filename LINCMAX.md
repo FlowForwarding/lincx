@@ -340,3 +340,36 @@ Now that we have the test suite for the linc_max_fast_actions module and the
 performance figures, we are ready to make the packet-modification fast (by
 abandoning pkt:*).
 
+----[24.02.2014 03:55]----------------------------------------------------------
+
+The fast packet modification code complete and covered with unit tests. Let us
+measure the latency cost of linc_max_splicer.
+
+We measure the processing delay using ping packets. These packets have Ethernet,
+IPv4, and ICMPv4 headers. The modifiable fields are thus:
+
+* eth\_src
+* eth\_dst
+* ipv4\_src
+* ipv4\_dst
+* ip\_dscp
+* ip\_ecn
+
+Other fields, e.g. icmpv4_type cannot be modified without destroying the packet.
+linc_max_splicer returns 'protected' for such fields.
+
+The testing involves manual modification of priv/test5.tab flow table. A
+set-field action added 10 times to both forward and opposite flow. The latency
+is measured using `ling:experimental(processing_delay, [])`.
+
+All times in the table are in microseconds.
+
+Field | N | Base | Delay
+------|---|------|------
+eth\_dst| 10 | 1.2 | 5.3
+eth\_src| 10 | 1.2 | 4.7
+ipv4\_src | 10 | 1.7 | 17.6
+ipv4\_dst | 10 | 1.2 | 17.4
+ip\_dscp | 10 | 1.2 | 17.7
+ip\_ecn | 10 | 1.4 | 17.0
+
