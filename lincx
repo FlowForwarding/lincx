@@ -1,0 +1,53 @@
+#!/bin/bash
+
+function check_prerequisites {
+	if [ ! -f domain_config ]; then
+		echo Error: domain_config not found - use make domain_config
+		exit 1
+	fi
+	if [ ! -f vmling ]; then
+		echo Error: vmling not found - use make me
+		exit 1
+	fi
+	if [ $UID -ne 0 ]; then
+		echo Error: only root can start Xen instances
+		exit 1
+	fi
+	if ! hash xl 2>/dev/null; then
+		echo Error: xl not found - are you running Xen?
+		exit 1
+	fi
+	if xl domid lincx &>/dev/null; then
+		echo Error: domain lincx already running
+		exit 1
+	fi
+	if ! ip link show xenbr0 &>/dev/null; then
+		echo Error: bridge xenbr0 not found
+		exit 1
+	fi
+	if ! ip link show br-linc1 &>/dev/null; then
+		echo Error: bridge br-linc1 not found
+		exit 1
+	fi
+	if ! ip link show br-linc2 &>/dev/null; then
+		echo Error: bridge br-linc2 not found
+		exit 1
+	fi
+}
+
+check_prerequisites
+
+xl create domain_config
+
+domid=`xl domid lincx`
+lingvif1=vif${domid}.1
+lingvif2=vif${domid}.2
+
+brctl delif xenbr0 $lingvif1
+brctl delif xenbr0 $lingvif2
+brctl addif br-linc1 $lingvif1
+brctl addif br-linc2 $lingvif2
+
+xl console lincx
+
+#EOF
