@@ -27,4 +27,5 @@
 						linc_max_convert,
 						linc_max_meter_sup,
 						linc_max_sup,
+						linc_max_demo,
 						linc_max]}]}.
