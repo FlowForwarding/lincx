@@ -8,35 +8,6 @@
 %% Restart the fast path after this many packets to avoid GC
 -define(REIGNITE_AFTER, 16384).
 
-%[{switch,0,
-%  [{datapath_id,"00:16:3E:6E:71:B1:00:00"},
-%   {backend,linc_max},
-%   {controllers,
-%	   [{"Switch0-DefaultController","localhost",6633,tcp}]},
-%   {queues_status,disabled},
-%   {ports,
-%	   [{port,1,
-%			[{config,
-%				 {port_configuration,undefined,up,false,false,
-%					 false}},
-%			 {features,
-%				 {features,undefined,'100Mb-FD',true,copper,
-%					 unsupported}},
-%			 {interface,"eth1"},
-%			 {type,vif}]},
-%		{port,2,
-%			[{config,
-%				 {port_configuration,undefined,up,false,false,
-%					 false}},
-%			 {features,
-%				 {features,undefined,'100Mb-FD',true,copper,
-%					 unsupported}},
-%			 {interface,"eth2"},
-%			 {type,vif}]}]},
-%   {queues,
-%	   [{port,2,[{port_rate,{100,mbps}},{port_queues,[]}]},
-%		{port,1,[{port_rate,{100,mbps}},{port_queues,[]}]}]}]}]
-
 start(SwitchConfig, FlowTab0) ->
 	%%NB: Config contains data for the current switch only
 	PortConfig = proplists:get_value(ports, SwitchConfig, []),
