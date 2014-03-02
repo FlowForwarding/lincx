@@ -109,9 +109,47 @@ more_matches1(Prob, Spec, Matches, Acc) ->
 		more_matches(Matches, Acc)
 	end.
 
+bit_len(in_port) -> 32;
+bit_len(in_phy_port) -> 32;
+bit_len(metadata) -> 64;
 bit_len(eth_dst) -> 48;
+bit_len(eth_src) -> 48;
+bit_len(eth_type) -> 16;
+bit_len(vlan_vid) -> 13;
+bit_len(vlan_pcp) -> 3;
 bit_len(ip_dscp) -> 6;
-bit_len(vlan_vid) -> 13.
+bit_len(ip_ecn) -> 2;
+bit_len(ip_proto) -> 8;
+bit_len(ipv4_src) -> 32;
+bit_len(ipv4_dst) -> 32;
+bit_len(tcp_src) -> 16;
+bit_len(tcp_dst) -> 16;
+bit_len(udp_src) -> 16;
+bit_len(udp_dst) -> 16;
+bit_len(sctp_src) -> 16;
+bit_len(sctp_dst) -> 16;
+bit_len(icmpv4_type) -> 8;
+bit_len(icmpv4_code) -> 8;
+bit_len(arp_op) -> 16;
+bit_len(arp_spa) -> 32;
+bit_len(arp_tpa) -> 32;
+bit_len(arp_sha) -> 48;
+bit_len(arp_tha) -> 48;
+bit_len(ipv6_src) -> 128;
+bit_len(ipv6_dst) -> 128;
+bit_len(ipv6_flabel) -> 20;
+bit_len(icmpv6_type) -> 8;
+bit_len(icmpv6_code) -> 8;
+bit_len(ipv6_nd_target) -> 128;
+bit_len(ipv6_nd_sll) -> 48;
+bit_len(ipv6_nd_tll) -> 48;
+bit_len(mpls_label) -> 20;
+bit_len(mpls_tc) -> 3;
+bit_len(mpls_bos) -> 1;
+bit_len(pbb_isid) -> 24;
+bit_len(tunnel_id) -> 64;
+bit_len(ipv6_exthdr) -> 9;
+bit_len(pbb_uca) -> 1.
 
 %% predefined flow configurations
 
