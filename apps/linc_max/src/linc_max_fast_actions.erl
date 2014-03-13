@@ -42,14 +42,22 @@ apply_set(#fast_actions{output =PortNo}, Frame, Blaze) when is_integer(PortNo) -
 	erlang:port_command(Outlet, Frame);
 
 apply_set(#fast_actions{output =controller}, Frame, _Blaze) ->
-	?INFO("TODO: Packet-in: ~p~n", [Frame]);
+
+	%% 
+	%% This is a quick-n-dirty implementation for Packet-In messages. It follows
+	%% the code of linc_us4 without much thought. Require a good review.
+	%%
+
+	SwitchId = 0, %%XXX
+	PacketIn = #ofp_packet_in{reason = action,
+							  data = Frame},
+    linc_logic:send_to_controllers(SwitchId, #ofp_message{body = PacketIn});
 
 apply_set(#fast_actions{}, _Frame, _Blaze) ->
 	drop;	%% empty action set
 
 apply_set(Actions, _Frame, _Blaze) ->
 	io:format("? ~p\n", [Actions]).
-
 
 %% Apply-Actions
 
@@ -63,7 +71,11 @@ apply_list([{output,PortNo}|ActionList], Frame, Blaze) when is_integer(PortNo) -
 	erlang:port_command(Outlet, Frame),
 	apply_list(ActionList, Frame, Blaze);
 apply_list([{output,controller}|ActionList], Frame, Blaze) ->
-	?INFO("TODO: Packet-in: ~p~n", [Frame]),
+	%% See comment above
+	SwitchId = 0, %%XXX
+	PacketIn = #ofp_packet_in{reason = action,
+							  data = Frame},
+    linc_logic:send_to_controllers(SwitchId, #ofp_message{body = PacketIn}),
 	apply_list(ActionList, Frame, Blaze);
 
 apply_list([{set_queue,_Queue}|ActionList], Frame, Blaze) ->
