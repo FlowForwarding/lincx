@@ -186,8 +186,14 @@ ether(Packet, VlanTag, EthType, PbbTag, MplsTag,
 		InPhyPort,
 		TunnelId,
 		Actions,
-		Blaze).
+		Blaze);
 
+%% Non-common Ethernet type - never a match
+ether(_Packet, _VlanTag, _EthType, _PbbTag, _MplsTag,
+	_Ip4Hdr, _Ip6Hdr, _Ip6Ext, _IpTclass, _IpProto,
+	_Metadata, _PortInfo, _Actions, _Blaze, _Rest) ->
+	miss.
+	
 mpls(Packet, VlanTag, EthType, PbbTag, MplsTag,
 		Ip4Hdr, Ip6Hdr, Ip6Ext, IpTclass, IpProto,
 		Metadata, PortInfo, Actions, Blaze,
