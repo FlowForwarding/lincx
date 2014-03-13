@@ -17,7 +17,7 @@ start(SwitchConfig, FlowTab0) ->
 			Ports = open_ports(PortConfig),
 			blaze(#blaze{ports =Ports,start_at =FlowTab0})
 		catch _:Error ->
-			?ERROR("blaze dies: ~p\n", Error)
+			?ERROR("blaze dies: ~p\n~p", [Error,erlang:get_stacktrace()])
 		end
 	end).
 
@@ -64,7 +64,10 @@ blaze(Blaze, ReigniteCounter) ->
 		{do,Frame1,Actions} ->
 			linc_max_fast_actions:apply_set(Actions, Frame1, Blaze);
 		miss ->
-			io:format("MISS: ~p\n", [pkt:decapsulate(Frame)]);
+			%%io:format("MISS: ~p\n", [pkt:decapsulate(Frame)]);
+
+			%%TODO: send Packet-in message?
+			drop;
 		_ ->
 			drop
 		end,
