@@ -613,8 +613,13 @@ proto(Packet, VlanTag, EthType, PbbTag, MplsTag,
 		InPhyPort,
 		TunnelId,
 		Actions,
-		Blaze).
-
+		Blaze);
+proto(_Packet, _VlanTag, _EthType, _PbbTag, _MplsTag,
+	_Ip4Hdr, _Ip6Hdr, _Ip6Ext, _IpTclass, _IpProto,
+	_Metadata, _PortInfo, _Actions, _Blaze,
+	_Proto, _Rest) ->
+	miss.
+	
 %% IPPROTO_GRE not expected
 
 icmpv6(Packet, VlanTag, EthType, PbbTag, MplsTag,
