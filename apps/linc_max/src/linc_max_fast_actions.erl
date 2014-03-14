@@ -48,8 +48,10 @@ apply_set(#fast_actions{output =controller}, Frame, _Blaze) ->
 	%% the code of linc_us4 without much thought. Require a good review.
 	%%
 
-	SwitchId = 0, %%XXX
+	SwitchId = 0,	%%XXX
+	TableId = 0,	%%XXX
 	PacketIn = #ofp_packet_in{reason = action,
+							  table_id = TableId,
 							  data = Frame},
     linc_logic:send_to_controllers(SwitchId, #ofp_message{body = PacketIn});
 
@@ -72,8 +74,10 @@ apply_list([{output,PortNo}|ActionList], Frame, Blaze) when is_integer(PortNo) -
 	apply_list(ActionList, Frame, Blaze);
 apply_list([{output,controller}|ActionList], Frame, Blaze) ->
 	%% See comment above
-	SwitchId = 0, %%XXX
+	SwitchId = 0,	%%XXX
+	TableId = 0,	%%XXX
 	PacketIn = #ofp_packet_in{reason = action,
+							  table_id = TableId,
 							  data = Frame},
     linc_logic:send_to_controllers(SwitchId, #ofp_message{body = PacketIn}),
 	apply_list(ActionList, Frame, Blaze);
