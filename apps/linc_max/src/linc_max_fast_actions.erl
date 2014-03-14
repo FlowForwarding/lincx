@@ -53,7 +53,7 @@ apply_set(#fast_actions{output =controller}, Frame, _Blaze) ->
 	PacketIn = #ofp_packet_in{reason = action,
 							  table_id = TableId,
 							  data = Frame},
-	?INFO("Packet-In [1]: ~p\n", [pkt:decapsulate(Frame)]),
+	%%?INFO("Packet-In [1]: ~p\n", [pkt:decapsulate(Frame)]),
     linc_logic:send_to_controllers(SwitchId, #ofp_message{body = PacketIn});
 
 apply_set(#fast_actions{}, _Frame, _Blaze) ->
@@ -80,7 +80,7 @@ apply_list([{output,controller}|ActionList], Frame, Blaze) ->
 	PacketIn = #ofp_packet_in{reason = action,
 							  table_id = TableId,
 							  data = Frame},
-	?INFO("Packet-In [2]: ~p\n", [pkt:decapsulate(Frame)]),
+	%%?INFO("Packet-In [2]: ~p\n", [pkt:decapsulate(Frame)]),
     linc_logic:send_to_controllers(SwitchId, #ofp_message{body = PacketIn}),
 	apply_list(ActionList, Frame, Blaze);
 
