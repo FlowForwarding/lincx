@@ -54,8 +54,8 @@ SYSCONF := /lincx/priv/sys.config
 
 EXTRA := -ipaddr 192.168.0.2 -netmask 255.255.255.0 -gateway 192.168.0.1
 #EXTRA += -goofs /lincx/log
-EXTRA += -9p 192.168.0.1 /lincx_log /lincx/log
-EXTRA += -secret a9fe261db6606efe439f6138e007d499d52c97ee 4ab1c03c8b5175907d3583f39df946a038f292a4
+#EXTRA += -9p 192.168.0.1 /lincx_log /lincx/log
+#EXTRA += -secret a9fe261db6606efe439f6138e007d499d52c97ee 4ab1c03c8b5175907d3583f39df946a038f292a4
 EXTRA += -home /lincx
 EXTRA += -pz $(PATHZ)
 EXTRA += -config $(SYSCONF)
