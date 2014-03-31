@@ -180,5 +180,73 @@ bytes   bytes    secs            #      #   10^6bits/sec
 4194304      60   10.00     5581612      0     267.91
 212992           10.00     2115262            101.53
 
-This is rearlly strange.
+This is really strange.
+
+----[31/03/2014 15:15]----------------------------------------------------------
+
+A new instrumentation has been added to the low-level network driver. The
+instrumentation API:
+
+ling:experimental(llstat, N).	%% start collecting statistics for interface N
+ling:experimental(llstat, stop).
+ling:experimental(llstat, []).	%% display the results
+
+The statistics are collected for eth1 and eth2 during the netperf small packet
+UDP tests:
+
+eth2:
+
+Duration: 3887.1ms
+RX: interrupts: 65205 (0 kicks 0.0%) (freq 16774.7/s period 59.6us)
+RX: reqs per int: 0/0.0/0
+RX: tx buf freed per int: 0/2.8/256
+TX: outputs: 931760 (123337 kicks 13.2) (freq 239705.8/s period 4.2us)
+TX: tx buf freed per int: 0/0.8/90
+TX: rates: 239.7kpps 195.60Mbps avg pkt size 102.0B
+TX: drops: 76131 (freq 19585.6/s period 51.1us)
+TX: drop rates: 19.6kpps 15.98Mbps avg pkt size 102.0B
+
+eth1:
+
+Duration: 3584.4ms
+RX: interrupts: 378236 (67 kicks 0.0%) (freq 105523.3/s period 9.5us)
+RX: reqs per int: 0/2.7/256
+RX: tx buf freed per int: 0/0.0/0
+
+A few obvservations:
+
+1. Upon interrupt on average 3 packets are read from the ring -- we may wait for
+some time to read more packets per interrupt.
+
+1. The interrupt occur every 9.5us -- this looks like a Xen quantum.
+
+1. TX shows avg packets size of 102B (not 60B or 64B). Why?
+
+netperf TCP_STREAM test (2.8Mbps).
+
+eth1:
+
+Duration: 4575.2ms
+RX: interrupts: 48311 (110 kicks 0.2%) (freq 10559.2/s period 94.7us)
+RX: reqs per int: 0/23.2/256
+RX: tx buf freed per int: 0/7.9/103
+TX: outputs: 561142 (145776 kicks 26.0) (freq 122647.6/s period 8.2us)
+TX: tx buf freed per int: 0/0.3/59
+TX: rates: 122.6kpps 64.82Mbps avg pkt size 66.1B
+
+eth2:
+
+Duration: 3926.3ms
+RX: interrupts: 24435 (110 kicks 0.5%) (freq 6223.3/s period 160.7us)
+RX: reqs per int: 0/19.5/184
+RX: tx buf freed per int: 0/14.5/240
+TX: outputs: 949456 (164113 kicks 17.3) (freq 241816.5/s period 4.1us)
+TX: tx buf freed per int: 0/0.6/112
+TX: rates: 241.8kpps 2928.88Mbps avg pkt size 1514.0B
+TX: drops: 425 (freq 108.2/s period 9238.5us)
+TX: drop rates: 0.1kpps 1.31Mbps avg pkt size 1514.0B
+
+1. The packet size (1514B) is sound.
+
+1. The driver gets 20 packets per interrupt.
 
