@@ -157,6 +157,11 @@ apply_list([copy_ttl_inwards|ActionList], Frame, Blaze) ->
 set_field(Frame, Field, FastValue) ->
 	linc_max_splicer:edit(Frame, Field, FastValue).
 
+update(undefined, New) ->
+	New;
+update(Old, _New) ->
+	Old.
+
 push_vlan(<<EthAddrs:12/binary,
 			?ETH_P_802_1Q:16,VlanTag:2/binary,
 			Rest/binary>>, EthType) ->
@@ -172,7 +177,12 @@ push_vlan(<<EthAddrs:12/binary,
 push_vlan(<<EthAddrs:12/binary,
 			Rest/binary>>, EthType) ->
 	%% default values
-	<<EthAddrs/binary,EthType:16,1:16,Rest/binary>>.
+	
+	%% OpenFlow 1.4.0 page 26: New fields ... should be set to zero.
+	%% 
+	%% The old implementation sets VLAN ID to 1. Why?
+	
+	<<EthAddrs/binary,EthType:16,0:16,Rest/binary>>.
 
 %push_vlan(Frame, EthType) ->
 %	P = pkt:decapsulate(Frame),
@@ -222,6 +232,69 @@ pop_vlan(Frame) ->
 %%
 %% Copied from linc_max_actions.erl
 %%
+
+%push_pbb(Frame, ?ETH_P_PBB_I) ->
+%	push_pbb(Frame, 0, Frame, undefined, undefined).
+
+%push_pbb(Frame, Skip, <<?ETH_P_802_1Q:16,Pcp:3,_VlanId:13,Rest/binary>>, Pcp0, Isid) ->
+%	push_pbb(Frame, Skip +4, Rest, update(Pcp0, Pcp), Isid);
+%...
+
+%%==============================================================================
+
+push_pbb(Frame, 16#88e7) ->
+	%%
+	%% pkt module has separate entries for ether and pbb packets. Try pbb first.
+	%%
+	P =  try
+		pkt:decapsulate_pbb(Frame)
+	catch _:_ ->
+		pkt:decapsulate(Frame)
+	end,
+
+    %% If there was PBB tag, copy isid from it
+    {ISID, IsPreviousPBB} = case linc_max_packet:find(P, pbb) of
+                                not_found ->
+                                    {<<1:24>>, false};
+                                {_, PreviousPBB} ->
+                                    {PreviousPBB#pbb.i_sid, true}
+                            end,
+    %% If there was VLAN tag, copy PCP from it
+    IPCP = case linc_max_packet:find(P, ieee802_1q_tag) of
+               not_found ->
+                   0;
+               {_, PreviousVLAN} ->
+                   PreviousVLAN#ieee802_1q_tag.pcp
+           end,
+    PBB = #pbb{b_pcp = 0,
+               b_dei = 0,
+               i_pcp = IPCP,
+               i_dei = 0,
+               i_uca = 0,
+               i_sid = ISID},
+    NewPacket = case IsPreviousPBB of
+                    true ->
+                        [#pbb{} | PacketRest] = P,
+                        [PBB | PacketRest];
+                    false ->
+                        [PBB | P]
+                end,
+	pkt:encapsulate(NewPacket).
+
+pop_pbb(Frame) ->
+	%% see comment above
+	P =  try
+		pkt:decapsulate_pbb(Frame)
+	catch _:_ ->
+		pkt:decapsulate(Frame)
+	end,
+    P2 = case P of
+             [#pbb{} | PRest] ->
+                 PRest;
+             _ ->
+                 P
+         end,
+	pkt:encapsulate(P2).
 
 %%XXX: EthType is not used
 push_mpls(Frame, _EthType) ->
@@ -305,60 +378,6 @@ pop_mpls(Frame, EthType) ->
                                  end,
                  linc_max_packet:find_and_edit(Modified, BeforeMPLSTag,
                                                ModifyEtherType)
-         end,
-	pkt:encapsulate(P2).
-
-push_pbb(Frame, 16#88e7) ->
-	%%
-	%% pkt module has separate entries for ether and pbb packets. Try pbb first.
-	%%
-	P =  try
-		pkt:decapsulate_pbb(Frame)
-	catch _:_ ->
-		pkt:decapsulate(Frame)
-	end,
-
-    %% If there was PBB tag, copy isid from it
-    {ISID, IsPreviousPBB} = case linc_max_packet:find(P, pbb) of
-                                not_found ->
-                                    {<<1:24>>, false};
-                                {_, PreviousPBB} ->
-                                    {PreviousPBB#pbb.i_sid, true}
-                            end,
-    %% If there was VLAN tag, copy PCP from it
-    IPCP = case linc_max_packet:find(P, ieee802_1q_tag) of
-               not_found ->
-                   0;
-               {_, PreviousVLAN} ->
-                   PreviousVLAN#ieee802_1q_tag.pcp
-           end,
-    PBB = #pbb{b_pcp = 0,
-               b_dei = 0,
-               i_pcp = IPCP,
-               i_dei = 0,
-               i_uca = 0,
-               i_sid = ISID},
-    NewPacket = case IsPreviousPBB of
-                    true ->
-                        [#pbb{} | PacketRest] = P,
-                        [PBB | PacketRest];
-                    false ->
-                        [PBB | P]
-                end,
-	pkt:encapsulate(NewPacket).
-
-pop_pbb(Frame) ->
-	%% see comment above
-	P =  try
-		pkt:decapsulate_pbb(Frame)
-	catch _:_ ->
-		pkt:decapsulate(Frame)
-	end,
-    P2 = case P of
-             [#pbb{} | PRest] ->
-                 PRest;
-             _ ->
-                 P
          end,
 	pkt:encapsulate(P2).
 
