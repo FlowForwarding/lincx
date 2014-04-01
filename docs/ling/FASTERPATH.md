@@ -250,3 +250,107 @@ TX: drop rates: 0.1kpps 1.31Mbps avg pkt size 1514.0B
 
 1. The driver gets 20 packets per interrupt.
 
+Collecting data for various packet sizes of UDP flood test (port 2 only).
+
+vm1> netperf -t UDP_STREAM -H 192.168.2.2 -- -m 214 # actual packet size is 256B
+
+18> ling:experimental(llstat, []).
+Duration: 4550.6ms
+RX: interrupts: 15080 (110 kicks 0.7%) (freq 3313.8/s period 301.8us)
+RX: reqs per int: 0/0.0/0
+RX: tx buf freed per int: 0/19.3/214
+TX: outputs: 1279103 (216976 kicks 17.0) (freq 281082.1/s period 3.6us)
+TX: tx buf freed per int: 0/0.8/81
+TX: rates: 281.1kpps 134.92Mbps avg pkt size 60.0B
+TX: drops: 301345 (freq 66220.4/s period 15.1us)
+TX: drop rates: 66.2kpps 31.79Mbps avg pkt size 60.0B
+
+----
+
+Duration: 4000.5ms
+RX: interrupts: 15451 (110 kicks 0.7%) (freq 3862.3/s period 258.9us)
+RX: reqs per int: 0/0.0/0
+RX: tx buf freed per int: 0/12.4/143
+TX: outputs: 1108760 (265822 kicks 24.0) (freq 277154.9/s period 3.6us)
+TX: tx buf freed per int: 0/0.8/95
+TX: rates: 277.2kpps 141.90Mbps avg pkt size 64.0B
+TX: drops: 126249 (freq 31558.3/s period 31.7us)
+TX: drop rates: 31.6kpps 16.16Mbps avg pkt size 64.0B
+
+----
+
+Duration: 3281.9ms
+RX: interrupts: 29901 (110 kicks 0.4%) (freq 9110.9/s period 109.8us)
+RX: reqs per int: 0/0.0/0
+RX: tx buf freed per int: 0/4.4/256
+TX: outputs: 847903 (343957 kicks 40.6) (freq 258359.1/s period 3.9us)
+TX: tx buf freed per int: 0/0.8/116
+TX: rates: 258.4kpps 264.56Mbps avg pkt size 128.0B
+TX: drops: 41311 (freq 12587.6/s period 79.4us)
+TX: drop rates: 12.6kpps 12.89Mbps avg pkt size 128.0B
+
+----
+
+Duration: 3056.1ms
+RX: interrupts: 20072 (110 kicks 0.5%) (freq 6567.7/s period 152.3us)
+RX: reqs per int: 0/0.0/0
+RX: tx buf freed per int: 0/2.6/256
+TX: outputs: 719536 (441826 kicks 61.4) (freq 235438.8/s period 4.2us)
+TX: tx buf freed per int: 0/0.9/75
+TX: rates: 235.4kpps 482.18Mbps avg pkt size 256.0B
+TX: drops: 6557 (freq 2145.5/s period 466.1us)
+TX: drop rates: 2.1kpps 4.39Mbps avg pkt size 256.0B
+
+----
+
+Duration: 3624.0ms
+RX: interrupts: 23060 (110 kicks 0.5%) (freq 6363.2/s period 157.2us)
+RX: reqs per int: 0/0.0/0
+RX: tx buf freed per int: 0/4.8/256
+TX: outputs: 858915 (556910 kicks 64.8) (freq 237009.6/s period 4.2us)
+TX: tx buf freed per int: 0/0.9/100
+TX: rates: 237.0kpps 970.79Mbps avg pkt size 512.0B
+TX: drops: 45619 (freq 12588.1/s period 79.4us)
+TX: drop rates: 12.6kpps 51.56Mbps avg pkt size 512.0B
+
+----
+
+Duration: 4784.7ms
+RX: interrupts: 35822 (110 kicks 0.3%) (freq 7486.9/s period 133.6us)
+RX: reqs per int: 0/0.0/0
+RX: tx buf freed per int: 0/2.3/256
+TX: outputs: 1039730 (714772 kicks 68.7) (freq 217305.3/s period 4.6us)
+TX: tx buf freed per int: 0/0.9/87
+TX: rates: 217.3kpps 1780.17Mbps avg pkt size 1024.0B
+TX: drops: 6852 (freq 1432.1/s period 698.3us)
+TX: drop rates: 1.4kpps 11.73Mbps avg pkt size 1024.0B
+
+----
+
+Duration: 3511.0ms
+RX: interrupts: 40566 (110 kicks 0.3%) (freq 11553.9/s period 86.6us)
+RX: reqs per int: 0/0.0/0
+RX: tx buf freed per int: 0/2.7/256
+TX: outputs: 774499 (828696 kicks 107.0) (freq 220591.5/s period 4.5us)
+TX: tx buf freed per int: 0/0.9/117
+TX: rates: 220.6kpps 2671.80Mbps avg pkt size 1514.0B
+TX: drops: 48577 (freq 13835.6/s period 72.3us)
+TX: drop rates: 13.8kpps 167.58Mbps avg pkt size 1514.0B
+
+----
+
+-m 65507
+
+Duration: 4868.6ms
+RX: interrupts: 69170 (0 kicks 0.0%) (freq 14207.4/s period 70.4us)
+RX: reqs per int: 0/0.0/0
+RX: tx buf freed per int: 0/8.5/234
+TX: outputs: 1479707 (112263 kicks 7.6) (freq 303928.8/s period 3.3us)
+TX: tx buf freed per int: 0/0.6/113
+TX: rates: 303.9kpps 3622.66Mbps avg pkt size 1489.9B
+TX: drops: 12392 (freq 2545.3/s period 392.9us)
+TX: drop rates: 2.5kpps 30.26Mbps avg pkt size 1486.0B
+
+The kick percentage data unreliable (bug). The last test involves heavy packet
+fragmentation.
+

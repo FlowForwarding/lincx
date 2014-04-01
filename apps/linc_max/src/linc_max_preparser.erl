@@ -218,7 +218,11 @@ mpls(Packet, VlanTag, EthType, PbbTag, MplsTag,
 		mpls(Packet, VlanTag, EthType, PbbTag, MplsTag,
 			Ip4Hdr, Ip6Hdr, Ip6Ext, IpTclass, IpProto,
 			Metadata, PortInfo, Actions, Blaze,
-			Rest).
+			Rest);
+mpls(_Packet, _VlanTag, _EthType, _PbbTag, _MplsTag,
+		_Ip4Hdr, _Ip6Hdr, _Ip6Ext, _IpTclass, _IpProto,
+		_Metadata, _PortInfo, _Actions, _Blaze, _Rest) ->
+	miss.
 
 ipv4(Packet, VlanTag, EthType, PbbTag, MplsTag,
 		Ip4Hdr, Ip6Hdr, Ip6Ext, IpTclass, IpProto,
@@ -279,7 +283,11 @@ ipv4(Packet, VlanTag, EthType, PbbTag, MplsTag,
 		proto(Packet, VlanTag, EthType, PbbTag, MplsTag,
 			Ip4Hdr, Ip6Hdr, Ip6Ext, IpTclass, IpProto,
 			Metadata, PortInfo, Actions, Blaze,
-			LastProto, Rest).
+			LastProto, Rest);
+ipv4(_Packet, _VlanTag, _EthType, _PbbTag, _MplsTag,
+		_Ip4Hdr, _Ip6Hdr, _Ip6Ext, _IpTclass, _IpProto,
+		_Metadata, _PortInfo, _Actions, _Blaze, _Rest) ->
+	miss.
 
 ipv6(Packet, VlanTag, EthType, PbbTag, MplsTag,
 		Ip4Hdr, undefined = _Ip6Hdr, _Ip6Ext, IpTclass, IpProto,
@@ -300,7 +308,11 @@ ipv6(Packet, VlanTag, EthType, PbbTag, MplsTag,
 		ipv6_skip(Packet, VlanTag, EthType, PbbTag, MplsTag,
 			Ip4Hdr, Ip6Hdr, Ip6Ext, IpTclass, IpProto,
 			Metadata, PortInfo, Actions, Blaze,
-			Next, Rest).
+			Next, Rest);
+ipv6(_Packet, _VlanTag, _EthType, _PbbTag, _MplsTag,
+		_Ip4Hdr, _Ip6Hdr, _Ip6Ext, _IpTclass, _IpProto,
+		_Metadata, _PortInfo, _Actions, _Blaze, _Rest) ->
+	miss.
 
 ipv6_chain(Packet, VlanTag, EthType, PbbTag, MplsTag,
 		Ip4Hdr, Ip6Hdr, Ip6Ext, IpTclass, IpProto,

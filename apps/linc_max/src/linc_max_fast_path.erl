@@ -80,7 +80,8 @@ reignite(#blaze{ports =Ports} =Blaze) ->
 		try
 			blaze(Blaze)
 		catch _:Error ->
-			?ERROR("blaze extinguishes: ~p\n~p\n", [Error,erlang:get_stacktrace()])
+			?ERROR("blaze extinguishes: ~p\n~p\n", [Error,erlang:get_stacktrace()]),
+			reignite(Blaze)
 		end
 	end),
 

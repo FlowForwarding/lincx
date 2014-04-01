@@ -157,43 +157,71 @@ apply_list([copy_ttl_inwards|ActionList], Frame, Blaze) ->
 set_field(Frame, Field, FastValue) ->
 	linc_max_splicer:edit(Frame, Field, FastValue).
 
+push_vlan(<<EthAddrs:12/binary,
+			?ETH_P_802_1Q:16,VlanTag:2/binary,
+			Rest/binary>>, EthType) ->
+	%% inherited values
+	<<EthAddrs/binary,EthType:16,VlanTag:2/binary,
+					  ?ETH_P_802_1Q:16,VlanTag:2/binary,Rest/binary>>;
+push_vlan(<<EthAddrs:12/binary,
+			?ETH_P_PBB_B:16,VlanTag:2/binary,
+			Rest/binary>>, EthType) ->
+	%% inherited values
+	<<EthAddrs/binary,EthType:16,VlanTag:2/binary,
+					  ?ETH_P_PBB_B:16,VlanTag:2/binary,Rest/binary>>;
+push_vlan(<<EthAddrs:12/binary,
+			Rest/binary>>, EthType) ->
+	%% default values
+	<<EthAddrs/binary,EthType:16,1:16,Rest/binary>>.
+
+%push_vlan(Frame, EthType) ->
+%	P = pkt:decapsulate(Frame),
+%    %% When pushing, fields are based on existing tag if there is any
+%    case linc_max_packet:find(P, ieee802_1q_tag) of
+%        not_found ->
+%            InheritVid = <<1:12>>,
+%            InheritPrio = 0;
+%        {_, BasedOnTag} ->
+%            InheritVid = BasedOnTag#ieee802_1q_tag.vid,
+%            InheritPrio = BasedOnTag#ieee802_1q_tag.pcp
+%    end,
+%    P2 = linc_max_packet:find_and_edit(
+%           P, ether,
+%           fun(T) -> 
+%                   NewTag = #ieee802_1q_tag{
+%                     pcp = InheritPrio,
+%                     vid = InheritVid,
+%                     ether_type = EthType
+%                    },
+%                   %% found ether element, return it plus VLAN tag for insertion
+%                   [T, NewTag]
+%           end),
+%	pkt:encapsulate(P2).
+
+pop_vlan(<<EthAddrs:12/binary,
+			?ETH_P_802_1Q:16,_VlanTag:2/binary,
+			Rest/binary>>) ->
+	<<EthAddrs/binary,Rest/binary>>;
+pop_vlan(<<EthAddrs:12/binary,
+			?ETH_P_PBB_B:16,_VlanTag:2/binary,
+			Rest/binary>>) ->
+	<<EthAddrs/binary,Rest/binary>>;
+pop_vlan(Frame) ->
+	Frame.
+
+%pop_vlan(Frame) ->
+%	P = pkt:decapsulate(Frame),
+%    P2 = linc_max_packet:find_and_edit(
+%           P, ieee802_1q_tag,
+%           %% returning 'delete' atom will work for first VLAN tag only
+%           fun(_) -> 'delete' end),
+%	pkt:encapsulate(P2).
+
 %%------------------------------------------------------------------------------
 %% These are slow - the faster version should not use pkt:*
 %%
 %% Copied from linc_max_actions.erl
 %%
-
-push_vlan(Frame, EthType) ->
-	P = pkt:decapsulate(Frame),
-    %% When pushing, fields are based on existing tag if there is any
-    case linc_max_packet:find(P, ieee802_1q_tag) of
-        not_found ->
-            InheritVid = <<1:12>>,
-            InheritPrio = 0;
-        {_, BasedOnTag} ->
-            InheritVid = BasedOnTag#ieee802_1q_tag.vid,
-            InheritPrio = BasedOnTag#ieee802_1q_tag.pcp
-    end,
-    P2 = linc_max_packet:find_and_edit(
-           P, ether,
-           fun(T) -> 
-                   NewTag = #ieee802_1q_tag{
-                     pcp = InheritPrio,
-                     vid = InheritVid,
-                     ether_type = EthType
-                    },
-                   %% found ether element, return it plus VLAN tag for insertion
-                   [T, NewTag]
-           end),
-	pkt:encapsulate(P2).
-
-pop_vlan(Frame) ->
-	P = pkt:decapsulate(Frame),
-    P2 = linc_max_packet:find_and_edit(
-           P, ieee802_1q_tag,
-           %% returning 'delete' atom will work for first VLAN tag only
-           fun(_) -> 'delete' end),
-	pkt:encapsulate(P2).
 
 %%XXX: EthType is not used
 push_mpls(Frame, _EthType) ->
