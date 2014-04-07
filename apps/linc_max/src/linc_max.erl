@@ -99,8 +99,17 @@ start(BackendOpts) ->
 		%TODO
         %linc_max_groups:initialize(SwitchId),
 
-		%%MK
 		{switch,_,SwitchConfig} = lists:keyfind(SwitchId, 2, Config),
+
+		%%
+		%% This is a band-aid solution for passing the OF controller endpoint to
+		%% the switch. There is a new command-line option '-of_controller
+		%% <ip:port> that adds the controller information to the list taken from
+		%% the configuration file.
+		%%
+		SwitchConfig1 = add_of_controllers(SwitchConfig),
+		io:format("SwitchConfig = ~p~n", [SwitchConfig1]),
+
 		FlowTab0 = flow_table_0,	%%TODO
 		linc_max_fast_path:start(SwitchConfig, FlowTab0),
 
@@ -113,6 +122,30 @@ start(BackendOpts) ->
 			io:format("ERROR:linc_max: ~p\n", [Error]),
             {error, Error}
     end.
+
+%% @private
+add_of_controllers(Conf) -> %% Conf1
+	case init:get_argument(of_controller) of
+	error ->
+		Conf;
+	{ok,Ss} ->
+		Endpoints = [parse_endpoint(S) || S <- lists:concat(Ss)],
+		{Controllers,_} = lists:mapfoldl(fun({IpAddr,Port}, N) ->
+			{{"OF-Controller-" ++ integer_to_list(N),IpAddr,Port,tcp},N +1}
+		end, 0, Endpoints),
+		case lists:keytake(controllers, 1, Conf) of
+		false ->
+			[{controllers,Controllers}|Conf];
+		{value,{_,Controllers0},Conf1} ->
+			[{controllers,Controllers ++ Controllers0}|Conf1]
+		end
+	end.
+
+%% @private
+parse_endpoint(S) ->
+	%% 10.1.2.3:6633 -> {"10.1.2.3",6633}
+	[IpAddr,PortStr] = string:tokens(S, ":"),
+	{IpAddr,list_to_integer(PortStr)}.
 
 %% @doc Stop the switch.
 -spec stop(state()) -> any().
