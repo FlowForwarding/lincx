@@ -108,7 +108,7 @@ start(BackendOpts) ->
 		%% the configuration file.
 		%%
 		SwitchConfig1 = add_of_controllers(SwitchConfig),
-		io:format("SwitchConfig = ~p~n", [SwitchConfig1]),
+		%io:format("SwitchConfig = ~p~n", [SwitchConfig1]),
 
 		FlowTab0 = flow_table_0,	%%TODO
 		linc_max_fast_path:start(SwitchConfig, FlowTab0),

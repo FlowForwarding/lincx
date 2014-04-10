@@ -227,59 +227,77 @@ pop_vlan(Frame) ->
 %           fun(_) -> 'delete' end),
 %	pkt:encapsulate(P2).
 
+push_pbb(<<EthAddrs:12/binary,
+		   ?ETH_P_PBB_B:16,_:16,
+		   ?ETH_P_PBB_I:16,_,ISID:24,
+		   Rest/binary>>, ?ETH_P_PBB_I) ->
+	%% See the OF 1.4.0 spec, p. 26
+	IPCP = vlan_pcp(Rest),
+	<<EthAddrs/binary,
+	  ?ETH_P_PBB_I:16,IPCP:3,0:5,ISID:24,
+	  Rest/binary>>;
+
+push_pbb(<<EthAddrs:12/binary,
+		   Rest/binary>>, ?ETH_P_PBB_I) ->
+	%% See the OF 1.4.0 spec, p. 66
+	IPCP = vlan_pcp(Rest),
+	<<EthAddrs/binary,
+	  ?ETH_P_PBB_I:16,IPCP:3,0:5,0:24,
+	  EthAddrs/binary,
+	  Rest/binary>>.
+
+%% find the outmost 802.1q header and return its PCP field
+vlan_pcp(<<?ETH_P_802_1Q:16,PCP:3,_:13,_/binary) ->
+	PCP;
+vlan_pcp(<<?ETH_P_PBB_B:16,_:16,Rest/binary>>) ->
+	vlan_pcp(Rest);
+vlan_pcp(_) ->
+	0.
+
+%push_pbb(Frame, 16#88e7) ->
+%	%%
+%	%% pkt module has separate entries for ether and pbb packets. Try pbb first.
+%	%%
+%	P =  try
+%		pkt:decapsulate_pbb(Frame)
+%	catch _:_ ->
+%		pkt:decapsulate(Frame)
+%	end,
+%
+%    %% If there was PBB tag, copy isid from it
+%    {ISID, IsPreviousPBB} = case linc_max_packet:find(P, pbb) of
+%                                not_found ->
+%                                    {<<1:24>>, false};
+%                                {_, PreviousPBB} ->
+%                                    {PreviousPBB#pbb.i_sid, true}
+%                            end,
+%    %% If there was VLAN tag, copy PCP from it
+%    IPCP = case linc_max_packet:find(P, ieee802_1q_tag) of
+%               not_found ->
+%                   0;
+%               {_, PreviousVLAN} ->
+%                   PreviousVLAN#ieee802_1q_tag.pcp
+%           end,
+%    PBB = #pbb{b_pcp = 0,
+%               b_dei = 0,
+%               i_pcp = IPCP,
+%               i_dei = 0,
+%               i_uca = 0,
+%               i_sid = ISID},
+%    NewPacket = case IsPreviousPBB of
+%                    true ->
+%                        [#pbb{} | PacketRest] = P,
+%                        [PBB | PacketRest];
+%                    false ->
+%                        [PBB | P]
+%                end,
+%	pkt:encapsulate(NewPacket).
+
 %%------------------------------------------------------------------------------
 %% These are slow - the faster version should not use pkt:*
 %%
 %% Copied from linc_max_actions.erl
 %%
-
-%push_pbb(Frame, ?ETH_P_PBB_I) ->
-%	push_pbb(Frame, 0, Frame, undefined, undefined).
-
-%push_pbb(Frame, Skip, <<?ETH_P_802_1Q:16,Pcp:3,_VlanId:13,Rest/binary>>, Pcp0, Isid) ->
-%	push_pbb(Frame, Skip +4, Rest, update(Pcp0, Pcp), Isid);
-%...
-
-%%==============================================================================
-
-push_pbb(Frame, 16#88e7) ->
-	%%
-	%% pkt module has separate entries for ether and pbb packets. Try pbb first.
-	%%
-	P =  try
-		pkt:decapsulate_pbb(Frame)
-	catch _:_ ->
-		pkt:decapsulate(Frame)
-	end,
-
-    %% If there was PBB tag, copy isid from it
-    {ISID, IsPreviousPBB} = case linc_max_packet:find(P, pbb) of
-                                not_found ->
-                                    {<<1:24>>, false};
-                                {_, PreviousPBB} ->
-                                    {PreviousPBB#pbb.i_sid, true}
-                            end,
-    %% If there was VLAN tag, copy PCP from it
-    IPCP = case linc_max_packet:find(P, ieee802_1q_tag) of
-               not_found ->
-                   0;
-               {_, PreviousVLAN} ->
-                   PreviousVLAN#ieee802_1q_tag.pcp
-           end,
-    PBB = #pbb{b_pcp = 0,
-               b_dei = 0,
-               i_pcp = IPCP,
-               i_dei = 0,
-               i_uca = 0,
-               i_sid = ISID},
-    NewPacket = case IsPreviousPBB of
-                    true ->
-                        [#pbb{} | PacketRest] = P,
-                        [PBB | PacketRest];
-                    false ->
-                        [PBB | P]
-                end,
-	pkt:encapsulate(NewPacket).
 
 pop_pbb(Frame) ->
 	%% see comment above
