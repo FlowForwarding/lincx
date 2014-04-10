@@ -157,11 +157,6 @@ apply_list([copy_ttl_inwards|ActionList], Frame, Blaze) ->
 set_field(Frame, Field, FastValue) ->
 	linc_max_splicer:edit(Frame, Field, FastValue).
 
-update(undefined, New) ->
-	New;
-update(Old, _New) ->
-	Old.
-
 push_vlan(<<EthAddrs:12/binary,
 			?ETH_P_802_1Q:16,VlanTag:2/binary,
 			Rest/binary>>, EthType) ->
@@ -180,7 +175,7 @@ push_vlan(<<EthAddrs:12/binary,
 	
 	%% OpenFlow 1.4.0 page 26: New fields ... should be set to zero.
 	%% 
-	%% The old implementation sets VLAN ID to 1. Why?
+	%% The old implementation set VLAN ID to 1. Why?
 	
 	<<EthAddrs/binary,EthType:16,0:16,Rest/binary>>.
 
@@ -247,7 +242,7 @@ push_pbb(<<EthAddrs:12/binary,
 	  Rest/binary>>.
 
 %% find the outmost 802.1q header and return its PCP field
-vlan_pcp(<<?ETH_P_802_1Q:16,PCP:3,_:13,_/binary) ->
+vlan_pcp(<<?ETH_P_802_1Q:16,PCP:3,_:13,_/binary>>) ->
 	PCP;
 vlan_pcp(<<?ETH_P_PBB_B:16,_:16,Rest/binary>>) ->
 	vlan_pcp(Rest);
@@ -293,111 +288,177 @@ vlan_pcp(_) ->
 %                end,
 %	pkt:encapsulate(NewPacket).
 
+pop_pbb(<<_EthAddrs:12/binary,
+		  ?ETH_P_PBB_B:16,_:16,
+		  ?ETH_P_PBB_I:16,_:32,
+		  ClientFrame/binary>>) ->
+	ClientFrame;
+pop_pbb(Frame) ->
+	Frame.
+
+%pop_pbb(Frame) ->
+%	%% see comment above
+%	P =  try
+%		pkt:decapsulate_pbb(Frame)
+%	catch _:_ ->
+%		pkt:decapsulate(Frame)
+%	end,
+%    P2 = case P of
+%             [#pbb{} | PRest] ->
+%                 PRest;
+%             _ ->
+%                 P
+%         end,
+%	pkt:encapsulate(P2).
+
+push_mpls(<<_:12/binary,Rest/binary>> =Frame, EthType) ->
+	push_mpls(Frame, 12, Rest, EthType).
+
+push_mpls(Frame, Off,
+	<<?ETH_P_802_1Q:16,_:16,Rest/binary>>, EthType) ->
+	push_mpls(Frame, Off +2 +2, Rest, EthType);
+push_mpls(Frame, Off,
+	<<?ETH_P_PBB_B:16,_:16,Rest/binary>>, EthType) ->
+	push_mpls(Frame, Off +2 +2, Rest, EthType);
+push_mpls(Frame, Off,
+	<<?ETH_P_PBB_I:16,_:32,_:(6+6)/binary,Rest/binary>>, EthType) ->
+	push_mpls(Frame, Off +2 +4 +6 +6, Rest, EthType);
+push_mpls(Frame, Off,
+	<<MplsType:16,Label:20,TClass:3,_BoS:1,TTL:8,_/binary>> =Rest, EthType)
+			when MplsType =:= ?ETH_P_MPLS_UNI orelse MplsType =:= ?ETH_P_MPLS_MULTI ->
+	Prefix = binary:part(Frame, 0, Off),
+	<<Prefix/binary,
+	  EthType:16,Label:20,TClass:3,0:1,TTL:8,
+	  Rest/binary>>;
+push_mpls(Frame, Off,
+	<<4:4,_:60,TTL:8,_/binary>> =Rest, EthType) ->
+	Prefix = binary:part(Frame, 0, Off),
+	<<Prefix/binary,
+	  EthType:16,0:20,0:3,0:1,TTL:8,
+	  Rest/binary>>;
+push_mpls(Frame, Off,
+	<<6:4,_:52,TTL:8,_/binary>> =Rest, EthType) ->
+	Prefix = binary:part(Frame, 0, Off),
+	<<Prefix/binary,
+	  EthType:16,0:20,0:3,0:1,TTL:8,
+	  Rest/binary>>;
+push_mpls(Frame, _, _, _) ->
+	Frame.
+
+%push_mpls(Frame, _EthType) ->
+%	P = pkt:decapsulate(Frame),
+%	%% inherit IP or MPLS ttl value
+%    FindOldMPLS = linc_max_packet:find(P, mpls_tag),
+%    SetTTL = case linc_max_packet:find(P, ipv4) of
+%                 not_found ->
+%                     case FindOldMPLS of
+%                         not_found ->
+%                             0;
+%                         {_, T} ->
+%                             mpls_get_outermost_ttl(T)
+%                     end;
+%                 {_, T} ->
+%                     T#ipv4.ttl
+%             end,
+%
+%    case FindOldMPLS of
+%        not_found ->
+%            %% Must insert after ether or vlan tag,
+%            %% whichever is deeper in the packet
+%            InsertAfter = case linc_max_packet:find(P, ieee802_1q_tag) of
+%                              not_found ->
+%                                  ether;
+%                              _ ->
+%                                  ieee802_1q_tag
+%                          end,
+%            P2 = linc_max_packet:find_and_edit(
+%                   P, InsertAfter,
+%                   fun(T) -> 
+%                           NewEntry = #mpls_stack_entry{ttl = SetTTL},
+%                           NewTag = #mpls_tag{stack = [NewEntry]},
+%                           %% found ether or vlan element, return it plus
+%                           %% MPLS tag for insertion
+%                           [T, NewTag]
+%                   end);
+%        %% found an MPLS shim header, and will push tag into it
+%        _ ->
+%            P2 = linc_max_packet:find_and_edit(
+%                   P, mpls_tag,
+%                   fun(T) -> 
+%                           %% base the newly inserted entry on a previous one
+%                           NewEntry = hd(T#mpls_tag.stack),
+%                           T#mpls_tag{stack = [NewEntry | T#mpls_tag.stack]}
+%                   end)
+%    end,
+%	pkt:encapsulate(P2).
+
+pop_mpls(<<_:12/binary,Rest/binary>> =Frame, EthType) ->
+	pop_mpls(Frame, 12, Rest, EthType).
+
+pop_mpls(Frame, Off,
+	<<?ETH_P_802_1Q:16,_:16,Rest/binary>>, EthType) ->
+	pop_mpls(Frame, Off +2 +2, Rest, EthType);
+pop_mpls(Frame, Off,
+	<<?ETH_P_PBB_B:16,_:16,Rest/binary>>, EthType) ->
+	pop_mpls(Frame, Off +2 +2, Rest, EthType);
+pop_mpls(Frame, Off,
+	<<?ETH_P_PBB_I:16,_:32,_:(6+6)/binary,Rest/binary>>, EthType) ->
+	pop_mpls(Frame, Off +2 +4 +6 +6, Rest, EthType);
+pop_mpls(Frame, Off,
+	<<MplsType:16,_Label:20,_TClass:3,0:1,_TTL:8,Rest/binary>>, _EthType)
+			when MplsType =:= ?ETH_P_MPLS_UNI orelse MplsType =:= ?ETH_P_MPLS_MULTI ->
+	Prefix = binary:part(Frame, 0, Off),
+	<<Prefix/binary,MplsType:16,Rest/binary>>;
+pop_mpls(Frame, Off,
+	<<MplsType:16,_Label:20,_TClass:3,1:1,_TTL:8,Rest/binary>>, EthType)
+			when MplsType =:= ?ETH_P_MPLS_UNI orelse MplsType =:= ?ETH_P_MPLS_MULTI ->
+	Prefix = binary:part(Frame, 0, Off),
+	<<Prefix/binary,EthType:16,Rest/binary>>;
+pop_mpls(Frame, _, _, _) ->
+	Frame.
+
+%pop_mpls(Frame, EthType) ->
+%	P = pkt:decapsulate(Frame),
+%    PopMPLSHeader = fun(T) ->
+%                            Stk = T#mpls_tag.stack,
+%                            %% based on how many elements were in stack,
+%                            %% either pop a top most element or delete
+%                            %% the whole tag (for empty)
+%                            case Stk of
+%                                [_OnlyOneElement] ->
+%                                    'delete';
+%                                [_|RestOfStack] ->
+%                                    T#mpls_tag{stack = RestOfStack}
+%                            end
+%                    end,
+%    ModifyEtherType = fun(T) ->
+%                              case T of
+%                                  #ether{} ->
+%                                      T#ether{type = EthType};
+%                                  #ieee802_1q_tag{} ->
+%                                      T#ieee802_1q_tag{ether_type = EthType}
+%                              end
+%                      end,
+%    P2 = case linc_max_packet:find_and_edit(P, mpls_tag, PopMPLSHeader) of
+%             Unmodified when Unmodified =:= P ->
+%                 Unmodified;
+%             Modified ->
+%                 BeforeMPLSTag = case linc_max_packet:find(P, ieee802_1q_tag) of
+%                                     not_found ->
+%                                         ether;
+%                                     _ ->
+%                                         ieee802_1q_tag
+%                                 end,
+%                 linc_max_packet:find_and_edit(Modified, BeforeMPLSTag,
+%                                               ModifyEtherType)
+%         end,
+%	pkt:encapsulate(P2).
+
 %%------------------------------------------------------------------------------
 %% These are slow - the faster version should not use pkt:*
 %%
 %% Copied from linc_max_actions.erl
 %%
-
-pop_pbb(Frame) ->
-	%% see comment above
-	P =  try
-		pkt:decapsulate_pbb(Frame)
-	catch _:_ ->
-		pkt:decapsulate(Frame)
-	end,
-    P2 = case P of
-             [#pbb{} | PRest] ->
-                 PRest;
-             _ ->
-                 P
-         end,
-	pkt:encapsulate(P2).
-
-%%XXX: EthType is not used
-push_mpls(Frame, _EthType) ->
-	P = pkt:decapsulate(Frame),
-	%% inherit IP or MPLS ttl value
-    FindOldMPLS = linc_max_packet:find(P, mpls_tag),
-    SetTTL = case linc_max_packet:find(P, ipv4) of
-                 not_found ->
-                     case FindOldMPLS of
-                         not_found ->
-                             0;
-                         {_, T} ->
-                             mpls_get_outermost_ttl(T)
-                     end;
-                 {_, T} ->
-                     T#ipv4.ttl
-             end,
-
-    case FindOldMPLS of
-        not_found ->
-            %% Must insert after ether or vlan tag,
-            %% whichever is deeper in the packet
-            InsertAfter = case linc_max_packet:find(P, ieee802_1q_tag) of
-                              not_found ->
-                                  ether;
-                              _ ->
-                                  ieee802_1q_tag
-                          end,
-            P2 = linc_max_packet:find_and_edit(
-                   P, InsertAfter,
-                   fun(T) -> 
-                           NewEntry = #mpls_stack_entry{ttl = SetTTL},
-                           NewTag = #mpls_tag{stack = [NewEntry]},
-                           %% found ether or vlan element, return it plus
-                           %% MPLS tag for insertion
-                           [T, NewTag]
-                   end);
-        %% found an MPLS shim header, and will push tag into it
-        _ ->
-            P2 = linc_max_packet:find_and_edit(
-                   P, mpls_tag,
-                   fun(T) -> 
-                           %% base the newly inserted entry on a previous one
-                           NewEntry = hd(T#mpls_tag.stack),
-                           T#mpls_tag{stack = [NewEntry | T#mpls_tag.stack]}
-                   end)
-    end,
-	pkt:encapsulate(P2).
-
-pop_mpls(Frame, EthType) ->
-	P = pkt:decapsulate(Frame),
-    PopMPLSHeader = fun(T) ->
-                            Stk = T#mpls_tag.stack,
-                            %% based on how many elements were in stack,
-                            %% either pop a top most element or delete
-                            %% the whole tag (for empty)
-                            case Stk of
-                                [_OnlyOneElement] ->
-                                    'delete';
-                                [_|RestOfStack] ->
-                                    T#mpls_tag{stack = RestOfStack}
-                            end
-                    end,
-    ModifyEtherType = fun(T) ->
-                              case T of
-                                  #ether{} ->
-                                      T#ether{type = EthType};
-                                  #ieee802_1q_tag{} ->
-                                      T#ieee802_1q_tag{ether_type = EthType}
-                              end
-                      end,
-    P2 = case linc_max_packet:find_and_edit(P, mpls_tag, PopMPLSHeader) of
-             Unmodified when Unmodified =:= P ->
-                 Unmodified;
-             Modified ->
-                 BeforeMPLSTag = case linc_max_packet:find(P, ieee802_1q_tag) of
-                                     not_found ->
-                                         ether;
-                                     _ ->
-                                         ieee802_1q_tag
-                                 end,
-                 linc_max_packet:find_and_edit(Modified, BeforeMPLSTag,
-                                               ModifyEtherType)
-         end,
-	pkt:encapsulate(P2).
 
 set_mpls_ttl(Frame, NewTTL) ->
 	P = pkt:decapsulate(Frame),
