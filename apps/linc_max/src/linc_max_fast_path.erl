@@ -63,10 +63,9 @@ blaze(Blaze, ReigniteCounter) ->
 				Metadata, PortInfo, #fast_actions{}, Blaze) of
 		{do,Frame1,Actions} ->
 			linc_max_fast_actions:apply_set(Actions, Frame1, Blaze);
-		miss ->
-			%%io:format("MISS: ~p\n", [pkt:decapsulate(Frame)]);
-
-			%%TODO: send Packet-in message?
+		malformed ->
+			%% preparser detected a malformed packet
+			%%io:format("MALFORMED: ~p\n", [pkt:decapsulate(Frame)]);
 			drop;
 		_ ->
 			drop

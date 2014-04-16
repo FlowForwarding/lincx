@@ -170,7 +170,7 @@ ether(Packet, VlanTag, EthType, PbbTag, MplsTag,
 		MplsTag,
 		Ip4Hdr,
 		Ip6Hdr,
-		bin16(Ip6Ext),
+		bin16(Ip6Ext),	%% =:= undefined
 		IpTclass,
 		IpProto,
 		Rest,		%% ArpMsg
@@ -187,12 +187,35 @@ ether(Packet, VlanTag, EthType, PbbTag, MplsTag,
 		TunnelId,
 		Actions,
 		Blaze);
-
-%% Non-common Ethernet type - never a match
-ether(_Packet, _VlanTag, _EthType, _PbbTag, _MplsTag,
-	_Ip4Hdr, _Ip6Hdr, _Ip6Ext, _IpTclass, _IpProto,
-	_Metadata, _PortInfo, _Actions, _Blaze, _Rest) ->
-	miss.
+ether(Packet, VlanTag, EthType, PbbTag, MplsTag,
+	Ip4Hdr, Ip6Hdr, Ip6Ext, IpTclass, IpProto,
+	Metadata, {InPort,InPhyPort,TunnelId} = _PortInfo, Actions, #blaze{start_at =FlowTab} =Blaze,
+	<<EthType1:16,_/binary>>) ->
+	%% Ethernet type is very unusual. The matching is likely to result in a table miss.
+	FlowTab:match(Packet,
+		VlanTag,
+		up(EthType, EthType1),
+		PbbTag,
+		MplsTag,
+		Ip4Hdr,
+		Ip6Hdr,
+		bin16(Ip6Ext),	%% =:= undefined
+		IpTclass,
+		IpProto,
+		undefined,	%% ArpMsg
+		undefined,	%% IcmpMsg
+		undefined,	%% Icmp6Hdr
+		undefined,	%% Icmp6Sll
+		undefined,	%% Icmp6Tll
+		undefined,	%% TcpHdr
+		undefined,	%% UdpHdr
+		undefined,	%% SctpHdr
+		Metadata,
+		InPort,
+		InPhyPort,
+		TunnelId,
+		Actions,
+		Blaze).
 	
 mpls(Packet, VlanTag, EthType, PbbTag, MplsTag,
 		Ip4Hdr, Ip6Hdr, Ip6Ext, IpTclass, IpProto,
@@ -209,7 +232,10 @@ mpls(Packet, VlanTag, EthType, PbbTag, MplsTag,
 			ipv6(Packet, VlanTag, EthType, PbbTag, MplsTag,
 				Ip4Hdr, Ip6Hdr, Ip6Ext, IpTclass, IpProto,
 				Metadata, PortInfo, Actions, Blaze,
-				Rest)
+				Rest);
+		_ ->
+			%% MPLS may wrap IPv4 or IPv6 packet only
+			malformed
 		end;
 mpls(Packet, VlanTag, EthType, PbbTag, MplsTag,
 		Ip4Hdr, Ip6Hdr, Ip6Ext, IpTclass, IpProto,
@@ -222,8 +248,9 @@ mpls(Packet, VlanTag, EthType, PbbTag, MplsTag,
 mpls(_Packet, _VlanTag, _EthType, _PbbTag, _MplsTag,
 		_Ip4Hdr, _Ip6Hdr, _Ip6Ext, _IpTclass, _IpProto,
 		_Metadata, _PortInfo, _Actions, _Blaze, _Rest) ->
-	miss.
-
+	%% The bottom-less MPLS stack
+	malformed.
+	
 ipv4(Packet, VlanTag, EthType, PbbTag, MplsTag,
 		Ip4Hdr, Ip6Hdr, Ip6Ext, IpTclass, IpProto,
 		Metadata, {InPort,InPhyPort,TunnelId}, Actions, #blaze{start_at =FlowTab} =Blaze,
@@ -287,7 +314,8 @@ ipv4(Packet, VlanTag, EthType, PbbTag, MplsTag,
 ipv4(_Packet, _VlanTag, _EthType, _PbbTag, _MplsTag,
 		_Ip4Hdr, _Ip6Hdr, _Ip6Ext, _IpTclass, _IpProto,
 		_Metadata, _PortInfo, _Actions, _Blaze, _Rest) ->
-	miss.
+	%% The version field of IPv4 is not 4
+	malformed.
 
 ipv6(Packet, VlanTag, EthType, PbbTag, MplsTag,
 		Ip4Hdr, undefined = _Ip6Hdr, _Ip6Ext, IpTclass, IpProto,
@@ -312,7 +340,7 @@ ipv6(Packet, VlanTag, EthType, PbbTag, MplsTag,
 ipv6(_Packet, _VlanTag, _EthType, _PbbTag, _MplsTag,
 		_Ip4Hdr, _Ip6Hdr, _Ip6Ext, _IpTclass, _IpProto,
 		_Metadata, _PortInfo, _Actions, _Blaze, _Rest) ->
-	miss.
+	malformed.
 
 ipv6_chain(Packet, VlanTag, EthType, PbbTag, MplsTag,
 		Ip4Hdr, Ip6Hdr, Ip6Ext, IpTclass, IpProto,
@@ -626,11 +654,35 @@ proto(Packet, VlanTag, EthType, PbbTag, MplsTag,
 		TunnelId,
 		Actions,
 		Blaze);
-proto(_Packet, _VlanTag, _EthType, _PbbTag, _MplsTag,
-	_Ip4Hdr, _Ip6Hdr, _Ip6Ext, _IpTclass, _IpProto,
-	_Metadata, _PortInfo, _Actions, _Blaze,
-	_Proto, _Rest) ->
-	miss.
+proto(Packet, VlanTag, EthType, PbbTag, MplsTag,
+	Ip4Hdr, Ip6Hdr, Ip6Ext, IpTclass, IpProto,
+	Metadata, {InPort,InPhyPort,TunnelId} = _PortInfo, Actions, #blaze{start_at =FlowTab} =Blaze,
+	_RareProto, _Payload) ->
+	%% An unusual protocol number. A table miss is likely to happen.
+	FlowTab:match(Packet,
+		VlanTag,
+		EthType,
+		PbbTag,
+		MplsTag,
+		Ip4Hdr,
+		Ip6Hdr,
+		bin16(Ip6Ext),
+		IpTclass,
+		IpProto,
+		undefined,	%% ArpMsg
+		undefined,	%% IcmpMsg
+		undefined,	%% Icmp6Hdr
+		undefined,	%% Icmp6Sll
+		undefined,	%% Icmp6Tll
+		undefined,	%% TcpHdr
+		undefined,	%% UdpHdr
+		undefined,	%% SctpHdr
+		Metadata,
+		InPort,
+		InPhyPort,
+		TunnelId,
+		Actions,
+		Blaze).
 	
 %% IPPROTO_GRE not expected
 
