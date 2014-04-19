@@ -1,6 +1,0 @@
-2013-12-13 16:34:19 =ERROR REPORT====
-Bad input fd in erts_poll()! fd=18, port=#Port<0.1181>, driver=fd, name=18/18
-
-2013-12-25 14:20:58 =ERROR REPORT====
-Bad input fd in erts_poll()! fd=16, port=#Port<0.1183>, driver=fd, name=16/16
-

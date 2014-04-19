@@ -1,5 +1,11 @@
 name = "lincx"
 kernel = "vmling"
-extra = "-ipaddr 192.168.0.2 -netmask 255.255.255.0 -gateway 192.168.0.1 -home /lincx -pz /lincx/apps/linc/ebin /lincx/apps/linc_max/ebin /lincx/apps/linc_us3/ebin /lincx/apps/linc_us4/ebin /lincx/deps/eenum/ebin /lincx/deps/enetconf/ebin /lincx/deps/epcap/ebin /lincx/deps/lager/ebin /lincx/deps/ling_builder/ebin /lincx/deps/meck/ebin /lincx/deps/of_config/ebin /lincx/deps/of_protocol/ebin /lincx/deps/pkt/ebin /lincx/deps/procket/ebin /lincx/deps/sync/ebin /lincx/deps/tunctl/ebin -config /lincx/priv/sys.config -eval \"lists:map(fun application:start/1, [crypto,asn1,public_key,ssh,compiler,syntax_tools,xmerl,mnesia,lager,linc])\""
+extra = "-ipaddr 10.48.11.59 -netmask 255.255.255.0 -gateway 10.48.11.1 -home /lincx -pz /lincx/apps/linc/ebin /lincx/apps/linc_max/ebin /lincx/apps/linc_us3/ebin /lincx/apps/linc_us4/ebin /lincx/deps/eenum/ebin /lincx/deps/enetconf/ebin /lincx/deps/epcap/ebin /lincx/deps/lager/ebin /lincx/deps/ling_builder/ebin /lincx/deps/meck/ebin /lincx/deps/of_config/ebin /lincx/deps/of_protocol/ebin /lincx/deps/pkt/ebin /lincx/deps/procket/ebin /lincx/deps/sync/ebin /lincx/deps/tunctl/ebin -config /lincx/priv/sys.config -eval \"lists:map(fun application:start/1, [crypto,asn1,public_key,ssh,compiler,syntax_tools,xmerl,mnesia,lager,linc])\""
 memory = "1024"
-vif = [ '', '', '' ]
+vif = [ 'bridge=xenbr0',
+	'bridge=br1',
+	'bridge=br2',
+	'bridge=br3',
+	'brdige=br4',
+	'brdige=br5',
+	'bridge=br6' ]
