@@ -1,0 +1,32 @@
+#!/usr/bin/expect
+
+puts "---------------------------------------------------------------------"
+puts "UNIT: [lindex $argv 0]M, [lindex $argv 1] rules, eth [lindex $argv 2]"
+
+spawn xl destroy lincx
+sleep 20
+
+spawn xl create -c domain_[lindex $argv 0]M
+expect "error: not owner"
+sleep 10
+
+send "linc_max_generator:update_flow_table(\
+	flow_table_0,\
+	linc_max_demo:generate_flows(\[\
+		{num_flows,[lindex $argv 1]},\
+		{match,{1.0,eth_src,16#ffffff}},\
+		{match,{1.0,eth_dst,16#ffffff}},\
+		{match,{0.5,vlan_vid,nomask}},\
+		{match,{0.1,ip_dscp}},\
+		allow_arp]))\
+.\r"
+expect "ok"
+
+send "ling:experimental(llstat, [lindex $argv 2]).\r"
+sleep 60
+send "ling:experimental(llstat, stop).\r"
+send "ling:experimental(llstat, \[]).\r"
+
+send "erlang:statistics(garbage_collection).\r"
+send "q().\r"
+expect eof

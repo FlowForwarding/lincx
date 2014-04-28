@@ -5,21 +5,35 @@
 
 -include("fast_path.hrl").
 
-%% Restart the fast path after this many packets to avoid GC
+%% Restart the fast path after this many packets (to mimic suppressed GC)
 -define(REIGNITE_AFTER, 16384).
+
+-define(BLAZE_PRIORITY, high).
+-define(SUPPRESS_GC, true).
 
 start(SwitchConfig, FlowTab0) ->
 	%%NB: Config contains data for the current switch only
 	PortConfig = proplists:get_value(ports, SwitchConfig, []),
 
+	%% It is not possible to catch no_memory exception from inside the process.
+	%% Thus, we need this.
+	register(last_will, spawn(fun() ->
+		process_flag(trap_exit, true),
+		last_will()
+	end)),
+
 	spawn(fun() ->
-		try
-			Ports = open_ports(PortConfig),
-			blaze(#blaze{ports =Ports,start_at =FlowTab0})
-		catch _:Error ->
-			?ERROR("blaze dies: ~p\n~p", [Error,erlang:get_stacktrace()])
-		end
+		Ports = open_ports(PortConfig),
+		blaze(#blaze{ports =Ports,start_at =FlowTab0})
 	end).
+
+last_will() ->
+	receive
+	{'EXIT',_Pid,normal} -> %% reignited
+		last_will();
+	{'EXIT',Pid,Reason} ->
+		?ERROR("blaze ~p dies: ~p\n (fast path stopped)\n", [Pid,Reason])
+	end.
 
 open_ports(PortConfig) ->
 	lists:foldl(fun({port,PortNo,Opts}, Ports) ->
@@ -45,6 +59,12 @@ open_ports(PortConfig) ->
 %%
 
 blaze(Blaze) ->
+	link(whereis(last_will)),
+
+	%% the blaze is a peculiar process
+	process_flag(priority, ?BLAZE_PRIORITY),
+	process_flag(suppress_gc, ?SUPPRESS_GC),
+
 	blaze(Blaze, 0).	%% add restart counter
 
 blaze(Blaze, ?REIGNITE_AFTER) ->
@@ -75,13 +95,16 @@ blaze(Blaze, ReigniteCounter) ->
 	end.
 
 reignite(#blaze{ports =Ports} =Blaze) ->
+%	%% Check that GC never happens
+%	case process_info(self(), garbage_collection) of
+%	{_,0} ->
+%		ok;
+%	{_,N} ->
+%		?INFO("blaze ~w ran gc ~w time(s)\n", [self(),N])
+%	end,
+
 	NewPid = spawn(fun() ->
-		try
-			blaze(Blaze)
-		catch _:Error ->
-			?ERROR("blaze extinguishes: ~p\n~p\n", [Error,erlang:get_stacktrace()]),
-			reignite(Blaze)
-		end
+		blaze(Blaze)
 	end),
 
 	reconnect_ports(Ports, NewPid),
@@ -94,12 +117,21 @@ reconnect_ports(Ports, NewPid) ->
 	end, Ports).
 
 drain_packets(NewPid) ->
+	drain_packets(NewPid, 0).
+
+drain_packets(NewPid, N) ->
 	receive
 	Any ->
 		NewPid ! Any,
-		drain_packets(NewPid)
+		drain_packets(NewPid, N +1)
 	after 0 ->
-		ok
+		case whereis(blaze_statistics) of
+		undefined ->
+			ok;
+		Pid ->
+			Pid ! {message_count,N},
+			ok
+		end
 	end.
 
 %%EOF

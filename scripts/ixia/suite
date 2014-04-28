@@ -1,0 +1,9 @@
+#!/bin/bash
+for M in 128 256 1024
+do
+	for R in 2 128 1024 8192
+	do
+		./unit $M $R 1
+		./unit $M $R 2
+	done
+done

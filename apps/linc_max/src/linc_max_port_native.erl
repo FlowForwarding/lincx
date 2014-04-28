@@ -7,7 +7,10 @@
 -module(linc_max_port_native).
 -export([vif/1]).
 
--define(VIF_MAILBOX_LIMIT, 131072).
+%-define(VIF_MAILBOX_LIMIT, 131072).
+%-define(VIF_MAILBOX_LIMIT, 16384).
+%-define(VIF_MAILBOX_LIMIT, 1500).
+-define(VIF_MAILBOX_LIMIT, 512).
 
 -spec vif(string()) -> {ok, port(), binary()} |
 					   {error, term()}.

@@ -2,7 +2,11 @@
 %% This is a temporary/experimentation module
 %%
 -module(linc_max_demo).
--export([help/0,generate_flows/1]).
+-export([help/0,generate_flows/1,up/1]).
+
+-export([ixia_test/0]).
+
+-export([collect_blaze_statistics/0,get_stats/0,reset_stats/0]).
 
 -include_lib("of_protocol/include/ofp_v4.hrl").
 -include("linc_max.hrl").
@@ -161,5 +165,111 @@ flow_config(test1) ->
 	 {match,{0.5,vlan_vid,nomask}},
 	 {match,{0.1,ip_dscp}},
 	 allow_arp].
+
+up(NumFlows) ->
+	linc_max_generator:update_flow_table(
+		flow_table_0, 
+		linc_max_demo:generate_flows([
+			{num_flows,NumFlows},
+			%{match,{0.2,eth_src,nomask}},
+			{match,{1.0,eth_dst,16#ffffff}},
+			{match,{1.0,vlan_vid,nomask}},
+			{match,{0.1,ip_dscp}},
+			allow_arp
+		])
+	).
+
+ixia_test() ->
+	io:format(">>>> IXIA marker\n", []),
+	collect_blaze_statistics(),
+	{GcRuns0,GcReclaimed0,_} = statistics(garbage_collection),
+
+	io:format(">>>> iface eth1\n", []),
+	ling:experimental(llstat, 1),
+	timer:sleep(5000),
+	ling:experimental(llstat, stop),
+	ling:experimental(llstat, []),	%% display
+	
+	io:format(">>>> iface eth2\n", []),
+	ling:experimental(llstat, 2),
+	timer:sleep(5000),
+	ling:experimental(llstat, stop),
+	ling:experimental(llstat, []),	%% display
+
+	{GcRuns1,GcReclaimed1,_} = statistics(garbage_collection),
+	io:format("!gc_runs: ~w\n", [GcRuns1 -GcRuns0]),
+	io:format("!gc_reclaimed: ~w\n", [GcReclaimed1 -GcReclaimed0]),
+
+	{statistics,BStats} = get_stats(),
+	SampleSize = proplists:get_value(sample_size, BStats),
+	MinMsgCount = proplists:get_value(min_msg_count, BStats),
+	MaxMsgCount = proplists:get_value(max_msg_count, BStats),
+	AvgMsgCount = proplists:get_value(avg_msg_count, BStats),
+	StdDevMsgCount = proplists:get_value(std_dev_msg_count, BStats),
+	io:format("!sample_size: ~w\n", [SampleSize]),
+	io:format("!min_mq_len: ~w\n", [MinMsgCount]),
+	io:format("!max_mq_len: ~w\n", [MaxMsgCount]),
+	io:format("!avg_mq_len: ~w\n", [AvgMsgCount]),
+	io:format("!sdev_mq_len: ~w\n", [StdDevMsgCount]),
+
+	io:format("<<<< IXIA end\n", []).
+
+%% blaze statistics collector
+collect_blaze_statistics() ->
+	case whereis(blaze_statistics) of
+	undefined ->
+		register(blaze_statistics,
+			spawn(fun() ->
+				blaze_statistics()
+			end));
+	_Pid ->
+		already_running
+	end.
+
+%double old_average = running_average;
+%running_average += (delay_us -old_average) /linc_num_sent;
+%running_variance += (delay_us -running_average) *(delay_us -old_average);
+
+get_stats() ->
+	case whereis(blaze_statistics) of
+	undefined ->
+		not_running;
+	Pid ->
+		Pid ! {get,self()},
+		receive X -> X end
+	end.
+
+reset_stats() ->
+	case whereis(blaze_statistics) of
+	undefined ->
+		not_running;
+	Pid ->
+		Pid ! reset
+	end.
+
+blaze_statistics() ->
+	blaze_statistics(0, undefined, undefined, undefined, undefined).
+
+blaze_statistics(N, RunAvg, RunVar, Min, Max) ->
+	receive
+	{message_count,Count} when N =:= 0 ->
+		blaze_statistics(1, Count, 0.0, Count, Count);
+	{message_count,Count} ->
+		NewAvg = RunAvg + (Count -RunAvg) /(N +1),
+		NewVar = RunVar + (Count -RunAvg) *(Count -NewAvg),
+		blaze_statistics(N +1, NewAvg, NewVar, min(Min, Count), max(Max, Count));
+	{get,Pid} when N < 2 ->
+		Pid ! no_data;
+	{get,Pid} ->
+		StdDev = math:sqrt(RunAvg /(N -1)),
+		Pid ! {statistics,[{sample_size,N},
+					  {min_msg_count,Min},
+					  {max_msg_count,Max},
+					  {avg_msg_count,RunAvg},
+					  {std_dev_msg_count,StdDev}]},
+		blaze_statistics(N, RunAvg, RunVar, Min, Max);
+	reset ->
+		blaze_statistics()
+	end.
 
 %%EOF
