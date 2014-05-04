@@ -21,7 +21,7 @@ represented as Erlang processes.
 
 Queues are a part of the "fast path" of the switch and thus they should maintain
 minumum memory footprint and suppress garbage collection. A queue is yet another
-destination of a packets. Queues are created and controlled by the blaze process
+destination of a packet. Queues are created and controlled by the blaze process
 similarly to ports. The blaze process should maintain the queue map -- the
 mapping between `queue_id` and `Pid`.
 
@@ -135,31 +135,22 @@ same procedure is repeated when either a packet arrives or a timeout expires.
 
 # Queue configuration
 
-The following specifications are copied from docs/queues.md. Note that parameter
-`rate` is not used by the proposed queue implementation.
+The following queue configuration options are taken from
+rel/files/sys.config.orig.
 
-## Port configuration spec
+	{capable_switch_queues,
+		[
+		 %% Examples:
+		 %% {queue, 1, [{min_rate, 100}, {max_rate, 100}]},
+		 %% {queue, 2, [{min_rate, 100}, {max_rate, 100}]}
+		]}
 
-``` erlang
-[{PortId :: integer(),
-  [{rate, {integer(), bps | kbps | kibps | mbps | mibps | gbps | gibps}} |
-   {queues, [{QueueId :: integer(), [{min_rate, integer()} |
-                                     {max_rate, integer()}]}]}]}]
-```
+The ports gets queues attaches as follows:
 
-## Example setup
-
-``` erlang
-{queues,
- [
-  {1, [
-       {rate, {100, mbps}},
-       {queues, []}
-      ]},
-  {2, [
-       {rate, {1, gbps}},
-       {queues, [{1, [{min_rate, 250},
-                      {max_rate, 500}]}]}
-      ]}
- ]}
-```
+	{ports, [
+		%% Examples:
+		%% - port without queues:
+		%% {port, 1, {queues, []}},
+		%% - port with two queues:
+		%% {port, 2, {queues, [1, 2]}}
+	]}
