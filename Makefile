@@ -1,4 +1,4 @@
-.PHONY: default compile get-deps update-deps test clean deep-clean
+.PHONY: default lincx compile get-deps update-deps test clean deep-clean
 
 default: lincx
 
@@ -32,6 +32,8 @@ lincx:
 	@./rebar co skip_deps=true
 	@./rebar ling-build-image
 
+DOMCONF := domain_config
+
 boot: $(DOMCONF)
 	xl create -c $(DOMCONF)
 
@@ -45,8 +47,6 @@ EXTRA += -home /lincx
 EXTRA += -pz $(PATHZ)
 EXTRA += -config $(SYSCONF)
 EXTRA += -eval \"lists:map(fun application:start/1, [crypto,asn1,public_key,ssh,compiler,syntax_tools,xmerl,mnesia,lager,linc])\"
-
-DOMCONF := domain_config
 
 $(DOMCONF): LINGConfig.mk
 	@echo "name = \"lincx\"" >$(DOMCONF)

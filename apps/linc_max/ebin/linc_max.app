@@ -20,6 +20,7 @@
 						linc_max_fast_actions,
 						linc_max_fast_actions_tests,
 						linc_max_flow,
+						linc_max_queue,
 						linc_max_port_native,
 						linc_max_port,
 						linc_max_fast_path,
