@@ -11,3 +11,6 @@ erl_crash.dump
 domain_config
 vmling
 
+LINGConfig.mk
+priv/sys.config
+
