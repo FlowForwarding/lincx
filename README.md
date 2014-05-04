@@ -2,10 +2,8 @@
 
 ## What is LINC?
 
-LINC is a pure OpenFlow software switch written in Erlang. It's implemented in
-operating system's userspace as an Erlang node. Such approach is not the most
-efficient one, but it gives a lot of flexibility and allows quick development
-and testing of new OpenFlow features.
+LINC is a pure OpenFlow software switch written in Erlang. It runs within a
+separate domain under Xen hypervisor using LING (erlangonxen.org).
 
 ### Features
 
@@ -16,63 +14,11 @@ and testing of new OpenFlow features.
 
 ## How to use it?
 
-### Erlang
+### Prerequisites
 
-To use LINC you need to have an Erlang runtime installed on your
-machine. Required version is **R15B+**.
-
-#### Install from sources
-
-To build Erlang from sources first you have to install some required system
-packages.
-
-On Ubuntu:
-
-    # apt-get install gcc wget make autoconf openssl libssl0.9.8 libssl-dev libncurses5 libncurses5-dev
-
-On RedHat/CentOS:
-
-    # yum install gcc wget make autoconf openssl openssl-devel ncurses ncurses-devel
-
-On other Linux systems you need to install the counterparts of aforementioned packages.
-
-
-When your system environment is ready download the sources from [erlang.org][erlang-src]. Unpack, compile and install:
-
-    % ./configure
-    % make
-    # make install
-
-#### Install from binaries
-
-If you're lazy you can also use [Erlang binary packages][erlang-bin] created by [Erlang Solutions][esl].
+* Erlang/OTP R16B01
 
 ### LINC
-
-To build the switch you need to install the following additional libraries and
-tools.
-
-On Ubuntu:
-
-    # apt-get install git-core bridge-utils libpcap0.8 libpcap-dev libcap2-bin uml-utilities
-
-On RedHat/CentOS:
-
-    # yum install git sudo bridge-utils libpcap libpcap-devel libcap tunctl
-
-Note that on RedHat/CentOS 5.x you need a newer version of libpcap:
-
-    # yum erase libpcap libpcap-devel
-    # yum install flex byacc
-    # wget http://www.tcpdump.org/release/libpcap-1.2.1.tar.gz
-    # tar xzf libpcap-1.2.1.tar.gz
-    # cd libpcap-1.2.1
-    # ./configure
-    # make && make install
-
-On other Linux systems you need to install the counterparts of aforementioned packages.
-
-When your environment is set up you are ready to build and run LINC.
 
 Clone this git repository:
 
@@ -80,68 +26,34 @@ Clone this git repository:
 
 Compile everything:
 
-    % make
+    % ./rebar get-deps
+	% ./rebar compile
 
-Adjust switch configuration by editing the `rel/linc/releases/0.1/sys.config` file which looks like this:
+Create a LING configuration file:
 
-    {linc,
-     [
-      {of_config, enabled},
-      {capable_switch_ports,
-       [
-        {port, 1, [{interface, "eth0"}]},
-        {port, 2, [{interface, "tap0"}]}
-       ]},
-      {logical_switches,
-       [
-        {switch, 0,
-         [
-          {backend, linc_us4},
-          {controllers,
-           [
-            {"Switch0-DefaultController", "localhost", 6633, tcp}
-           ]},
-          {queues_status, disabled},
-          {ports,
-           [
-            {port, 1, {queues, []}},
-            {port, 2, {queues, []}}
-           ]}
-         ]}
-       ]}
-     ]}.
+	% cp LINGConfig.mk.sample LINGConfig.mk
 
-At the moment you can change the list of controllers and ports used by the
-switch.
+Edit LINGConfig.mk as needed.
 
-Start LINC switch in `console` mode:
+Create the switch configuration file:
 
-    % rel/linc/bin/linc console
+	% cp priv/sys.config.sample priv/sys.config
+
+Edit you priv/sys.config file.
+
+Build the Xen image for the switch:
+
+	% make
+
+Boot the lincx x domain:
+
+	% sudo make boot
 
 For further instructions on how to use LINC check the
 "[Ping example](https://github.com/FlowForwarding/LINC-Switch/tree/master/docs/example-ping.md)".
 
 For detailed explanation on how to setup simple LINC testbed check the
 "[Testbed setup](https://github.com/FlowForwarding/LINC-Switch/tree/master/docs/testbed-setup.md)".
-
-## Development environment
-To facilitate developing LINC application the appropriate environment was prepared. It consists of the following components:
-
-1. "[Sync](https://github.com/mentels/sync)" - scans all the **beam** files and their corresponding source files and reloads or recompiles them respectively if necessary.
-2. "[EDTS](https://github.com/tjarvstrand/edts)" - Emacs mode that among others provides automatic files compilation, finding function declaration etc. For this to work you have to configure your emacs to use EDTS.
-3. Makefile targets - start the development Erlang VM.
-
-Assuming that you have Emacs and EDTS installed and properly configured, to start developing LINC you have follow these steps:
-
-1. Clone the repo.
-2. Enter the project root dir and issue:
-    make dev_prepare
-   If you get and error saying "beam.smp executable not found!" follow the guidelines and export the BEAMSMP_PATH variable pointing to your `beam.smp` and run the make target againg.
-3. By default only the `procket` module is excluded from scanning by Sync. If you want to prevent additional modules from being scanned modify sync configuration in `rel/files/sys.config` file.
-3. Next start the development Erlang VM:
-    make dev
-
-Now you can develop the LINC application without restarting the Erlang VM.
 
 ## Support
 
@@ -156,5 +68,4 @@ Issue. Thanks.
  [ofp4]: https://www.opennetworking.org/images/stories/downloads/specification/openflow-spec-v1.3.0.pdf 
  [ofc11]: https://www.opennetworking.org/images/stories/downloads/of-config/of-config-1.1.pdf
  [erlang-src]: http://www.erlang.org/download.html
- [erlang-bin]: http://www.erlang-solutions.com/section/132/download-erlang-otp
- [esl]: http://www.erlang-solutions.com
+

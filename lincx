@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# The script launches a lincx domain. It assumes that lincx uses two ports, 1
+# and 2. The corresponding VIFs are attached to br-linc1 and br-linc2 bridges.
+#
+
 function check_prerequisites {
 	if [ ! -f domain_config ]; then
 		echo Error: domain_config not found - use make domain_config

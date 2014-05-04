@@ -111,7 +111,7 @@ start(BackendOpts) ->
 		%io:format("SwitchConfig = ~p~n", [SwitchConfig1]),
 
 		FlowTab0 = flow_table_0,	%%TODO
-		linc_max_fast_path:start(SwitchConfig, FlowTab0),
+		linc_max_fast_path:start(SwitchConfig1, FlowTab0),
 
         {ok, 4, #state{flow_state = FlowState,
                        buffer_state = BufferState,

@@ -1,12 +1,13 @@
 .eunit
+
 deps
-rel
+
 *.o
 *.beam
 *.plt
-erl_crash.dump
-*.img
 
-domain_config_local
-priv/sys.config_local
-fixnet.sh
+erl_crash.dump
+
+domain_config
+vmling
+
