@@ -58,7 +58,11 @@ open_ports(PortConfig) ->
 %% blaze() loops hundreds thousand times per second
 %%
 
+%% FAST PATH
+%%
 blaze(Blaze) ->
+	register(blaze, self()),
+
 	link(whereis(last_will)),
 
 	%% the blaze is a peculiar process
@@ -95,13 +99,7 @@ blaze(Blaze, ReigniteCounter) ->
 	end.
 
 reignite(#blaze{ports =Ports} =Blaze) ->
-%	%% Check that GC never happens
-%	case process_info(self(), garbage_collection) of
-%	{_,0} ->
-%		ok;
-%	{_,N} ->
-%		?INFO("blaze ~w ran gc ~w time(s)\n", [self(),N])
-%	end,
+	unregister(blaze),
 
 	NewPid = spawn(fun() ->
 		blaze(Blaze)
