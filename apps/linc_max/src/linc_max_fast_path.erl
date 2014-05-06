@@ -14,6 +14,10 @@
 start(SwitchConfig, FlowTab0) ->
 	%%NB: Config contains data for the current switch only
 	PortConfig = proplists:get_value(ports, SwitchConfig, []),
+	QueueConfig = proplists:get_value(queues, SwitchConfig, []),
+
+	%%NB:each queue can be attached to a single port only. Two ports can not
+	%% refer to the same queue_id. Not checked.
 
 	%% It is not possible to catch no_memory exception from inside the process.
 	%% Thus, we need this.
@@ -24,7 +28,10 @@ start(SwitchConfig, FlowTab0) ->
 
 	spawn(fun() ->
 		Ports = open_ports(PortConfig),
-		blaze(#blaze{ports =Ports,start_at =FlowTab0})
+		QueueMap = start_queues(Ports, QueueConfig),
+		blaze(#blaze{ports =Ports,
+					 queue_map =QueueMap,
+					 start_at =FlowTab0})
 	end).
 
 last_will() ->
@@ -54,6 +61,26 @@ open_ports(PortConfig) ->
 		end
 	end, [], PortConfig).
 
+start_queues(Ports, QueueConfig) ->
+
+	%QueueConfig = [{port,2,
+	%                     [{port_rate,{100,mbps}},
+	%                      {port_queues,[{2,[{min_rate,20},{max_rate,50}]}]}]},
+	%               {port,1,
+	%                     [{port_rate,{100,mbps}},
+	%                      {port_queues,[{1,[{max_rate,10}]}]}]}]
+
+	lists:flatmap(fun({port,PortNo,Os}) ->
+		Queues = proplists:get_value(port_queues, Os, []),
+		{_,Outlet,_} = lists:keyfind(PortNo, 1, Ports),
+		lists:map(fun({QueueNo,QueueOpts}) ->
+			?INFO("Starting queue ~w for port ~w ~p\n", [QueueNo,PortNo,QueueOpts]),
+			{ok,Pid} = linc_max_queue:start(Outlet, QueueOpts),
+			?INFO("Queue ~w started: ~w\n", [QueueNo,Pid]),
+			{QueueNo,Pid}
+		end, Queues)
+	end, QueueConfig).
+
 %%
 %% blaze() loops hundreds thousand times per second
 %%
@@ -73,8 +100,14 @@ blaze(Blaze) ->
 
 blaze(Blaze, ?REIGNITE_AFTER) ->
 	reignite(Blaze);
-blaze(Blaze, ReigniteCounter) ->
+blaze(#blaze{queue_map =QueueMap} =Blaze, ReigniteCounter) ->
 	receive
+	{queue_restarting,OldPid,NewPid} ->
+		{value,{Outlet,_},QueueMap1} = lists:keytake(OldPid, 2, QueueMap),
+		OldPid ! queue_restarted,
+		%% #blaze{} copied - happens rarely
+		blaze(Blaze#blaze{queue_map =[{Outlet,NewPid}|QueueMap1]}, ReigniteCounter);
+
 	{Outlet,{data,Frame}} ->
 		{PortNo,_,_} = lists:keyfind(Outlet, 2, Blaze#blaze.ports),
 

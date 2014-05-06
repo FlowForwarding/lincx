@@ -37,6 +37,11 @@ meter(_MeterId, _St) -> ok.
 
 %% FAST PATH
 %%
+apply_set(#fast_actions{output =PortNo,queue =QueueNo}, Frame, Blaze)
+		when is_integer(PortNo), is_integer(QueueNo) ->
+	{_,Pid} = lists:keyfind(QueueNo, 1, Blaze#blaze.queue_map),
+	Pid ! Frame;
+
 apply_set(#fast_actions{output =PortNo}, Frame, Blaze) when is_integer(PortNo) ->
 	{_,Outlet,_} = lists:keyfind(PortNo, 1, Blaze#blaze.ports),
 	erlang:port_command(Outlet, Frame);

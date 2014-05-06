@@ -16,7 +16,7 @@
 
 start(Outlet, Opts) when is_port(Outlet), is_list(Opts) ->	%% {ok,Pid}
 	case check_options(Opts) of
-	{ok,Rmin,Rmax} when Rmin > Rmax ->
+	{ok,Rmin,Rmax} when Rmin =/= undefined, Rmax =/= undefined, Rmin > Rmax ->
 		{error,badarg};
 	{ok,Rmin,Rmax} ->
 		Pid = spawn(fun() ->
@@ -32,6 +32,8 @@ start(_, _) ->
 check_options(Opts) ->
 	check_options(Opts, undefined, undefined).
 
+check_options([], Rmin, Rmax) ->
+	{ok,Rmin,Rmax};
 check_options([{min_rate,R}|Opts], _, Rmax)
 		when is_number(R), R >= 0 ->
 	check_options(Opts, float(R), Rmax);

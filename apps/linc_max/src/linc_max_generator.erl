@@ -416,6 +416,7 @@ compile_body(MeterInstr, {apply,ActionList}, ClearWriteInstr, _MetadataInstr, un
 	%%		Packet1 = linc_max_fast_actions:apply_list(ActionList, Frame, Blaze),
 	%%		{do,Packet1,Actions}.
 	%%
+
 	ApplyList = {call,0,{remote,0,{atom,0,linc_max_fast_actions},
 								  {atom,0,apply_list}},
 							[ast(ActionList),
