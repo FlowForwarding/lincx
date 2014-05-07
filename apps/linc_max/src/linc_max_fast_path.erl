@@ -75,7 +75,7 @@ start_queues(Ports, QueueConfig) ->
 		{_,Outlet,_} = lists:keyfind(PortNo, 1, Ports),
 		lists:map(fun({QueueNo,QueueOpts}) ->
 			?INFO("Starting queue ~w for port ~w ~p\n", [QueueNo,PortNo,QueueOpts]),
-			{ok,Pid} = linc_max_queue:start(Outlet, QueueOpts),
+			{ok,Pid} = linc_max_queue:start_link(Outlet, QueueOpts),
 			?INFO("Queue ~w started: ~w\n", [QueueNo,Pid]),
 			{QueueNo,Pid}
 		end, Queues)
@@ -107,6 +107,14 @@ blaze(#blaze{queue_map =QueueMap} =Blaze, ReigniteCounter) ->
 		OldPid ! queue_restarted,
 		%% #blaze{} copied - happens rarely
 		blaze(Blaze#blaze{queue_map =[{Outlet,NewPid}|QueueMap1]}, ReigniteCounter);
+
+	{'EXIT',_,normal} ->
+		blaze(Blaze, ReigniteCounter);	%% queue restarted normally
+
+	{'EXIT',QueuePid,Reason} ->
+		?ERROR("queue ~p exits with reason ~p\n", [QueuePid,Reason]),
+		QueueMap1 = lists:keydelete(QueuePid, 2, QueueMap),
+		blaze(Blaze#blaze{queue_map =QueueMap1}, ReigniteCounter);
 
 	{Outlet,{data,Frame}} ->
 		{PortNo,_,_} = lists:keyfind(Outlet, 2, Blaze#blaze.ports),
