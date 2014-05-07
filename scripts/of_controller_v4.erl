@@ -185,6 +185,15 @@ handle_connection(Parent, Socket, Scenario, Notify) ->
     handle(#cstate{parent = Parent, socket = Socket, parser = Parser}).
 
 %%MK
+scenario(simple_queue_test) ->
+	[flow_mod_delete_all_flows,
+     	 flow_add([], [{in_port, <<1:32>>}], [{write_actions,
+                                               [{set_queue,1},
+												{output,2, no_buffer}]}]),
+     	 flow_add([], [{in_port, <<2:32>>}], [{write_actions,
+                                               [{output,1, no_buffer}]}])];
+
+%%MK
 scenario(simple_iperf_test) ->
 	[flow_mod_delete_all_flows,
      	 flow_add([], [{in_port, <<1:32>>}], [{write_actions,
