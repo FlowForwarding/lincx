@@ -37,13 +37,14 @@ DOMCONF := domain_config
 boot: $(DOMCONF)
 	xl create -c $(DOMCONF)
 
-APPS_EBIN_DIRS := $(addprefix /lincx/,$(wildcard apps/*/ebin))
-DEPS_EBIN_DIRS := $(addprefix /lincx/,$(wildcard deps/*/ebin))
+PRJ_DIR:=$(lastword $(subst /, ,$(realpath $(dir $(lastword $(MAKEFILE_LIST))))))
+APPS_EBIN_DIRS := $(addprefix /$(PRJ_DIR)/,$(wildcard apps/*/ebin))
+DEPS_EBIN_DIRS := $(addprefix /$(PRJ_DIR)/,$(wildcard deps/*/ebin))
 PATHZ := $(APPS_EBIN_DIRS) $(DEPS_EBIN_DIRS)
-SYSCONF := /lincx/priv/sys.config
+SYSCONF := /$(PRJ_DIR)/priv/sys.config
 
 EXTRA := $(LING_NETSPEC)
-EXTRA += -home /lincx
+EXTRA += -home /$(PRJ_DIR)
 EXTRA += -pz $(PATHZ)
 EXTRA += -config $(SYSCONF)
 EXTRA += $(REMOTE_MOUNTS)
@@ -51,7 +52,7 @@ EXTRA += $(patsubst %,-of_controller %,$(OF_CONTROLLERS))
 EXTRA += -eval \"lists:map(fun application:start/1, [crypto,asn1,public_key,ssh,compiler,syntax_tools,xmerl,mnesia,lager,linc])\"
 
 $(DOMCONF): LINGConfig.mk
-	@echo "name = \"lincx\"" >$(DOMCONF)
+	@echo "name = \"$(PRJ_DIR)\"" >$(DOMCONF)
 	@echo "kernel = \"vmling\"" >>$(DOMCONF)
 	@echo 'extra = "$(EXTRA)"' >> $(DOMCONF)
 	@echo "memory = \"$(MEMORY)\"" >>$(DOMCONF)
