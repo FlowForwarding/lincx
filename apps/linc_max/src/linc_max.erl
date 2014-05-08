@@ -113,13 +113,13 @@ start(BackendOpts) ->
 		FlowTab0 = flow_table_0,	%%TODO
 		linc_max_fast_path:start(SwitchConfig1, FlowTab0),
 
-        {ok, 4, #state{flow_state = FlowState,
-                       buffer_state = BufferState,
-                       switch_id = SwitchId,
-                       datapath_mac = DatapathMac}}
+    {ok, 4, #state{flow_state = FlowState,
+                   buffer_state = BufferState,
+                   switch_id = SwitchId,
+                   datapath_mac = DatapathMac}}
     catch
         _:Error ->
-			io:format("ERROR:linc_max: ~p\n", [Error]),
+            io:format("ERROR:linc_max: ~p~n~p~n", [Error, erlang:get_stacktrace()]),
             {error, Error}
     end.
 
