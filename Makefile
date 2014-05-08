@@ -48,7 +48,7 @@ EXTRA += -home /$(PRJ_DIR)
 EXTRA += -pz $(PATHZ)
 EXTRA += -config $(SYSCONF)
 EXTRA += $(REMOTE_MOUNTS)
-EXTRA += $(patsubst %,-of_controller %,$(OF_CONTROLLERS))
+EXTRA += $(OF_CONTROLLERS)
 EXTRA += -eval \"lists:map(fun application:start/1, [crypto,asn1,public_key,ssh,compiler,syntax_tools,xmerl,mnesia,lager,linc])\"
 
 $(DOMCONF): LINGConfig.mk

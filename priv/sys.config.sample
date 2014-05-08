@@ -1,86 +1,69 @@
 [
- {linc,
-  [
-   {of_config,disabled},
-
-   {capable_switch_ports,
-    [
-	 {port,1,[{interface,"eth1"},{type,vif}]},
-	 {port,2,[{interface,"eth2"},{type,vif}]},
-	 {port,3,[{interface,"eth3"},{type,vif}]},
-	 {port,4,[{interface,"eth4"},{type,vif}]},
-	 {port,5,[{interface,"eth5"},{type,vif}]},
-	 {port,6,[{interface,"eth6"},{type,vif}]}
+  {linc,[
+    {of_config,disabled},
+    {capable_switch_ports,[
+      {port,1,[{interface,"eth1"},{type,vif}]},
+      {port,2,[{interface,"eth2"},{type,vif}]},
+      {port,3,[{interface,"eth3"},{type,vif}]},
+      {port,4,[{interface,"eth4"},{type,vif}]},
+      {port,5,[{interface,"eth5"},{type,vif}]},
+      {port,6,[{interface,"eth6"},{type,vif}]}
     ]},
-
-   {capable_switch_queues,[]},
-
-   {logical_switches,
-    [
-     {switch,0,
-      [
-       {backend,linc_max},
-
-       {controllers,
-        [
-         %{"Stu's Laptop","10.102.28.219",6653,tcp},
-         %{"Stu's Laptop","10.120.253.192",6653,tcp}
-         %{"Switch0-DefaultController-2","10.48.2.39",6633,tcp},
-         {"NCI","10.48.2.39",6653,tcp}
-        ]},
-	
-	   {controllers_listener,{"0.0.0.0",6634,tcp}},
-
-       {queues_status, disabled},
-
-       {ports,
-		[
-		 {port,1,{queues,[]}},
-		 {port,2,{queues,[]}},
-		 {port,3,{queues,[]}},
-		 {port,4,{queues,[]}},
-		 {port,5,{queues,[]}},
-		 {port,6,{queues,[]}}
+    {capable_switch_queues,[]},
+    {logical_switches,[
+      {switch,0,[
+        {backend,linc_max},
+        {controllers,[
+          %{"Stu's Laptop","10.102.28.219",6653,tcp},
+          %{"Stu's Laptop","10.120.253.192",6653,tcp},
+          %{"Switch0-DefaultController-2","10.48.2.39",6633,tcp},
+          %{"NCI","10.48.2.39",6653,tcp}
+        ]},  
+        {controllers_listener,{"0.0.0.0",6634,tcp}},
+        {queues_status, disabled},
+        {ports, [
+          {port,1,{queues,[]}},
+          {port,2,{queues,[]}},
+          {port,3,{queues,[]}},
+          {port,4,{queues,[]}},
+          {port,5,{queues,[]}},
+          {port,6,{queues,[]}}
         ]}
-	  ]}
-    ]}
-  ]},
-
- {enetconf,
-  [
-   {capabilities, [{base, {1, 0}},
-                   {base, {1, 1}},
-                   {startup, {1, 0}},
-                   {'writable-running', {1, 0}}]},
-   {callback_module, linc_ofconfig},
-   {sshd_ip, any},
-   {sshd_port, 1830},
-   {sshd_user_passwords,
-    [
-     {"linc", "linc"}
-    ]}
-  ]},
-
- {lager,
-  [
-   {handlers,
-    [
-     {lager_console_backend, info},
-     {lager_file_backend,
-      [
-       {"log/error.log", error, 10485760, "$D0", 5},
-       {"log/console.log", info, 10485760, "$D0", 5}
       ]}
     ]}
   ]},
 
- {sasl,
-  [
-   {sasl_error_logger, {file, "log/sasl-error.log"}},
-   {errlog_type, error},
-   {error_logger_mf_dir, "log"},      	   % Log directory
-   {error_logger_mf_maxbytes, 10485760},   % 10 MB max file size
-   {error_logger_mf_maxfiles, 5}           % 5 files max
-  ]}
+  {enetconf,[
+    {capabilities,[
+      {base, {1, 0}},
+      {base, {1, 1}},
+      {startup, {1, 0}},
+      {'writable-running', {1, 0}}
+    ]},
+    {callback_module, linc_ofconfig},
+    {sshd_ip, any},
+    {sshd_port, 1830},
+    {sshd_user_passwords,[
+      {"linc", "linc"}
+    ]}
+  ]},
 
+  {lager,[
+    {handlers,[
+      {lager_console_backend, info},
+      {lager_file_backend,[
+        {"/log/error.log", error, 10485760, "$D0", 5},
+        {"/log/console.log", info, 10485760, "$D0", 5}
+      ]}
+    ]},
+    {crash_log,"/log/crash.log"}
+  ]},
+
+ {sasl,[
+    {sasl_error_logger, {file, "/log/sasl-error.log"}},
+    {errlog_type, error},
+    {error_logger_mf_dir, "/log"},          % Log directory
+    {error_logger_mf_maxbytes, 10485760},   % 10 MB max file size
+    {error_logger_mf_maxfiles, 5}           % 5 files max
+  ]}
 ].

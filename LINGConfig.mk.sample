@@ -27,7 +27,9 @@ DEFAULT_BRIDGE := xenbr0
 BRIDGE_PREFIX := br
 
 # External filesystem, see http://build.erlangonxen.org/mounting for details
-#REMOTE_MOUNTS := -secret xxxxxxxx yyyyyyyy -9p 192.168.0.1 /home /diod
+# REMOTE_MOUNTS := -secret xxxxxxxx yyyyyyyy -9p 192.168.0.1 /home /log
+REMOTE_MOUNTS :=
 
 # The list of logical switch controllers
-#OF_CONTROLLERS := 10.48.2.39:6653 10.48.2.60:6653
+# OF_CONTROLLERS := -of_controller 10.48.2.39:6653 10.48.2.60:6653
+OF_CONTROLLERS :=
