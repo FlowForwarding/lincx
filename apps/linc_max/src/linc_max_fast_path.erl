@@ -1,5 +1,5 @@
 -module(linc_max_fast_path).
--export([start/2]).
+-export([start/2,stop/0]).
 
 -include_lib("linc/include/linc_logger.hrl").
 
@@ -34,12 +34,28 @@ start(SwitchConfig, FlowTab0) ->
 					 start_at =FlowTab0})
 	end).
 
+stop() ->
+	case erlang:whereis(last_will) of
+	undefined ->
+		ok;
+	Pid ->
+		Pid ! {stop,self()},
+		receive stopped -> ok end
+	end,
+	
+	%% the blaze process stops queues and closes ports
+	send_to_blaze({stop,self()}),
+	receive stopped -> ok end.
+
 last_will() ->
 	receive
+	{stop,From} ->
+		unregister(last_will),
+		From ! stopped;
 	{'EXIT',_Pid,normal} -> %% reignited
 		last_will();
 	{'EXIT',Pid,Reason} ->
-		?ERROR("blaze ~p dies: ~p\n (fast path stopped)\n", [Pid,Reason])
+		?ERROR("blaze ~p dies: ~p\n (fast path stalled)\n", [Pid,Reason])
 	end.
 
 open_ports(PortConfig) ->
@@ -61,6 +77,12 @@ open_ports(PortConfig) ->
 		end
 	end, [], PortConfig).
 
+close_ports(Ports) ->
+	lists:foreach(fun({PortNo,Outlet,_Opts}) ->
+		?INFO("port ~w [~w] closed\n", [PortNo,Outlet]),
+		net_vif:close(Outlet)
+	end, Ports).
+
 start_queues(Ports, QueueConfig) ->
 
 	%QueueConfig = [{port,2,
@@ -80,6 +102,11 @@ start_queues(Ports, QueueConfig) ->
 			{QueueNo,Pid}
 		end, Queues)
 	end, QueueConfig).
+
+stop_queues(QueueMap) ->
+	lists:foreach(fun({_,QueuePid}) ->
+		linc_max_queue:stop(QueuePid)
+	end, QueueMap).
 
 %%
 %% blaze() loops hundreds thousand times per second
@@ -107,6 +134,15 @@ blaze(#blaze{queue_map =QueueMap} =Blaze, ReigniteCounter) ->
 		OldPid ! queue_restarted,
 		%% #blaze{} copied - happens rarely
 		blaze(Blaze#blaze{queue_map =[{Outlet,NewPid}|QueueMap1]}, ReigniteCounter);
+
+	{stop,From} ->
+		stop_queues(QueueMap),
+		close_ports(Blaze#blaze.ports),
+
+		{message_queue_len,MQLen} = process_info(self(), message_queue_len),
+		?INFO("blaze process stopped: ~w message(s) lost\n", [MQLen]),
+
+		From ! stopped;
 
 	{'EXIT',_,normal} ->
 		blaze(Blaze, ReigniteCounter);	%% queue restarted normally
@@ -171,6 +207,15 @@ drain_packets(NewPid, N) ->
 			Pid ! {message_count,N},
 			ok
 		end
+	end.
+
+send_to_blaze(Msg) ->
+	try
+		blaze ! Msg
+	catch _:_ ->
+		%% happens rarely; blaze is restarting, between unregister/register
+		receive after 0 -> ok end,	%% yield
+		send_to_blaze(Msg)
 	end.
 
 %%EOF

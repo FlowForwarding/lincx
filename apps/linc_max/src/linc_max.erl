@@ -119,7 +119,7 @@ start(BackendOpts) ->
                    datapath_mac = DatapathMac}}
     catch
         _:Error ->
-            io:format("ERROR:linc_max: ~p~n~p~n", [Error, erlang:get_stacktrace()]),
+			?ERROR("linc_max:start(): ~p\n\t~p\n", [Error,erlang:get_stacktrace()]),
             {error, Error}
     end.
 
@@ -151,6 +151,7 @@ parse_endpoint(S) ->
 -spec stop(state()) -> any().
 stop(#state{flow_state = FlowState,
             buffer_state = BufferState}) ->
+	linc_max_fast_path:stop(),
 
     linc_max_flow:terminate(FlowState),
 

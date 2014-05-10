@@ -5,7 +5,7 @@
 %% @author Cloduozer LLP. <info@cloudozer.com>
 %% @copyright 2014 FlowForwarding.org
 -module(linc_max_queue).
--export([start_link/2]).
+-export([start_link/2,stop/1]).
 
 -include_lib("linc/include/linc_logger.hrl").
 
@@ -33,6 +33,15 @@ start_link(Outlet, Opts) when is_port(Outlet), is_list(Opts) ->	%% {ok,Pid}
 start_link(_, _) ->
 	{error,badarg}.
 
+stop(QueuePid) ->
+	QueuePid ! {stop,self()},
+	receive
+	stopped ->
+		ok
+	after 5000 ->
+		{error,timout}
+	end.
+
 check_options(Opts) ->
 	check_options(Opts, undefined, undefined).
 
@@ -53,23 +62,30 @@ loop(Outlet, Rmin, Rmax) ->
 	loop(Outlet, Rmin, Rmax, 0.0, now(), queue:new(), 0, 0, undefined).
 
 loop(Outlet, Rmin, Rmax, R, T, Q, B, ?RESTART_AFTER, TRef) ->
-	if TRef =/= undefined -> erlang:cancel_timer(TRef);
-			true -> ok end,
+	stop_timer(TRef),
 	NewPid = spawn(fun() ->
 		loop(Outlet, Rmin, Rmax, R, T, Q, B, 0, undefined)
 	end),
-	send_to_blaze({queue_restarting,self(),NewPid}),
+	linc_max_fast_path:send_to_blaze({queue_restarting,self(),NewPid}),
 	receive queue_restarted -> ok end,
 	drain_mailbox(NewPid);
 
 loop(Outlet, Rmin, Rmax, R, T, Q, B, N, TRef) ->
 	receive
+	{stop,From} ->
+		stop_timer(TRef),
+		if B > 0 ->
+			?INFO("Queue ~w stopped (~w buffered byte(s) lost)\n", [self(),B]);
+		true ->
+			?INFO("Queue ~w stopped\n", [self()])
+		end,
+		From ! stopped;
+
 	timeout ->
 		new_rate(Outlet, Rmin, Rmax, R, T, Q, B, N);
 
 	Frame when is_binary(Frame) ->
-		if TRef =/= undefined -> erlang:cancel_timer(TRef);
-				true -> ok end,
+		stop_timer(TRef),
 		if B > ?MAX_BUFFERED ->
 			%% drop
 			new_rate(Outlet, Rmin, Rmax, R, T, Q, B, N +1);
@@ -140,16 +156,6 @@ delta({M1,S1,U1}, {M,S,U}) when M1 > M ->
 %% happens once a week
 	(M1 -M) *1.0e9 + (S1 -S) *1000.0 + (U1 -U) /1000.
 
-send_to_blaze(Msg) ->
-	try
-		blaze ! Msg
-	catch _:badarg ->
-		receive after 0 -> ok end, %% yield
-		%% The blaze process is restarting. The new process will be registered
-		%% soon. Keep trying.
-		send_to_blaze(Msg)
-	end.
-
 drain_mailbox(NewPid) ->
 	receive
 	Any ->
@@ -158,5 +164,10 @@ drain_mailbox(NewPid) ->
 	after 0 ->
 		ok
 	end.
+
+stop_timer(undefined) ->
+	ok;
+stop_timer(TRef) ->
+	erlang:cancel_timer(TRef).
 
 %%EOF
