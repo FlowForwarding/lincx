@@ -496,6 +496,8 @@ compile_meter({meter,Id}, Goto) ->
 updated_actions(undefined) ->
 	{var,0,var_name(actions)};
 
+updated_actions(clear) ->	%% plugfest5
+	updated_actions(clear, [], #fast_actions{});
 updated_actions({clear,Specs}) ->
 	updated_actions(clear, Specs, #fast_actions{});
 updated_actions({write,Specs}) ->
