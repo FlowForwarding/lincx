@@ -14,3 +14,6 @@ vmling
 LINGConfig.mk
 priv/sys.config
 
+domain1.cfg
+domain2.cfg
+domain3.cfg

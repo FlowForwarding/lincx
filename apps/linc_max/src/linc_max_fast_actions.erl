@@ -61,6 +61,10 @@ apply_set(#fast_actions{output =controller}, Frame, _Blaze) ->
 	%%?INFO("Packet-In [1]: ~p\n", [pkt:decapsulate(Frame)]),
     linc_logic:send_to_controllers(SwitchId, #ofp_message{body = PacketIn});
 
+%%
+%% TODO: output to all, flood, in_port
+%%
+
 apply_set(#fast_actions{}, _Frame, _Blaze) ->
 	drop;	%% empty action set
 
@@ -87,6 +91,10 @@ apply_list([{output,controller}|ActionList], Frame, Blaze) ->
 							  data = Frame},
 	%%?INFO("Packet-In [2]: ~p\n", [pkt:decapsulate(Frame)]),
     linc_logic:send_to_controllers(SwitchId, #ofp_message{body = PacketIn}),
+	apply_list(ActionList, Frame, Blaze);
+
+apply_list([{output,Sink}|ActionList], Frame, Blaze) when is_atom(Sink) ->
+	?ERROR("Output to '~w' not implemented", [Sink]),
 	apply_list(ActionList, Frame, Blaze);
 
 apply_list([{set_queue,_Queue}|ActionList], Frame, Blaze) ->

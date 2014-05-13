@@ -129,6 +129,7 @@ add_of_controllers(Conf) -> %% Conf1
 	error ->
 		Conf;
 	{ok,Ss} ->
+		?INFO("Auxilliary controller specification(s) found: ~p\n", [Ss]),
 		Endpoints = [parse_endpoint(S) || S <- lists:concat(Ss)],
 		{Controllers,_} = lists:mapfoldl(fun({IpAddr,Port}, N) ->
 			{{"OF-Controller-" ++ integer_to_list(N),IpAddr,Port,tcp},N +1}
