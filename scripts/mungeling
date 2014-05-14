@@ -1,0 +1,22 @@
+#!/usr/bin/env escript
+% The utility extracts two values needed by LING node to connect to diod servers.
+% Its output can be directly added to the command line of the node.
+
+main([]) ->
+	demunge("/etc/munge/munge.key");
+main([File | _]) ->
+	demunge(File).
+
+demunge(File) ->
+	case file:read_file(File) of
+		{ok, Key} ->
+			io:format("-secret ~s ~s\n", [secret(Key, $2), secret(Key, $1)]);
+		_ ->
+			io:format("Error: can't read ~s\n", [File]),
+			io:format("Usage: mungeling [key_file]\n"),
+			halt(1)
+	end.
+
+secret(Key, Suffix) ->
+	Sha = crypto:hash(sha, <<Key/binary, Suffix>>),
+	string:to_lower(lists:flatten([integer_to_list(Nibble, 16) || <<Nibble:4>> <= Sha])).
