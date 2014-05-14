@@ -10,6 +10,7 @@
 -export([modify/2]).
 
 -include_lib("of_protocol/include/ofp_v4.hrl").
+-include("linc_max_port.hrl").
 -include("fast_path.hrl").
 
 initialize(_SwitchId, _Config) ->
@@ -40,9 +41,29 @@ is_valid(_SwitchId, PortNo) ->
 get_desc(_SwitchId) ->
 	Ports = linc_max_fast_path:describe_ports(),
 	Body = [#ofp_port{port_no =PortNo,
-					  hw_addr =Mac} || #port_info{port_no =PortNo,
-												  hw_addr =Mac} <- Ports], 
+					  hw_addr =Mac,
+					  name = port_name(PortNo),
+					  state =[live],
+					  curr =?FEATURES,
+					  advertised =?FEATURES,
+					  supported =?FEATURES,
+					  peer =?FEATURES,
+					  curr_speed =?PORT_SPEED,
+					  max_speed =?PORT_SPEED}
+								|| #port_info{port_no =PortNo,
+											  hw_addr =Mac} <- Ports], 
 	#ofp_port_desc_reply{body =Body}.
+
+port_name(1) ->
+	<<"Port-1">>;
+port_name(2) ->
+	<<"Port-2">>;
+port_name(3) ->
+	<<"Port-3">>;
+port_name(4) ->
+	<<"Port-4">>;
+port_name(PortNo) ->
+	list_to_binary("Port-" ++ integer_to_list(PortNo)).
 
 get_stats(_Switch, #ofp_port_stats_request{port_no =any}) ->
 	Ports = linc_max_fast_path:describe_ports(),
