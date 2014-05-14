@@ -1,4 +1,4 @@
-%%
+%
 %%
 %%
 
@@ -43,8 +43,7 @@ apply_set(#fast_actions{output =PortNo,queue =QueueNo}, Frame, Blaze)
 	Pid ! Frame;
 
 apply_set(#fast_actions{output =PortNo}, Frame, Blaze) when is_integer(PortNo) ->
-	{_,Outlet,_} = lists:keyfind(PortNo, 1, Blaze#blaze.ports),
-	erlang:port_command(Outlet, Frame);
+	outgoing_frame(PortNo, Frame, Blaze);
 
 apply_set(#fast_actions{output =controller}, Frame, _Blaze) ->
 
@@ -71,6 +70,21 @@ apply_set(#fast_actions{}, _Frame, _Blaze) ->
 apply_set(Actions, _Frame, _Blaze) ->
 	io:format("? ~p\n", [Actions]).
 
+%%------------------------------------------------------------------------------
+	
+outgoing_frame(PortNo, Frame, Blaze) ->
+	#port_info{outlet =Outlet,
+			   tx_pkt_ref =TxPktRef,
+			   tx_data_ref =TxDataRef} =
+					lists:keyfind(PortNo, #port_info.port_no, Blaze#blaze.ports),
+
+	erlang:port_command(Outlet, Frame),
+
+	erlang:update_counter(TxPktRef),
+	erlang:update_counter(TxDataRef, byte_size(Frame)).
+
+%%------------------------------------------------------------------------------
+
 %% Apply-Actions
 
 %% FAST PATH
@@ -79,9 +93,9 @@ apply_list([], Frame, _Blaze) ->
 	Frame;
 
 apply_list([{output,PortNo}|ActionList], Frame, Blaze) when is_integer(PortNo) ->
-	{_,Outlet,_} = lists:keyfind(PortNo, 1, Blaze#blaze.ports),
-	erlang:port_command(Outlet, Frame),
+	outgoing_frame(PortNo, Frame, Blaze),
 	apply_list(ActionList, Frame, Blaze);
+
 apply_list([{output,controller}|ActionList], Frame, Blaze) ->
 	%% See comment above
 	SwitchId = 0,	%%XXX

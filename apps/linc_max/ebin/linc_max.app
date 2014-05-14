@@ -19,6 +19,7 @@
 						linc_max_generator_tests,
 						linc_max_fast_actions,
 						linc_max_fast_actions_tests,
+						linc_max_table_features,
 						linc_max_flow,
 						linc_max_queue,
 						linc_max_port_native,

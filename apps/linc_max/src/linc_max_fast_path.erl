@@ -1,5 +1,6 @@
 -module(linc_max_fast_path).
 -export([start/2,stop/0]).
+-export([describe_ports/0]).
 
 -include_lib("linc/include/linc_logger.hrl").
 
@@ -47,6 +48,10 @@ stop() ->
 	send_to_blaze({stop,self()}),
 	receive stopped -> ok end.
 
+describe_ports() ->
+	send_to_blaze({describe_ports,self()}),
+	receive {ports,Ports} -> Ports end.
+
 last_will() ->
 	receive
 	{stop,From} ->
@@ -66,7 +71,14 @@ open_ports(PortConfig) ->
 			case linc_max_port_native:vif(IfName) of
 			{ok,Outlet,Mac} ->
 				?INFO("Open vif port ~p (~p)\n", [Outlet,Mac]),
-				[{PortNo,Outlet,[{mac,Mac}|Opts]}|Ports];
+				Port = #port_info{port_no =PortNo,
+								  outlet =Outlet,
+								  hw_addr =Mac,
+								  rx_pkt_ref =erlang:new_counter(),
+								  rx_data_ref =erlang:new_counter(),
+								  tx_pkt_ref =erlang:new_counter(),
+								  tx_data_ref =erlang:new_counter()},
+				[Port|Ports];
 			{error,Error} ->
 				?ERROR("Cannot open port: ~p", [Error]),
 				Ports
@@ -78,9 +90,20 @@ open_ports(PortConfig) ->
 	end, [], PortConfig).
 
 close_ports(Ports) ->
-	lists:foreach(fun({PortNo,Outlet,_Opts}) ->
-		?INFO("port ~w [~w] closed\n", [PortNo,Outlet]),
-		net_vif:close(Outlet)
+	lists:foreach(fun(#port_info{port_no =PortNo,
+								 outlet =Outlet,
+								 rx_pkt_ref =RxPktRef,
+								 rx_data_ref =RxDataRef,
+								 tx_pkt_ref =TxPktRef,
+								 tx_data_ref =TxDataRef}) ->
+
+		erlang:release_counter(RxPktRef),
+		erlang:release_counter(RxDataRef),
+		erlang:release_counter(TxPktRef),
+		erlang:release_counter(TxDataRef),
+
+		net_vif:close(Outlet),
+		?INFO("port ~w [~w] closed\n", [PortNo,Outlet])
 	end, Ports).
 
 start_queues(Ports, QueueConfig) ->
@@ -94,7 +117,7 @@ start_queues(Ports, QueueConfig) ->
 
 	lists:flatmap(fun({port,PortNo,Os}) ->
 		Queues = proplists:get_value(port_queues, Os, []),
-		{_,Outlet,_} = lists:keyfind(PortNo, 1, Ports),
+		#port_info{outlet =Outlet} = lists:keyfind(PortNo, #port_info.port_no, Ports),
 		lists:map(fun({QueueNo,QueueOpts}) ->
 			?INFO("Starting queue ~w for port ~w ~p\n", [QueueNo,PortNo,QueueOpts]),
 			{ok,Pid} = linc_max_queue:start_link(Outlet, QueueOpts),
@@ -127,22 +150,13 @@ blaze(Blaze) ->
 
 blaze(Blaze, ?REIGNITE_AFTER) ->
 	reignite(Blaze);
-blaze(#blaze{queue_map =QueueMap} =Blaze, ReigniteCounter) ->
+blaze(#blaze{queue_map =QueueMap,ports =Ports} =Blaze, ReigniteCounter) ->
 	receive
 	{queue_restarting,OldPid,NewPid} ->
 		{value,{Outlet,_},QueueMap1} = lists:keytake(OldPid, 2, QueueMap),
 		OldPid ! queue_restarted,
 		%% #blaze{} copied - happens rarely
 		blaze(Blaze#blaze{queue_map =[{Outlet,NewPid}|QueueMap1]}, ReigniteCounter);
-
-	{stop,From} ->
-		stop_queues(QueueMap),
-		close_ports(Blaze#blaze.ports),
-
-		{message_queue_len,MQLen} = process_info(self(), message_queue_len),
-		?INFO("blaze process stopped: ~w message(s) lost\n", [MQLen]),
-
-		From ! stopped;
 
 	{'EXIT',_,normal} ->
 		blaze(Blaze, ReigniteCounter);	%% queue restarted normally
@@ -153,7 +167,13 @@ blaze(#blaze{queue_map =QueueMap} =Blaze, ReigniteCounter) ->
 		blaze(Blaze#blaze{queue_map =QueueMap1}, ReigniteCounter);
 
 	{Outlet,{data,Frame}} ->
-		{PortNo,_,_} = lists:keyfind(Outlet, 2, Blaze#blaze.ports),
+		#port_info{port_no =PortNo,
+				   rx_pkt_ref =RxPktRef,
+				   rx_data_ref =RxDataRef} = 
+						lists:keyfind(Outlet, #port_info.outlet, Ports),
+
+		erlang:update_counter(RxPktRef),
+		erlang:update_counter(RxDataRef, byte_size(Frame)),
 
 		Metadata = <<0:64>>,
 		%% in_phy_port and tunnel_id are undefined
@@ -172,7 +192,20 @@ blaze(#blaze{queue_map =QueueMap} =Blaze, ReigniteCounter) ->
 			drop
 		end,
 
-		blaze(Blaze, ReigniteCounter +1)
+		blaze(Blaze, ReigniteCounter +1);
+
+	{stop,From} ->
+		stop_queues(QueueMap),
+		close_ports(Ports),
+
+		{message_queue_len,MQLen} = process_info(self(), message_queue_len),
+		?INFO("blaze process stopped: ~w message(s) lost\n", [MQLen]),
+
+		From ! stopped;
+
+	{describe_ports,From} ->
+		From ! {ports,Ports},
+		blaze(Blaze, ReigniteCounter)
 	end.
 
 reignite(#blaze{ports =Ports} =Blaze) ->

@@ -88,17 +88,7 @@
 start(BackendOpts) ->
     try
         {switch_id, SwitchId} = lists:keyfind(switch_id, 1, BackendOpts),
-        {datapath_mac, DatapathMac} = lists:keyfind(datapath_mac, 1, BackendOpts),
         {config, Config} = lists:keyfind(config, 1, BackendOpts),
-        BufferState = linc_buffer:initialize(SwitchId),
-        {ok, _Pid} = linc_max_sup:start_backend_sup(SwitchId),
-
-        FlowState = linc_max_flow:initialize(SwitchId),
-        linc_max_port:initialize(SwitchId, Config),
-
-		%TODO
-        %linc_max_groups:initialize(SwitchId),
-
 		{switch,_,SwitchConfig} = lists:keyfind(SwitchId, 2, Config),
 
 		%%
@@ -113,10 +103,22 @@ start(BackendOpts) ->
 		FlowTab0 = flow_table_0,	%%TODO
 		linc_max_fast_path:start(SwitchConfig1, FlowTab0),
 
-    {ok, 4, #state{flow_state = FlowState,
-                   buffer_state = BufferState,
-                   switch_id = SwitchId,
-                   datapath_mac = DatapathMac}}
+		%% the fast path must be the first to start as it is needed to desribe ports
+
+        {datapath_mac, DatapathMac} = lists:keyfind(datapath_mac, 1, BackendOpts),
+        BufferState = linc_buffer:initialize(SwitchId),
+        {ok, _Pid} = linc_max_sup:start_backend_sup(SwitchId),
+
+        FlowState = linc_max_flow:initialize(SwitchId),
+        linc_max_port:initialize(SwitchId, Config),
+
+		%TODO
+        %linc_max_groups:initialize(SwitchId),
+
+		{ok, 4, #state{flow_state = FlowState,
+        		buffer_state = BufferState,
+                switch_id = SwitchId,
+                datapath_mac = DatapathMac}}
     catch
         _:Error ->
 			?ERROR("linc_max:start(): ~p\n\t~p\n", [Error,erlang:get_stacktrace()]),
