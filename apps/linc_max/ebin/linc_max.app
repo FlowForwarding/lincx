@@ -22,6 +22,7 @@
 						linc_max_table_features,
 						linc_max_flow,
 						linc_max_queue,
+						linc_max_groups,
 						linc_max_port_native,
 						linc_max_port,
 						linc_max_fast_path,

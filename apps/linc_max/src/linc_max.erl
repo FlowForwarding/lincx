@@ -271,25 +271,20 @@ ofp_group_mod(#state{switch_id = SwitchId} = State,
 -spec ofp_packet_out(state(), ofp_packet_out()) ->
                             {noreply, #state{}} |
                             {reply, ofp_message(), #state{}}.
-ofp_packet_out(#state{switch_id = SwitchId} = State,
+ofp_packet_out(#state{switch_id = _SwitchId} = State,
                #ofp_packet_out{buffer_id = no_buffer,
-                               actions = Actions,
-                               in_port = InPort,
-                               data = Data}) ->
-    Pkt = linc_max_packet:binary_to_record(Data, SwitchId, InPort),
-    linc_max_actions:apply_list(Pkt, Actions),
-    {noreply, State};
-ofp_packet_out(#state{switch_id = SwitchId} = State,
-               #ofp_packet_out{buffer_id = BufferId,
-                               actions = Actions}) ->
-    case linc_buffer:get_buffer(SwitchId, BufferId) of
-        #linc_pkt{} = Pkt ->
-            linc_max_actions:apply_list(Pkt, Actions);
-        not_found ->
-            %% Buffer has been dropped, ignore
-            ok
-    end,
-    {noreply, State}.
+                               actions = _Actions,
+                               in_port = _InPort,
+                               data = _Data}) ->
+	%%TODO
+	?INFO("Packet-Out action ignored", []),
+    {noreply,State};
+ofp_packet_out(#state{switch_id = _SwitchId} = State,
+               #ofp_packet_out{buffer_id = _BufferId,
+                               actions = _Actions}) ->
+	%%TODO
+	?INFO("Packet-Out action (buffered) ignored", []),
+    {noreply,State}.
 
 %% @doc Reply to echo request.
 -spec ofp_echo_request(state(), ofp_echo_request()) ->
@@ -399,9 +394,10 @@ ofp_port_stats_request(#state{switch_id = SwitchId} = State,
 %% @doc Get queue statistics.
 -spec ofp_queue_stats_request(state(), ofp_queue_stats_request()) ->
                                      {reply, ofp_queue_stats_reply(), #state{}}.
-ofp_queue_stats_request(#state{switch_id = SwitchId} = State,
-                        #ofp_queue_stats_request{} = Request) ->
-    Reply = linc_max_queue:get_stats(SwitchId, Request),
+ofp_queue_stats_request(#state{switch_id = _SwitchId} = State,
+                        #ofp_queue_stats_request{} = _Request) ->
+	%%TODO
+    Reply = #ofp_error_msg{type = queue_op_failed, code = eperm},
     {reply, Reply, State}.
 
 %% @doc Get group statistics.
@@ -432,25 +428,33 @@ ofp_group_features_request(State,
 
 %% Meters ----------------------------------------------------------------------
 
-ofp_meter_mod(#state{switch_id = SwitchId} = State,
+ofp_meter_mod(#state{switch_id = _SwitchId} = State,
               #ofp_meter_mod{} = MeterMod) ->
-    case linc_max_meter:modify(SwitchId, MeterMod) of
-        noreply ->
-            {noreply, State};
-        {reply, Reply} ->
-            {reply, Reply, State}
-    end.
+	%%TODO
+	?INFO("Meter modification message ignored: ~p", [MeterMod]),
+	{noreply,State}.
 
-ofp_meter_stats_request(#state{switch_id = SwitchId} = State,
-                        #ofp_meter_stats_request{meter_id = Id}) ->
-    {reply, linc_max_meter:get_stats(SwitchId, Id), State}.
+ofp_meter_stats_request(#state{switch_id = _SwitchId} = State,
+                        #ofp_meter_stats_request{meter_id = _Id}) ->
+	%%TODO
+	Reply = #ofp_meter_stats_reply{body =[]},
+	{reply,Reply,State}.
 
-ofp_meter_config_request(#state{switch_id = SwitchId} = State,
-                         #ofp_meter_config_request{meter_id = Id}) ->
-    {reply, linc_max_meter:get_config(SwitchId, Id), State}.
+ofp_meter_config_request(#state{switch_id = _SwitchId} = State,
+                         #ofp_meter_config_request{meter_id = _Id}) ->
+	%%TODO
+	Reply = #ofp_meter_config_reply{body =[]},
+	{reply,Reply,State}.
 
 ofp_meter_features_request(State, #ofp_meter_features_request{}) ->
-    {reply, linc_max_meter:get_features(), State}.
+	%%TODO
+    Reply = #ofp_meter_features_reply{
+				max_meter = ?MAX,
+                band_types = [], %% ?SUPPORTED_BANDS,
+                capabilities = [], %% ?SUPPORTED_FLAGS,
+                max_bands = ?MAX_BANDS,
+                max_color = 0},
+	{reply,Reply,State}.
 
 %%%-----------------------------------------------------------------------------
 %%% Helpers
