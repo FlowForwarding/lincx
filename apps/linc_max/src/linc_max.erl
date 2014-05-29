@@ -107,7 +107,6 @@ start(BackendOpts) ->
 
         {datapath_mac, DatapathMac} = lists:keyfind(datapath_mac, 1, BackendOpts),
         BufferState = linc_buffer:initialize(SwitchId),
-        {ok, _Pid} = linc_max_sup:start_backend_sup(SwitchId),
 
         FlowState = linc_max_flow:initialize(SwitchId),
         linc_max_port:initialize(SwitchId, Config),
