@@ -5,7 +5,7 @@ main([]) ->
   io:format("usage: ./lincx <command>\n"),
   io:format("commands:\n"),
   io:format("\tcompile\t Compile sources\n"),
-  io:format("\ttest\t Run enuit tests\n"),
+  io:format("\ttest\t Run eunit tests\n"),
   io:format("\tbuild\t Build vmling image\n"),
   io:format("\tboot\t Create lincx domain\n"),
   io:format("\tclean\t Delete build files\n");
@@ -19,7 +19,12 @@ main(["compile"]) ->
 main(["build"]) ->
   [application:start(A) || A <- [crypto, asn1, public_key, ssl, inets]],
 
-  [copy_app(D, A) || {D, A} <- [
+  CopyApp =
+    fun(Dir, App) ->
+      file:copy(Dir ++ "/" ++ App ++ "/src/" ++ App ++ ".app.src", "ebin/" ++ App ++ ".app")
+    end,
+
+  [CopyApp(D, A) || {D, A} <- [
     {"apps", "linc"},
     {"apps", "linc_max"},
     {"deps", "eenum"},
@@ -85,9 +90,6 @@ main(["boot"]) ->
   io:format("~s", [os:cmd(Cmd)]);
 main(_) ->
   main([]).
-
-copy_app(Dir, App) ->
-  file:copy(Dir ++ "/" ++ App ++ "/src/" ++ App ++ ".app.src", "ebin/" ++ App ++ ".app").
 
 save() ->
   case getit("build/lincx/status") of
