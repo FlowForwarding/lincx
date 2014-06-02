@@ -53,6 +53,7 @@ main(["boot"]) ->
   ExtFS =
     case file:read_file("/etc/munge/munge.key") of
       {ok, Key} ->
+        file:make_dir("log"),
         Hash =
           fun(Suffix) ->
             Sha = crypto:hash(sha, <<Key/binary, Suffix>>),
