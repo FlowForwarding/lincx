@@ -353,7 +353,7 @@ splice_binary(Packet, Pos, ByteLen, ValueBin) ->
 
 splice_bits(Packet, Pos, BitLen, Value) ->
 	<<Prefix:(Pos)/bits,_:(BitLen)/bits,Suffix/bits>> =Packet,
-	<<Prefix/bits,Value:(BitLen),Suffix/binary>>.
+	<<Prefix/bits,Value:(BitLen),Suffix/bits>>.
 
 %% splice and recalculate the checksum
 splice_tcp_header(Packet, Pos, SrcPort, DstPort, SrcAddr, DstAddr) ->
