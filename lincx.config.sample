@@ -1,0 +1,12 @@
+[
+  % LINC params
+  {ipaddr, "192.168.3.2"},
+  {netmask, "255.255.255.0"},
+  {gateway, "192.168.3.1"},
+  {bridges, ["xenbr0", "br1", "br2"]},
+  {memory, 1024},
+
+  % LING build service
+  {lbs_url, "https://build.erlangonxen.org:8080/1/"},
+  {lbs_auth, "test:test"}
+].

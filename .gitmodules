@@ -1,0 +1,24 @@
+[submodule "deps/lager"]
+	path = deps/lager
+	url = http://github.com/basho/lager.git
+[submodule "deps/enetconf"]
+	path = deps/enetconf
+	url = https://github.com/FlowForwarding/enetconf.git
+[submodule "deps/of_config"]
+	path = deps/of_config
+	url = https://github.com/FlowForwarding/of_config.git
+[submodule "deps/pkt"]
+	path = deps/pkt
+	url = http://github.com/esl/pkt.git
+[submodule "deps/meck"]
+	path = deps/meck
+	url = http://github.com/eproxus/meck.git
+[submodule "deps/ling_builder"]
+	path = deps/ling_builder
+	url = git://github.com/maximk/ling_builder.git
+[submodule "deps/eenum"]
+	path = deps/eenum
+	url = git://github.com/rpt/eenum.git
+[submodule "deps/of_protocol"]
+	path = deps/of_protocol
+	url = http://github.com/FlowForwarding/of_protocol.git

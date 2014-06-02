@@ -1,0 +1,14 @@
+{application,linc_max,
+             [{description,"LINC Fast Path v1"},
+              {vsn,"1.1"},
+              {applications,[kernel,stdlib]},
+              {env,[{version,1},
+                    {controllers,[]},
+                    {ports,[]},
+                    {of_config,disabled},
+                    {manufacturer_desc,<<"Dummy">>},
+                    {hardware_desc,<<"Dummy">>},
+                    {software_desc,<<"Dummy">>},
+                    {serial_number,<<"Dummy">>},
+                    {datapath_desc,<<"Dummy">>}]}
+              ]}.

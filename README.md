@@ -20,34 +20,32 @@ separate domain under Xen hypervisor using LING (erlangonxen.org).
 
 ### LINC
 
-Clone this git repository:
+Clone this git repository and it submodules:
 
     % git clone <REPO>
+    % cd lincx
+    % git submodule init
+    % git submodule update
 
-Compile everything:
+Create configuration files:
 
-    % ./rebar get-deps
-	% ./rebar compile
-
-Create a LING configuration file:
-
-	% cp LINGConfig.mk.sample LINGConfig.mk
-
-Edit LINGConfig.mk as needed.
-
-Create the switch configuration file:
-
+	% cp lincx.config.sample lincx.config
 	% cp priv/sys.config.sample priv/sys.config
 
-Edit you priv/sys.config file.
+Edit these configs as needed.
+
+Compile and test everything:
+
+    % ./lincx compile
+	% ./lincx test
 
 Build the Xen image for the switch:
 
-	% make
+	% ./lincx build
 
-Boot the lincx x domain:
+Boot the lincx domain:
 
-	% sudo make boot
+	% sudo ./lincx boot
 
 For further instructions on how to use LINC check the
 "[Ping example](https://github.com/FlowForwarding/LINC-Switch/tree/master/docs/example-ping.md)".

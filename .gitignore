@@ -1,6 +1,5 @@
 .eunit
 
-deps
 
 *.o
 *.beam
@@ -17,3 +16,7 @@ priv/sys.config
 domain1.cfg
 domain2.cfg
 domain3.cfg
+
+log/*
+ebin/*
+lincx.config
