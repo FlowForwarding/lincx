@@ -117,13 +117,18 @@ start_queues(Ports, QueueConfig) ->
 
 	lists:flatmap(fun({port,PortNo,Os}) ->
 		Queues = proplists:get_value(port_queues, Os, []),
-		#port_info{outlet =Outlet} = lists:keyfind(PortNo, #port_info.port_no, Ports),
-		lists:map(fun({QueueNo,QueueOpts}) ->
-			?INFO("Starting queue ~w for port ~w ~p\n", [QueueNo,PortNo,QueueOpts]),
-			{ok,Pid} = linc_max_queue:start_link(Outlet, QueueOpts),
-			?INFO("Queue ~w started: ~w\n", [QueueNo,Pid]),
-			{QueueNo,Pid}
-		end, Queues)
+		case lists:keyfind(PortNo, #port_info.port_no, Ports) of
+			#port_info{outlet =Outlet} ->
+				lists:map(fun({QueueNo,QueueOpts}) ->
+					?INFO("Starting queue ~w for port ~w ~p\n", [QueueNo,PortNo,QueueOpts]),
+					{ok,Pid} = linc_max_queue:start_link(Outlet, QueueOpts),
+					?INFO("Queue ~w started: ~w\n", [QueueNo,Pid]),
+					{QueueNo,Pid}
+				end, Queues);
+			false ->
+				?INFO("Queues for port ~w failed to start\n", [PortNo]),
+				[]
+		end
 	end, QueueConfig).
 
 stop_queues(QueueMap) ->
