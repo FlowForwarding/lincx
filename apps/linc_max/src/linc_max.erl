@@ -17,7 +17,7 @@
 %% @author Erlang Solutions Ltd. <openflow@erlang-solutions.com>
 %% @author Cloduozer LLP. <info@cloudozer.com>
 %% @copyright 2012 FlowForwarding.org
-%% @doc Userspace implementation of the OpenFlow Switch logic.
+%% @doc A fast OpenFlow switch.
 -module(linc_max).
 
 -behaviour(gen_switch).

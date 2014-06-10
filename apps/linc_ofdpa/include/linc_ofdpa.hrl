@@ -15,6 +15,7 @@
 %%-----------------------------------------------------------------------------
 
 %% @author Erlang Solutions Ltd. <openflow@erlang-solutions.com>
+%% @author Cloudozer LLP. <info@cloudozer.com>
 %% @copyright 2012 FlowForwarding.org
 %% @doc Header file for userspace implementation of OpenFlow switch.
 
@@ -186,3 +187,5 @@
           switch_id = 0               :: integer()
          }).
 -type linc_pkt() :: #linc_pkt{}.
+
+%%EOF
