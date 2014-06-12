@@ -1,116 +1,57 @@
-#!/usr/bin/env escript
-%%! -pa ebin
+#!/bin/bash
 
-main([]) ->
-  io:format("usage: ./lincx <command>\n"),
-  io:format("commands:\n"),
-  io:format("\tcompile\t Compile sources\n"),
-  io:format("\ttest\t Run enuit tests\n"),
-  io:format("\tbuild\t Build vmling image\n"),
-  io:format("\tboot\t Create lincx domain\n"),
-  io:format("\tclean\t Delete build files\n");
-main(["clean"]) ->
-  [file:delete(F) || F <- filelib:wildcard("ebin/*")];
-main(["test"]) ->
-  eunit:test({dir,"ebin"});
-main(["compile"]) ->
-  file:make_dir("ebin"),
-  up_to_date = make:all([{outdir,"ebin"}]);
-main(["build"]) ->
-  [application:start(A) || A <- [crypto, asn1, public_key, ssl, inets]],
+# The script launches a lincx domain. It assumes that lincx uses two ports, 1
+# and 2. The corresponding VIFs are attached to br-linc1 and br-linc2 bridges.
+#
 
-  [copy_app(D, A) || {D, A} <- [
-    {"apps", "linc"},
-    {"apps", "linc_max"},
-    {"deps", "eenum"},
-    {"deps", "enetconf"},
-    {"deps", "lager"},
-    {"deps", "meck"},
-    {"deps", "of_config"},
-    {"deps", "of_protocol"},
-    {"deps", "pkt"}
-  ]],
+function check_prerequisites {
+	if [ ! -f domain_config ]; then
+		echo Error: domain_config not found - use make domain_config
+		exit 1
+	fi
+	if [ ! -f vmling ]; then
+		echo Error: vmling not found - use make me
+		exit 1
+	fi
+	if [ $UID -ne 0 ]; then
+		echo Error: only root can start Xen instances
+		exit 1
+	fi
+	if ! hash xl 2>/dev/null; then
+		echo Error: xl not found - are you running Xen?
+		exit 1
+	fi
+	if xl domid lincx &>/dev/null; then
+		echo Error: domain lincx already running
+		exit 1
+	fi
+	if ! ip link show xenbr0 &>/dev/null; then
+		echo Error: bridge xenbr0 not found
+		exit 1
+	fi
+	if ! ip link show br-linc1 &>/dev/null; then
+		echo Error: bridge br-linc1 not found
+		exit 1
+	fi
+	if ! ip link show br-linc2 &>/dev/null; then
+		echo Error: bridge br-linc2 not found
+		exit 1
+	fi
+}
 
-  Files = filelib:wildcard("ebin/*") ++ ["priv/sys.config"],
-  {ok,{_,Zip}} = zip:zip("unzip.zip", Files, [memory]),
-  {ok, {{_, 204, _},_,_}} = request(put, "projects/lincx", "application/zip", Zip),
-  io:format("o"),
+check_prerequisites
 
-  Json = <<"{\"import_lib\":[\"compiler\",\"syntax_tools\",\"mnesia\",\"xmerl\",\"ssh\",\"crypto\",\"asn1\",\"public_key\",\"tools\",\"eunit\"],\"image_type\":\"elf\",\"build_config\":0,\"strip_image\":false}">>,
-  {ok, {{_, 200, _},_,_}} = request(post, "build/lincx", "application/json", Json),
-  io:format("o"),
+xl create domain_config
 
-  save();
-main(["boot"]) ->
-  case os:cmd("echo $UID") of
-    "0\n" ->
-      ok;
-    _ ->
-      io:format("Please run as root\n"),
-      halt(1)
-  end,
+domid=`xl domid lincx`
+lingvif1=vif${domid}.1
+lingvif2=vif${domid}.2
 
-  ExtFS =
-    case file:read_file("/etc/munge/munge.key") of
-      {ok, Key} ->
-        Hash =
-          fun(Suffix) ->
-            Sha = crypto:hash(sha, <<Key/binary, Suffix>>),
-            string:to_lower(lists:flatten([integer_to_list(Nibble, 16) || <<Nibble:4>> <= Sha]))
-          end,
-        {ok, Cwd} = file:get_cwd(),
-        " -secret " ++ Hash($2) ++ " " ++ Hash($1) ++ " -9p " ++ config(gateway) ++ " " ++ Cwd ++ "/log /log";
-      _ ->
-        io:format("External logging disabled\n"),
-        ""
-    end,
+brctl delif xenbr0 $lingvif1
+brctl delif xenbr0 $lingvif2
+brctl addif br-linc1 $lingvif1
+brctl addif br-linc2 $lingvif2
 
-  Esc = fun(V) -> "\"\\\"" ++ V ++ "\\\"\"" end,
+xl console lincx
 
-  Cmd = "xl create /dev/null" ++
-    " name=" ++ Esc("lincx") ++
-    " kernel=" ++ Esc("vmling") ++
-    " memory=" ++ Esc(integer_to_list(config(memory))) ++
-    " vif=\"" ++ io_lib:format("~p",[[list_to_atom("bridge=" ++ B) || B <- config(bridges)]]) ++ "\"" ++
-    " extra=" ++ Esc(
-      "-ipaddr " ++ config(ipaddr) ++
-      " -netmask " ++ config(netmask) ++
-      " -gateway " ++ config(gateway) ++
-      ExtFS ++
-      " -home /lincx -pz /lincx/ebin -config /priv/sys.config" ++
-      " -eval '[application:start(A) || A <- [crypto,asn1,public_key,ssh,compiler,syntax_tools,xmerl,mnesia,lager,linc]]'"
-    ),
-
-  io:format("~s", [os:cmd(Cmd)]);
-main(_) ->
-  main([]).
-
-copy_app(Dir, App) ->
-  file:copy(Dir ++ "/" ++ App ++ "/src/" ++ App ++ ".app.src", "ebin/" ++ App ++ ".app").
-
-save() ->
-  case getit("build/lincx/status") of
-    "0" ->
-      io:format("o"),
-      timer:sleep(1000),
-      save();
-    "1" ->
-      Img = getit("build/lincx/image"),
-      ok = file:write_file("vmling", list_to_binary(Img)),
-      io:format("k\n")
-  end.
-
-request(Method, Slug, Type, Data) ->
-  Hdr = {"Authorization","Basic " ++ base64:encode_to_string(config(lbs_auth))},
-  Url = config(lbs_url) ++ Slug,
-  httpc:request(Method, {Url, [Hdr], Type, Data}, [{timeout,infinity}], []).
-
-getit(Slug) ->
-  Hdr = {"Authorization","Basic " ++ base64:encode_to_string(config(lbs_auth))},
-  Url = config(lbs_url) ++ Slug,
-  {ok,{{_,200,_},_,Resp}} = httpc:request(get, {Url, [Hdr]}, [{timeout,infinity}], []),
-  Resp.
-
-config(Option) ->
-  {ok, [Config]} = file:consult("lincx.config"),
-  proplists:get_value(Option, Config).
+#EOF
