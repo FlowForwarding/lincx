@@ -162,6 +162,6 @@
 
 -record(flow_table_info,{numEntries,maxEntries}).
 
--record(port_queue_stats,{txBytes,txPkts,duration_seconds}).
+-record(port_queue_stats,{txBytes =0,txPkts =0,duration_seconds =0}).
 
 %EOF
