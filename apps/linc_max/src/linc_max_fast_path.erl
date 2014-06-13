@@ -224,7 +224,7 @@ reignite(#blaze{ports =Ports} =Blaze) ->
 	drain_packets(NewPid).
 
 reconnect_ports(Ports, NewPid) ->
-	lists:foreach(fun({_,Outlet,_}) ->
+	lists:foreach(fun(#port_info{outlet =Outlet}) ->
 		erlang:port_connect(Outlet, NewPid),
 		unlink(Outlet)
 	end, Ports).

@@ -22,12 +22,11 @@
 						linc_max_table_features,
 						linc_max_flow,
 						linc_max_queue,
+						linc_max_groups,
 						linc_max_port_native,
 						linc_max_port,
 						linc_max_fast_path,
 						linc_max_packet,
 						linc_max_convert,
-						linc_max_meter_sup,
-						linc_max_sup,
 						linc_max_demo,
 						linc_max]}]}.

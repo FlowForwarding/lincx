@@ -1,9 +1,11 @@
-# LINC - OpenFlow software switch
+# LINCX - OpenFlow software switch
 
-## What is LINC?
+## What is LINCX?
 
-LINC is a pure OpenFlow software switch written in Erlang. It runs within a
+LINCX is a pure OpenFlow software switch written in Erlang. It runs within a
 separate domain under Xen hypervisor using LING (erlangonxen.org).
+
+LINCX is a new faster version of [LINC-SWitch][oldlinc].
 
 ### Features
 
@@ -18,7 +20,7 @@ separate domain under Xen hypervisor using LING (erlangonxen.org).
 
 * Erlang/OTP R16B01
 
-### LINC
+### LINCX
 
 Clone this git repository:
 
@@ -45,19 +47,13 @@ Build the Xen image for the switch:
 
 	% make
 
-Boot the lincx x domain:
+Boot the lincx Xen domain:
 
 	% sudo make boot
 
-For further instructions on how to use LINC check the
-"[Ping example](https://github.com/FlowForwarding/LINC-Switch/tree/master/docs/example-ping.md)".
-
-For detailed explanation on how to setup simple LINC testbed check the
-"[Testbed setup](https://github.com/FlowForwarding/LINC-Switch/tree/master/docs/testbed-setup.md)".
-
 ## Support
 
-If you have any technical questions, problems or suggestions regarding LINC
+If you have any technical questions, problems or suggestions regarding LINCX
 please send them to <linc-dev@flowforwarding.org> mailing list or create an
 Issue. Thanks.
 
@@ -68,4 +64,5 @@ Issue. Thanks.
  [ofp4]: https://www.opennetworking.org/images/stories/downloads/specification/openflow-spec-v1.3.0.pdf 
  [ofc11]: https://www.opennetworking.org/images/stories/downloads/of-config/of-config-1.1.pdf
  [erlang-src]: http://www.erlang.org/download.html
+ [oldlinc]: https://github.com/FlowForwarding/LINC-Switch
 
