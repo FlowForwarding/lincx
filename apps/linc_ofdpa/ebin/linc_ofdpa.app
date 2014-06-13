@@ -11,4 +11,7 @@
                     {software_desc,<<"Dummy">>},
                     {serial_number,<<"Dummy">>},
                     {datapath_desc,<<"Dummy">>}]},
-              {modules,[linc_ofdpa]}]}.
+              {modules,[linc_ofdpa,
+						linc_ofdpa_demo,
+						ofdpa,
+						ofdpa_link]}]}.

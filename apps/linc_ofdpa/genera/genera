@@ -1,0 +1,57 @@
+#!/usr/bin/env escript
+
+main(Args) ->
+	MyDir = filename:dirname(escript:script_name()),
+	true = code:add_path(MyDir),
+	case cmd_line(Args) of
+	{help,_} ->
+		io:format("Usage: genera [--api file] [--datatypes file] action\n"
+			"Actions:\n"
+			"  help            print help\n"
+			"  enums           generate enum_to_integer/2 and integer_to_enum/2\n"
+			"  structs         generate struct_to_binary/1 and binary_to_struct/2\n"
+			"  records         generate record declarations for structs\n"
+			"  stubs           generate API function stubs\n"
+			"  defines         generate function code defines\n"
+			"  dump-enums      dump enum definitions\n"
+			"  dump-structs    dump struct definitions\n"
+			"  dump-sizes      dump type sizes\n", []);
+
+	{Action,Opts} ->
+		ApiFile = proplists:get_value(api_file, Opts, filename:join(MyDir, "api.h")),
+		Api = import_api(ApiFile),
+
+		DTFile = proplists:get_value(datatypes_file, Opts, filename:join(MyDir, "datatypes.h")),
+		DataTypes = import_datatypes(DTFile),
+
+		genera:action(Action, Api, DataTypes)
+	end.
+
+cmd_line(Args) ->
+	cmd_line(Args, help, []).
+
+cmd_line([], Action, Acc) ->
+	{Action,lists:reverse(Acc)};
+cmd_line(["--api",File|Args], Action, Acc) ->
+	cmd_line(Args, Action, [{api_file,File}|Acc]);
+cmd_line(["--datatypes",File|Args], Action, Acc) ->
+	cmd_line(Args, Action, [{datatypes_file,File}|Acc]);
+cmd_line([Arg|Args], _Action, Acc) ->
+	cmd_line(Args, list_to_atom(Arg), Acc).
+
+import_api(ApiFile) ->
+	{ok,Bin} = file:read_file(ApiFile),
+	{ok,Ts,_} = api_lexer:string(binary_to_list(Bin)),
+	{ok,Api} = api_parser:parse(Ts),
+	{Api1,_} = lists:mapfoldl(fun({function,N,R,As}, K) ->
+		{{K,function,N,R,As},K +1}
+	end, 100, Api),
+	Api1.
+
+import_datatypes(DTFile) ->
+	{ok,Bin} = file:read_file(DTFile),
+	{ok,Ts,_} = data_lexer:string(binary_to_list(Bin)),
+	{ok,DataTypes} = data_parser:parse(Ts),
+	DataTypes.
+
+%%EOF
