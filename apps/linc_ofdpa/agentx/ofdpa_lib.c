@@ -343,13 +343,6 @@ OFDPA_ERROR_t ofdpaMaxPktSizeGet(uint32_t *pktSize)
 	return OFDPA_E_NONE;
 }
 
-
-// Events
-OFDPA_ERROR_t ofdpaPktReceive(struct timeval *timeout, ofdpaPacket_t *pkt)
-{
-	//TODO
-	return OFDPA_E_NONE;
-}
  // special
 OFDPA_ERROR_t ofdpaEventReceive(struct timeval *timeout)
 {
@@ -407,6 +400,26 @@ OFDPA_ERROR_t ofdpaQueueRateSet(uint32_t portNum, uint32_t queueId, uint32_t min
 }
 
 OFDPA_ERROR_t ofdpaQueueRateGet(uint32_t portNum, uint32_t queueId, uint32_t *minRate, uint32_t *maxRate)
+{
+	//TODO
+	return OFDPA_E_NONE;
+}
+
+// Asynchronous events
+
+int ofdpaClientEventSockFdGet()
+{
+	//TODO
+	return -1;
+}
+
+int ofdpaClientPktSockFdGet()
+{
+	//TODO
+	return -1;
+}
+
+OFDPA_ERROR_t ofdpaPktReceive(struct timeval *timeout, ofdpaPacket_t *pkt)
 {
 	//TODO
 	return OFDPA_E_NONE;

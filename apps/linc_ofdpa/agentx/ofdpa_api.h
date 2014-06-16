@@ -1403,123 +1403,125 @@ OFDPA_ERROR_t ofdpaPktSend(ofdpa_buffdesc *pkt, uint32_t flags, uint32_t outPort
  * ********************************************************************/
 OFDPA_ERROR_t ofdpaMaxPktSizeGet(uint32_t *pktSize);
 
-/*------------------------------------------------------------------------------------*/
-/* Event APIs */
+// Events are handled on the agentx side
 
-/*
-   Asynchronous events: Have classified them into two broad category:
-   Packet In : Packet received from the hardware to be sent to the controller
-   Control messages: Events like Port creation, deletion, link state, Flow age and Error
-
-   The packet In events can have a high frequency, so we want to ensure that there is
-   separate control for polling of these two event types to give flexibility to the agent
-*/
-
-/*********************************************************************
- * @purpose  Get OF-DPA Client's event socket fd
- *
- * @param    none
- *
- * @returns  event socket fd
- *
- * @end
- *********************************************************************/
-int ofdpaClientEventSockFdGet(void);
-
-/*********************************************************************
- * @purpose  Get OF-DPA Client's packet socket fd
- *
- * @param    none
- *
- * @returns  packet socket fd
- *
- * @end
- *********************************************************************/
-int ofdpaClientPktSockFdGet(void);
-
-/*********************************************************************
- * @purpose  The client calls this function to retrieve a single packet that the hardware
- *           has punted to the CPU.
- *
- * @param    timeout  @b{(input)}  If NULL, the function blocks until a packet is received.
- *                                 If the timeout value is zero, the function returns immediately,
- *                                 whether or not a packet is available. The return code
- *                                 indicates whether a packet has been received. If the timeout
- *                                 value is non-zero, the function blocks up to this length of
- *                                 time if a packet is not immediately available. Again, the
- *                                 return code indicates whether a packet was received.
- * @param    pkt      @b{(output)} A packet structure allocated by the caller and used to
- *                                 return a received packet. The packet structure includes some
- *                                 metadata to indicate properties like why the packet came to
- *                                 the CPU and the ingress port. On input, the caller must set
- *                                 pkt->pktData.size to the size in bytes of the buffer allocated
- *                                 to hold the received packet. On output, pkt->pktData.size
- *                                 specifies the length of the packet in bytes. pkt->pktData.pstart
- *                                 on input must point to a buffer large enough to hold the largest
- *                                 possible received packet (OFDPA_MAX_PKT_LEN). This function copies
- *                                 the packet into this buffer, starting with the Ethernet header
- *                                 (the destination MAC address). The trailing Ethernet CRC is not
- *                                 included.
- *
- * @returns  OFDPA_E_NONE     if a packet is returned
- * @returns  OFDPA_E_TIMEOUT  if no packet is available within the specified timeout
- * @returns  OFDPA_E_PARAM    if an input parameter is invalid (e.g., pkt is NULL)
- * @returns  OFDPA_E_FAIL     for any other failure
- *
- * @notes    This function runs in the client's own context and is not an RPC API.
- *
- * @end
- * ********************************************************************/
-OFDPA_ERROR_t ofdpaPktReceive(struct timeval *timeout, ofdpaPacket_t *pkt);
-
-
-/*********************************************************************
-* @purpose  Receive an event.
-*
-* @param    timeout    @b{(input)} time to wait for the event
-*
-* @returns  OFDPA_E_NONE        event received successfully
-* @returns  OFDPA_E_FAIL        failure in socket creation, timeout configuration
-*                               or event reception
-* @returns  OFDPA_E_TIMEOUT     no event waiting to be received
-*
-* @note
-*
-* @end
-*********************************************************************/
-OFDPA_ERROR_t ofdpaEventReceive(struct timeval *timeout);
-
-/*********************************************************************
-* @purpose  Get the next port event.
-*
-* @param    eventData    @b{(inout)} event data
-*
-* @returns  OFDPA_E_NONE        port event data returned successfully
-* @returns  OFDPA_E_PARAM       error in parameters passed to function
-* @returns  OFDPA_E_NOT_FOUND   next port event not found
-*
-* @note     populate the port number in eventData to get the
-*           event for the next port
-*
-* @end
-*********************************************************************/
-OFDPA_ERROR_t ofdpaPortEventNextGet(ofdpaPortEvent_t *eventData);
-
-/*********************************************************************
-* @purpose  Get the next flow event.
-*
-* @param    eventData    @b{(inout)} event data
-*
-* @returns  OFDPA_E_NONE        flow event data returned successfully
-* @returns  OFDPA_E_PARAM       error in parameters passed to function
-* @returns  OFDPA_E_NOT_FOUND   next port event not found
-*
-* @note     populate the table id in eventData to get the
-*           events for the flow table
-*
-* @end
-*********************************************************************/
-OFDPA_ERROR_t ofdpaFlowEventNextGet(ofdpaFlowEvent_t *eventData);
+///*------------------------------------------------------------------------------------*/
+///* Event APIs */
+//
+///*
+//   Asynchronous events: Have classified them into two broad category:
+//   Packet In : Packet received from the hardware to be sent to the controller
+//   Control messages: Events like Port creation, deletion, link state, Flow age and Error
+//
+//   The packet In events can have a high frequency, so we want to ensure that there is
+//   separate control for polling of these two event types to give flexibility to the agent
+//*/
+//
+///*********************************************************************
+// * @purpose  Get OF-DPA Client's event socket fd
+// *
+// * @param    none
+// *
+// * @returns  event socket fd
+// *
+// * @end
+// *********************************************************************/
+//int ofdpaClientEventSockFdGet(void);
+//
+///*********************************************************************
+// * @purpose  Get OF-DPA Client's packet socket fd
+// *
+// * @param    none
+// *
+// * @returns  packet socket fd
+// *
+// * @end
+// *********************************************************************/
+//int ofdpaClientPktSockFdGet(void);
+//
+///*********************************************************************
+// * @purpose  The client calls this function to retrieve a single packet that the hardware
+// *           has punted to the CPU.
+// *
+// * @param    timeout  @b{(input)}  If NULL, the function blocks until a packet is received.
+// *                                 If the timeout value is zero, the function returns immediately,
+// *                                 whether or not a packet is available. The return code
+// *                                 indicates whether a packet has been received. If the timeout
+// *                                 value is non-zero, the function blocks up to this length of
+// *                                 time if a packet is not immediately available. Again, the
+// *                                 return code indicates whether a packet was received.
+// * @param    pkt      @b{(output)} A packet structure allocated by the caller and used to
+// *                                 return a received packet. The packet structure includes some
+// *                                 metadata to indicate properties like why the packet came to
+// *                                 the CPU and the ingress port. On input, the caller must set
+// *                                 pkt->pktData.size to the size in bytes of the buffer allocated
+// *                                 to hold the received packet. On output, pkt->pktData.size
+// *                                 specifies the length of the packet in bytes. pkt->pktData.pstart
+// *                                 on input must point to a buffer large enough to hold the largest
+// *                                 possible received packet (OFDPA_MAX_PKT_LEN). This function copies
+// *                                 the packet into this buffer, starting with the Ethernet header
+// *                                 (the destination MAC address). The trailing Ethernet CRC is not
+// *                                 included.
+// *
+// * @returns  OFDPA_E_NONE     if a packet is returned
+// * @returns  OFDPA_E_TIMEOUT  if no packet is available within the specified timeout
+// * @returns  OFDPA_E_PARAM    if an input parameter is invalid (e.g., pkt is NULL)
+// * @returns  OFDPA_E_FAIL     for any other failure
+// *
+// * @notes    This function runs in the client's own context and is not an RPC API.
+// *
+// * @end
+// * ********************************************************************/
+////OFDPA_ERROR_t ofdpaPktReceive(struct timeval *timeout, ofdpaPacket_t *pkt);
+//
+//
+///*********************************************************************
+//* @purpose  Receive an event.
+//*
+//* @param    timeout    @b{(input)} time to wait for the event
+//*
+//* @returns  OFDPA_E_NONE        event received successfully
+//* @returns  OFDPA_E_FAIL        failure in socket creation, timeout configuration
+//*                               or event reception
+//* @returns  OFDPA_E_TIMEOUT     no event waiting to be received
+//*
+//* @note
+//*
+//* @end
+//*********************************************************************/
+//OFDPA_ERROR_t ofdpaEventReceive(struct timeval *timeout);
+//
+///*********************************************************************
+//* @purpose  Get the next port event.
+//*
+//* @param    eventData    @b{(inout)} event data
+//*
+//* @returns  OFDPA_E_NONE        port event data returned successfully
+//* @returns  OFDPA_E_PARAM       error in parameters passed to function
+//* @returns  OFDPA_E_NOT_FOUND   next port event not found
+//*
+//* @note     populate the port number in eventData to get the
+//*           event for the next port
+//*
+//* @end
+//*********************************************************************/
+//OFDPA_ERROR_t ofdpaPortEventNextGet(ofdpaPortEvent_t *eventData);
+//
+///*********************************************************************
+//* @purpose  Get the next flow event.
+//*
+//* @param    eventData    @b{(inout)} event data
+//*
+//* @returns  OFDPA_E_NONE        flow event data returned successfully
+//* @returns  OFDPA_E_PARAM       error in parameters passed to function
+//* @returns  OFDPA_E_NOT_FOUND   next port event not found
+//*
+//* @note     populate the table id in eventData to get the
+//*           events for the flow table
+//*
+//* @end
+//*********************************************************************/
+//OFDPA_ERROR_t ofdpaFlowEventNextGet(ofdpaFlowEvent_t *eventData);
 
 /*------------------------------------------------------------------------------------*/
 /* Table APIs */

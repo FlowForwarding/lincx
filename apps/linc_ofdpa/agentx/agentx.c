@@ -7,6 +7,8 @@
 
 #include <apr-1/apr_general.h>
 #include <apr-1/apr_network_io.h>
+#include <apr-1/apr_poll.h>
+#include <apr-1/apr_portable.h>
 
 #include "ofdpa_datatypes.h"
 #include "ofdpa_api.h"
@@ -18,11 +20,21 @@
 
 #define TAG_CALL	0xca11
 #define	TAG_RETURN	0xbac6
+#define TAG_EVENT	0xeeee
+#define TAG_PACKET	0xbead
+
+#define EVENT_FLOW	1
+#define	EVENT_PORT	2
+
+#define POLL_TIMEO	5000000
 
 apr_status_t handle_link(int *done, apr_socket_t *sock, apr_pool_t *cont);
 apr_status_t receive(apr_socket_t *sock, int len, uint8_t *buf);
 apr_status_t invoke(uint16_t what, uint32_t cookie,
 		uint8_t *arg_buf, uint32_t arg_len, uint8_t *ret_buf, uint32_t *ret_len);
+apr_status_t api_call(apr_socket_t *sock, apr_pool_t *cont);
+apr_status_t async_event(apr_socket_t *sock, apr_pool_t *cont);
+apr_status_t incoming_pkt(apr_socket_t *sock, apr_pool_t *cont);
 void error_exit(apr_status_t rs);
 
 int main(int argc, char *argv[])
@@ -84,50 +96,203 @@ apr_status_t handle_link(int *done, apr_socket_t *sock, apr_pool_t *cont)
 
 	printf("linc_ofdpa connection accepted\n");
 
+	int event_fd = ofdpaClientEventSockFdGet();
+	int pkt_fd = ofdpaClientPktSockFdGet();
+
+	apr_socket_t *event_sock;
+	apr_socket_t *pkt_sock;
+
+	// convert event and pkt descriptors to apr_socket_t
+	apr_os_sock_put(&event_sock, (apr_os_sock_t *)&event_fd, cont);
+	apr_os_sock_put(&pkt_sock, (apr_os_sock_t *)&pkt_fd, cont);
+
+	apr_pollfd_t pfd = {
+		.desc_type = APR_POLL_SOCKET,
+		.reqevents = APR_POLLIN,
+	};
+
+	apr_pollset_t *pollset;
+	rs = apr_pollset_create(&pollset, 3, cont, 0);
+	if (rs == 0)
+	{
+		pfd.desc.s = sock;
+		rs = apr_pollset_add(pollset, &pfd);
+	}
+	if (rs == 0)
+	{
+		pfd.desc.s = event_sock;
+		rs = apr_pollset_add(pollset, &pfd);
+	}
+	if (rs == 0)
+	{
+		pfd.desc.s = pkt_sock;
+		rs = apr_pollset_add(pollset, &pfd);
+	}
+	if (rs != 0)
+		return rs;
+
 	while (1)
 	{
-		uint32_t len;
-		uint8_t buf[4096];
-		rs = receive(sock, 4, buf);
-		if (rs == 0)
-		{
-			len = GET32(buf);
-			assert(len <= sizeof(buf));
-			rs = receive(sock, len, buf);
-		}
+		apr_int32_t n;
+		const apr_pollfd_t *pfds;
+
+		rs = apr_pollset_poll(pollset, POLL_TIMEO, &n, &pfds);
 		if (rs != 0)
 			return rs;
 
-		assert(len >= 2 +2 +4);
-		uint16_t tag = GET16(buf);
-		uint16_t what = GET16(buf +2);
-		uint32_t cookie = GET32(buf +2 +2);
-		uint8_t *arg_buf = buf +2 +2 +4;
-		uint32_t arg_len = len -2 -2 -4;
-
-		assert(tag == TAG_CALL);
-		assert(what <= API_CALL_MAX);
-
-		uint8_t reply[12];
-
-		uint8_t ret_buf[4096];
-		uint32_t ret_len = sizeof(ret_buf);
-		rs = invoke(what, cookie, arg_buf, arg_len, ret_buf, &ret_len);
-		if (rs == 0)
+		int i;
+		for (i = 0; i < n; i++)
 		{
-			uint32_t rep_len = 2 +2 +4 +ret_len;
-			PUT32(reply, rep_len);
-			PUT16(reply +4, TAG_RETURN);
-			PUT16(reply +4 +2, what);
-			PUT32(reply +4 +2 +2, cookie);
-
-			rs = transmit(sock, 12, reply);
+			if (pfds[i].desc.s == sock)
+				rs = api_call(sock, cont);
+			else if (pfds[i].desc.s == event_sock)
+				rs = async_event(sock, cont);
+			else if (pfds[i].desc.s == pkt_sock)
+				rs = incoming_pkt(sock, cont);
+			
+			if (rs != 0)
+				return rs;
 		}
-		if (rs == 0)
-			rs = transmit(sock, ret_len, ret_buf);
+	}
+}
+
+apr_status_t api_call(apr_socket_t *sock, apr_pool_t *cont)
+{
+	apr_status_t rs;
+
+	uint32_t len;
+	uint8_t buf[4096];
+	rs = receive(sock, 4, buf);
+	if (rs == 0)
+	{
+		len = GET32(buf);
+		assert(len <= sizeof(buf));
+		rs = receive(sock, len, buf);
+	}
+	if (rs != 0)
+		return rs;
+
+	assert(len >= 2 +2 +4);
+	uint16_t tag = GET16(buf);
+	uint16_t what = GET16(buf +2);
+	uint32_t cookie = GET32(buf +2 +2);
+	uint8_t *arg_buf = buf +2 +2 +4;
+	uint32_t arg_len = len -2 -2 -4;
+
+	assert(tag == TAG_CALL);
+	assert(what <= API_CALL_MAX);
+
+	uint8_t reply[12];
+
+	uint8_t ret_buf[4096];
+	uint32_t ret_len = sizeof(ret_buf);
+	rs = invoke(what, cookie, arg_buf, arg_len, ret_buf, &ret_len);
+	if (rs == 0)
+	{
+		uint32_t rep_len = 2 +2 +4 +ret_len;
+		PUT32(reply, rep_len);
+		PUT16(reply +4, TAG_RETURN);
+		PUT16(reply +4 +2, what);
+		PUT32(reply +4 +2 +2, cookie);
+
+		rs = transmit(sock, 12, reply);
+	}
+	if (rs == 0)
+		rs = transmit(sock, ret_len, ret_buf);
+
+	return rs;
+}
+
+// events has the same packet layout as API calls
+
+apr_status_t async_event(apr_socket_t *sock, apr_pool_t *cont)
+{
+	apr_status_t rs;
+
+	uint8_t buf[4096];
+	int off = 0;
+	
+	ofdpaFlowEvent_t fe;
+	while (ofdpaFlowEventNextGet(&fe) == OFDPA_E_NONE)
+	{
+		off = 4 +2 +2 +4;
+		PUT32(buf +off, fe.eventMask);
+		off += 4;
+		memcpy((void *)(buf +off), (void *)&fe.flowMatch, sizeof(ofdpaFlowEntry_t));
+		off += sizeof(ofdpaFlowEntry_t);
+
+		uint32_t len = off -4;
+		PUT32(buf, len);
+		PUT16(buf +4, TAG_EVENT);
+		PUT16(buf +4 +2, EVENT_FLOW);
+		apr_generate_random_bytes(buf +4 +2 +2, 4);	// cookie
+
+		rs = transmit(sock, buf, len);
 		if (rs != 0)
 			return rs;
 	}
+
+	ofdpaPortEvent_t pe;
+	while (ofdpaPortEventNextGet(&pe) == OFDPA_E_NONE)
+	{
+		off = 4 +2 +2 +4;
+		PUT32(buf +off, pe.eventMask);
+		off += 4;
+		PUT32(buf +off, pe.portNum);
+		off += 4;
+		PUT32(buf +off, pe.state);
+		off += 4;
+
+		uint32_t len = off -4;
+		PUT32(buf, len);
+		PUT16(buf +4, TAG_EVENT);
+		PUT16(buf +4 +2, EVENT_PORT);
+		apr_generate_random_bytes(buf +4 +2 +2, 4);	// cookie
+
+		rs = transmit(sock, buf, off);
+		if (rs != 0)
+			return rs;
+	}
+
+	return 0;
+}
+
+apr_status_t incoming_pkt(apr_socket_t *sock, apr_pool_t *cont)
+{
+	apr_status_t rs;
+
+	//  +0: 12-byte protocol 
+	// +12: 4-byte packet size
+	// +16: packet data
+
+	uint8_t buf[4096];
+	struct timeval tv = { 0 };
+
+	while (1)
+	{	
+		ofdpaPacket_t pkt = {
+			.pktData.pstart = buf +12 +4,
+			.pktData.size = sizeof(buf) -12 -4,
+		};
+
+		if (ofdpaPktReceive(&tv, &pkt) != OFDPA_E_NONE)
+			break;
+
+		uint32_t len = 12 +4 +pkt.pktData.size -4;
+		PUT32(buf, len);
+		PUT16(buf +4, TAG_PACKET);
+		PUT16(buf +4 +2, 0);
+		apr_generate_random_bytes(buf +4 +2 +2, 4);	// cookie
+
+		// fill-in packet size
+		PUT32(buf +4 +2 +2 +4, pkt.pktData.size);
+
+		rs = transmit(sock, buf, len +4);
+		if (rs != 0)
+			return rs;
+	}
+
+	return 0;
 }
 
 void error_exit(apr_status_t rs)
@@ -1341,86 +1506,6 @@ apr_status_t invoke(uint16_t what, uint32_t cookie,
 
 
 		OFDPA_ERROR_t err = ofdpaMaxPktSizeGet(pktSize);
-		PUT32(ret_buf, err);
-
-		*ret_len = roff;
-		break;
-	}
-	case PKT_RECEIVE:
-	{
-		assert(roff +4 <= *ret_len);
-		// make space for OFDPA_ERROR_t
-		roff += 4;
-
-		assert(roff +6 <= *ret_len);
-		struct timeval *timeout = (struct timeval *)(ret_buf +roff);
-		roff += 6;
-		assert(roff +4 <= *ret_len);
-		PUT32(ret_buf +roff, sizeof(ofdpaPacket_t));
-		roff += 4;
-		assert(roff +sizeof(ofdpaPacket_t) <= *ret_len);
-		ofdpaPacket_t *pkt = (ofdpaPacket_t *)(ret_buf +roff);
-		roff += sizeof(ofdpaPacket_t);
-
-
-		OFDPA_ERROR_t err = ofdpaPktReceive(timeout, pkt);
-		PUT32(ret_buf, err);
-
-		*ret_len = roff;
-		break;
-	}
-	case EVENT_RECEIVE:
-	{
-		assert(roff +4 <= *ret_len);
-		// make space for OFDPA_ERROR_t
-		roff += 4;
-
-		assert(roff +6 <= *ret_len);
-		struct timeval *timeout = (struct timeval *)(ret_buf +roff);
-		roff += 6;
-
-
-		OFDPA_ERROR_t err = ofdpaEventReceive(timeout);
-		PUT32(ret_buf, err);
-
-		*ret_len = roff;
-		break;
-	}
-	case PORT_EVENT_NEXT_GET:
-	{
-		assert(roff +4 <= *ret_len);
-		// make space for OFDPA_ERROR_t
-		roff += 4;
-
-		assert(roff +4 <= *ret_len);
-		PUT32(ret_buf +roff, sizeof(ofdpaPortEvent_t));
-		roff += 4;
-		assert(roff +sizeof(ofdpaPortEvent_t) <= *ret_len);
-		ofdpaPortEvent_t *eventData = (ofdpaPortEvent_t *)(ret_buf +roff);
-		roff += sizeof(ofdpaPortEvent_t);
-
-
-		OFDPA_ERROR_t err = ofdpaPortEventNextGet(eventData);
-		PUT32(ret_buf, err);
-
-		*ret_len = roff;
-		break;
-	}
-	case FLOW_EVENT_NEXT_GET:
-	{
-		assert(roff +4 <= *ret_len);
-		// make space for OFDPA_ERROR_t
-		roff += 4;
-
-		assert(roff +4 <= *ret_len);
-		PUT32(ret_buf +roff, sizeof(ofdpaFlowEvent_t));
-		roff += 4;
-		assert(roff +sizeof(ofdpaFlowEvent_t) <= *ret_len);
-		ofdpaFlowEvent_t *eventData = (ofdpaFlowEvent_t *)(ret_buf +roff);
-		roff += sizeof(ofdpaFlowEvent_t);
-
-
-		OFDPA_ERROR_t err = ofdpaFlowEventNextGet(eventData);
 		PUT32(ret_buf, err);
 
 		*ret_len = roff;
