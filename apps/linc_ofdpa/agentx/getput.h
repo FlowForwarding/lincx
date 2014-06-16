@@ -13,13 +13,13 @@
 
 #define GET64(p) \
 	 (uint64_t)((uint8_t *)(p))[0] | \
-	((uint64_t)((uint8_t *)(p))[1] << 8) \
-	((uint64_t)((uint8_t *)(p))[2] << 16) \
-	((uint64_t)((uint8_t *)(p))[3] << 24) \
-	((uint64_t)((uint8_t *)(p))[4] << 32) \
-	((uint64_t)((uint8_t *)(p))[5] << 40) \
-	((uint64_t)((uint8_t *)(p))[6] << 48) \
-	((uint64_t)((uint8_t *)(p))[7] << 56) \
+	((uint64_t)((uint8_t *)(p))[1] << 8) | \
+	((uint64_t)((uint8_t *)(p))[2] << 16) | \
+	((uint64_t)((uint8_t *)(p))[3] << 24) | \
+	((uint64_t)((uint8_t *)(p))[4] << 32) | \
+	((uint64_t)((uint8_t *)(p))[5] << 40) | \
+	((uint64_t)((uint8_t *)(p))[6] << 48) | \
+	((uint64_t)((uint8_t *)(p))[7] << 56) 
 
 #define PUT16(p, v) do { \
 	((uint8_t *)(p))[0] = (v) & 255; \

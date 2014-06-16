@@ -149,6 +149,122 @@ action(defines, #g{api =Api}) ->
 		io:format("#define ~s\t~w\n", [decamelize1(Name),K])
 	end, Api);
 
+action(cases, #g{api =Api,enums =Enums,structs =Structs}) ->
+	lists:foreach(fun({_,function,Name,RetType,Args}) ->
+		io:format("\tcase ~s:\n\t{\n", [decamelize1(Name)]),
+		ArgInfo = [{N,T,D,type_class(T, Enums, Structs)} || {_,N,T,D} <- Args],
+
+		if RetType =/= void ->
+			io:format("\t\tassert(roff +4 <= *ret_len);\n", []),
+			io:format("\t\t// make space for OFDPA_ERROR_t\n", []),
+			io:format("\t\troff += 4;\n\n", []);
+		true ->
+			ok
+		end,
+
+		%% inout/out parameters
+		lists:foreach(fun({N,T,_,struct}) ->
+			io:format("\t\tassert(roff +4 <= *ret_len);\n", []),
+			io:format("\t\tPUT32(ret_buf +roff, sizeof(~s));\n", [T]),
+			io:format("\t\troff += 4;\n", []),
+			io:format("\t\tassert(roff +sizeof(~s) <= *ret_len);\n", [T]),
+			io:format("\t\t~s *~w = (~s *)(ret_buf +roff);\n", [T,N,T]),
+			io:format("\t\troff += sizeof(~s);\n", [T]);
+		({N,T,_,enum}) ->
+			io:format("\t\tassert(roff +4 <= *ret_len);\n", []),
+			io:format("\t\t~s *~w = (~s *)(ret_buf +roff);\n", [T,N,T]),
+			io:format("\t\troff += 4;\n", []);
+
+		({N,ofdpaMacAddr_t,_,_}) ->
+			io:format("\t\tassert(roff +6 <= *ret_len);\n", []),
+			io:format("\t\tofdpaMacAddr_t *~w = (ofdpaMacAddr_t *)(ret_buf +roff);\n", [N]),
+			io:format("\t\troff += 6;\n", []);
+		({N,timeval,_,_}) ->
+			io:format("\t\tassert(roff +6 <= *ret_len);\n", []),
+			io:format("\t\tstruct timeval *~w = (struct timeval *)(ret_buf +roff);\n", [N]),
+			io:format("\t\troff += 6;\n", []);
+
+		({N,uint16_t,_,scalar}) ->
+			io:format("\t\tassert(roff +2 <= *ret_len);\n", []),
+			io:format("\t\tuint16_t *~w = (uint16_t *)(ret_buf +roff);\n", [N]),
+			io:format("\t\troff += 2;\n", []);
+		({N,uint32_t,_,scalar}) ->
+			io:format("\t\tassert(roff +4 <= *ret_len);\n", []),
+			io:format("\t\tuint32_t *~w = (uint32_t *)(ret_buf +roff);\n", [N]),
+			io:format("\t\troff += 4;\n", []);
+		({N,uint64_t,_,scalar}) ->
+			io:format("\t\tassert(roff +8 <= *ret_len);\n", []),
+			io:format("\t\tuint64_t *~w = (uint64_t *)(ret_buf +roff);\n", [N]),
+			io:format("\t\troff += 8;\n", []);
+		(X) ->
+			io:format("\t\t//TODO: ~p\n", [X])
+		end, [X || {_,_,D,_} =X <- ArgInfo, D =:= out orelse D =:= inout]),
+
+		%% in/inout parameters
+		io:format("\n", []),
+		lists:foreach(fun({N,T,inout,struct}) ->
+			io:format("\t\tassert(off +4 <= arg_len);\n", []),
+			io:format("\t\tsz = GET32(arg_buf +off);\n", []),
+			io:format("\t\toff += 4;\n", []),
+			io:format("\t\tassert(sz <= sizeof(~s));\n", [T], []),
+			io:format("\t\tmemcpy((void *)~s, (void *)arg_buf, sz);\n", [N]),
+			io:format("\t\tassert(off +sz <= arg_len);\n", []),
+			io:format("\t\toff += sz;\n", []);
+		({N,T,_,struct}) ->
+			io:format("\t\tassert(off +4 <= arg_len);\n", []),
+			io:format("\t\tsz = GET32(arg_buf +off);\n", []),
+			io:format("\t\toff += 4;\n", []),
+			io:format("\t\tassert(off +sz <= arg_len);\n", []),
+			io:format("\t\t~s *~w = (~s *)(arg_buf +off);\n", [T,N,T]),
+			io:format("\t\toff += sz;\n", []);
+
+		({N,T,in,enum}) ->
+			io:format("\t\tassert(off +4 <= arg_len);\n", []),
+			io:format("\t\t~s ~w = (~s)GET32(arg_buf +off);\n", [T,N,T]),
+			io:format("\t\toff += 4;\n", []);
+
+		({N,uint16_t,inout,scalar}) ->
+			io:format("\t\tassert(off +2 <= arg_len);\n", []),
+			io:format("\t\t*~w = GET16(arg_buf +off);\n", [N]),
+			io:format("\t\toff += 2;\n", []);
+		({N,uint16_t,_,scalar}) ->
+			io:format("\t\tassert(off +2 <= arg_len);\n", []),
+			io:format("\t\tuint16_t ~w = GET16(arg_buf +off);\n", [N]),
+			io:format("\t\toff += 2;\n", []);
+
+		({N,uint32_t,inout,scalar}) ->
+			io:format("\t\tassert(off +4 <= arg_len);\n", []),
+			io:format("\t\t*~w = GET32(arg_buf +off);\n", [N]),
+			io:format("\t\toff += 4;\n", []);
+		({N,uint32_t,_,scalar}) ->
+			io:format("\t\tassert(off +4 <= arg_len);\n", []),
+			io:format("\t\tuint32_t ~w = GET32(arg_buf +off);\n", [N]),
+			io:format("\t\toff += 4;\n", []);
+
+		({N,uint64_t,inout,scalar}) ->
+			io:format("\t\tassert(off +8 <= arg_len);\n", []),
+			io:format("\t\t*~w = GET64(arg_buf +off);\n", [N]),
+			io:format("\t\toff += 8;\n", []);
+		({N,uint64_t,_,scalar}) ->
+			io:format("\t\tassert(off +8 <= arg_len);\n", []),
+			io:format("\t\tuint64_t ~w = GET64(arg_buf +off);\n", [N]),
+			io:format("\t\toff += 8;\n", []);
+		(X) ->
+			io:format("\t\t//TODO: ~p\n", [X])
+		end, [X || {_,_,D,_} =X <- ArgInfo, D =:= in orelse D =:= inout]),
+
+		As = string:join([atom_to_list(N) || {N,_,_,_} <- ArgInfo], ", "),
+		if RetType =:= void ->
+			io:format("\n\t\t~s(~s);\n\n", [Name,As]);
+		true ->
+			io:format("\n\t\tOFDPA_ERROR_t err = ~s(~s);\n", [Name,As]),
+			io:format("\t\tPUT32(ret_buf, err);\n\n", [])
+		end,
+
+		io:format("\t\t*ret_len = roff;\n", []),
+		io:format("\t\tbreak;\n\t}\n", [])
+	end, Api);
+
 action(exports, #g{api =Api}) ->
 	F = {attribute,0,export,[{F,length(As)} || {_,function,F,_,As} <- Api]},
 	io:format("~s\n", [erl_pp:form(F)]);
