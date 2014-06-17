@@ -7,13 +7,13 @@
 
 %% generated using 'genera exports'
 
--export([ofdpaFlowEntryInit/2,
+-export([ofdpaFlowEntryInit/1,
          ofdpaFlowAdd/1,
          ofdpaFlowModify/1,
          ofdpaFlowDelete/1,
-         ofdpaFlowNextGet/2,
-         ofdpaFlowStatsGet/2,
-         ofdpaFlowByCookieGet/3,
+         ofdpaFlowNextGet/1,
+         ofdpaFlowStatsGet/1,
+         ofdpaFlowByCookieGet/1,
          ofdpaFlowByCookieDelete/1,
          ofdpaGroupTypeGet/2,
          ofdpaGroupVlanGet/2,
@@ -86,7 +86,7 @@
 call(Returns, What, Args) ->
 	case gen_server:call(ofdpa_link, {call,What,encode_args(Args)}) of
 	{ok,RetBlob} ->
-		{ok,decode_args(RetBlob, Returns)};
+		list_to_tuple([ok|decode_args(RetBlob, Returns)]);
 	{error,_} =Error ->
 		Error
 	end.
@@ -273,7 +273,15 @@ integer_to_enum(port_config_t, 1) ->
 integer_to_enum(port_state_t, 1) ->
     port_state_link_down.
 
-%% struct_to_binary/1 and binary_to_struct/2 generated using 'genera struct'
+%% manually
+
+pad_binary(Bin, N) when size(Bin) =:= N ->
+	Bin;
+pad_binary(Bin, N) ->
+	Pad = list_to_binary(lists:duplicate(N -size(Bin), 0)),
+	<<Bin/binary,Pad/binary>>.
+
+%% struct_to_binary/1 and binary_to_struct/2 generated using 'genera structs'
 
 struct_to_binary(#ingress_port_flow_match{inPort = InPort,
                                           inPortMask = InPortMask}) ->
@@ -281,7 +289,9 @@ struct_to_binary(#ingress_port_flow_match{inPort = InPort,
 struct_to_binary(#ingress_port_flow_entry{match_criteria =
                                               Match_criteria,
                                           gotoTableId = GotoTableId}) ->
-    <<Match_criteria:64/binary,GotoTableId:32/binary>>;
+	MatchBin = struct_to_binary(Match_criteria),
+	T = enum_to_integer(flow_table_id_t, GotoTableId),
+    <<MatchBin:8/binary,T:32/little>>;
 struct_to_binary(#vlan_flow_match{inPort = InPort,
                                   vlanId = VlanId,
                                   vlanIdMask = VlanIdMask}) ->
@@ -289,7 +299,9 @@ struct_to_binary(#vlan_flow_match{inPort = InPort,
 struct_to_binary(#vlan_flow_entry{match_criteria = Match_criteria,
                                   gotoTableId = GotoTableId,
                                   newVlanId = NewVlanId}) ->
-    <<Match_criteria:64/binary,GotoTableId:32/binary,NewVlanId:16/little>>;
+	MatchBin = struct_to_binary(Match_criteria),
+	T = enum_to_integer(flow_table_id_t, GotoTableId),
+    <<MatchBin:8/binary,T:32/little,NewVlanId:16/little>>;
 struct_to_binary(#termination_mac_flow_match{inPort = InPort,
                                              inPortMask = InPortMask,
                                              etherType = EtherType,
@@ -300,16 +312,18 @@ struct_to_binary(#termination_mac_flow_match{inPort = InPort,
     <<InPort:32/little,
       InPortMask:32/little,
       EtherType:16/little,
-      DestMac:48/binary,
-      DestMacMask:48/binary,
+      DestMac:6/binary,
+      DestMacMask:6/binary,
       VlanId:16/little,
       VlanIdMask:16/little>>;
 struct_to_binary(#termination_mac_flow_entry{match_criteria =
                                                  Match_criteria,
                                              gotoTableId = GotoTableId,
                                              outputPort = OutputPort}) ->
-    <<Match_criteria:208/binary,
-      GotoTableId:32/binary,
+	MatchBin = struct_to_binary(Match_criteria),
+	T = enum_to_integer(flow_table_id_t, GotoTableId),
+    <<MatchBin:26/binary,
+      T:32/little,
       0:16,
       OutputPort:32/little>>;
 struct_to_binary(#bridging_flow_match{vlanId = VlanId,
@@ -318,16 +332,18 @@ struct_to_binary(#bridging_flow_match{vlanId = VlanId,
                                       destMacMask = DestMacMask}) ->
     <<VlanId:16/little,
       TunnelId:16/little,
-      DestMac:48/binary,
-      DestMacMask:48/binary>>;
+      DestMac:6/binary,
+      DestMacMask:6/binary>>;
 struct_to_binary(#bridging_flow_entry{match_criteria = Match_criteria,
                                       gotoTableId = GotoTableId,
                                       groupID = GroupID,
                                       tunnelLogicalPort =
                                           TunnelLogicalPort,
                                       outputPort = OutputPort}) ->
-    <<Match_criteria:128/binary,
-      GotoTableId:32/binary,
+	MatchBin = struct_to_binary(Match_criteria),
+	T = enum_to_integer(flow_table_id_t, GotoTableId),
+    <<MatchBin:16/binary,
+      T:32/little,
       GroupID:32/little,
       TunnelLogicalPort:32/little,
       OutputPort:32/little>>;
@@ -337,16 +353,18 @@ struct_to_binary(#unicast_routing_flow_match{etherType = EtherType,
                                              dstIp6 = DstIp6,
                                              dstIp6Mask = DstIp6Mask}) ->
     <<EtherType:16/little,
-      DstIp4:32/binary,
-      DstIp4Mask:32/binary,
-      DstIp6:128/binary,
-      DstIp6Mask:128/binary>>;
+      DstIp4:4/binary,
+      DstIp4Mask:4/binary,
+      DstIp6:16/binary,
+      DstIp6Mask:16/binary>>;
 struct_to_binary(#unicast_routing_flow_entry{match_criteria =
                                                  Match_criteria,
                                              gotoTableId = GotoTableId,
                                              groupID = GroupID}) ->
-    <<Match_criteria:336/binary,
-      GotoTableId:32/binary,
+	MatchBin = struct_to_binary(Match_criteria),
+	T = enum_to_integer(flow_table_id_t, GotoTableId),
+    <<MatchBin:42/binary,
+      T:32/little,
       0:16,
       GroupID:32/little>>;
 struct_to_binary(#multicast_routing_flow_match{etherType = EtherType,
@@ -359,17 +377,19 @@ struct_to_binary(#multicast_routing_flow_match{etherType = EtherType,
                                                dstIp6 = DstIp6}) ->
     <<EtherType:16/little,
       VlanId:16/little,
-      SrcIp4:32/binary,
-      SrcIp4Mask:32/binary,
-      DstIp4:32/binary,
-      SrcIp6:128/binary,
-      SrcIp6Mask:128/binary,
-      DstIp6:128/binary>>;
+      SrcIp4:4/binary,
+      SrcIp4Mask:4/binary,
+      DstIp4:4/binary,
+      SrcIp6:16/binary,
+      SrcIp6Mask:16/binary,
+      DstIp6:16/binary>>;
 struct_to_binary(#multicast_routing_flow_entry{match_criteria =
                                                    Match_criteria,
                                                gotoTableId = GotoTableId,
                                                groupID = GroupID}) ->
-    <<Match_criteria:512/binary,GotoTableId:32/binary,GroupID:32/little>>;
+	MatchBin = struct_to_binary(Match_criteria),
+	T = enum_to_integer(flow_table_id_t, GotoTableId),
+    <<MatchBin:64/binary,T:32/little,GroupID:32/little>>;
 struct_to_binary(#policy_acl_flow_match{inPort = InPort,
                                         inPortMask = InPortMask,
                                         srcMac = SrcMac,
@@ -411,10 +431,10 @@ struct_to_binary(#policy_acl_flow_match{inPort = InPort,
                                             Ipv6FlowLabelMask}) ->
     <<InPort:32/little,
       InPortMask:32/little,
-      SrcMac:48/binary,
-      SrcMacMask:48/binary,
-      DestMac:48/binary,
-      DestMacMask:48/binary,
+      SrcMac:6/binary,
+      SrcMacMask:6/binary,
+      DestMac:6/binary,
+      DestMacMask:6/binary,
       EtherType:16/little,
       VlanId:16/little,
       VlanIdMask:16/little,
@@ -422,14 +442,14 @@ struct_to_binary(#policy_acl_flow_match{inPort = InPort,
       VlanPcpMask:16/little,
       0:16,
       TunnelId:32/little,
-      SourceIp4:32/binary,
-      SourceIp4Mask:32/binary,
-      DestIp4:32/binary,
-      DestIp4Mask:32/binary,
-      SourceIp6:128/binary,
-      SourceIp6Mask:128/binary,
-      DestIp6:128/binary,
-      DestIp6Mask:128/binary,
+      SourceIp4:4/binary,
+      SourceIp4Mask:4/binary,
+      DestIp4:4/binary,
+      DestIp4Mask:4/binary,
+      SourceIp6:16/binary,
+      SourceIp6Mask:16/binary,
+      DestIp6:16/binary,
+      DestIp6Mask:16/binary,
       Ipv4ArpSpa:32/little,
       Ipv4ArpSpaMask:32/little,
       IpProto:16/little,
@@ -460,7 +480,8 @@ struct_to_binary(#policy_acl_flow_entry{match_criteria = Match_criteria,
                                             OutputTunnelPort,
                                         outputPort = OutputPort,
                                         clearActions = ClearActions}) ->
-    <<Match_criteria:1408/binary,
+	MatchBin = struct_to_binary(Match_criteria),
+    <<MatchBin:176/binary,
       GroupID:32/little,
       QueueIDAction:8/little,
       QueueID:8/little,
@@ -478,9 +499,11 @@ struct_to_binary(#flow_entry{tableId = TableId,
                              hard_time = Hard_time,
                              idle_time = Idle_time,
                              cookie = Cookie}) ->
-    <<TableId:32/binary,
+	DataBin = pad_binary(struct_to_binary(FlowData), 200),
+	T = enum_to_integer(flow_table_id_t, TableId),
+    <<T:32/little,
       Priority:32/little,
-      FlowData:1600/binary,
+      DataBin:200/binary,
       Hard_time:32/little,
       Idle_time:32/little,
       Cookie:64/little>>;
@@ -504,25 +527,26 @@ struct_to_binary(#l_2_interface_group_bucket_data{outputPort =
     <<OutputPort:32/little,PopVlanTag:32/little>>;
 struct_to_binary(#l_3_interface_group_bucket_data{vlanId = VlanId,
                                                   srcMac = SrcMac}) ->
-    <<VlanId:32/little,SrcMac:48/binary>>;
+    <<VlanId:32/little,SrcMac:6/binary>>;
 struct_to_binary(#l_3_unicast_group_bucket_data{srcMac = SrcMac,
                                                 dstMac = DstMac,
                                                 vlanId = VlanId}) ->
-    <<SrcMac:48/binary,DstMac:48/binary,VlanId:32/little>>;
+    <<SrcMac:6/binary,DstMac:6/binary,VlanId:32/little>>;
 struct_to_binary(#l_2_overlay_group_bucket_data{outputPort = OutputPort}) ->
     <<OutputPort:32/little>>;
 struct_to_binary(#l_2_rewrite_group_bucket_data{srcMac = SrcMac,
                                                 dstMac = DstMac,
                                                 vlanId = VlanId}) ->
-    <<SrcMac:48/binary,DstMac:48/binary,VlanId:32/little>>;
+    <<SrcMac:6/binary,DstMac:6/binary,VlanId:32/little>>;
 struct_to_binary(#group_bucket_entry{groupId = GroupId,
                                      bucketIndex = BucketIndex,
                                      referenceGroupId = ReferenceGroupId,
                                      bucketData = BucketData}) ->
+	DataBin = struct_to_binary(BucketData),
     <<GroupId:32/little,
       BucketIndex:32/little,
       ReferenceGroupId:32/little,
-      BucketData:128/binary>>;
+      DataBin:16/binary>>;
 struct_to_binary(#group_table_info{numGroupEntries = NumGroupEntries,
                                    maxGroupEntries = MaxGroupEntries,
                                    maxBucketEntries = MaxBucketEntries}) ->
@@ -533,10 +557,14 @@ struct_to_binary(#port_feature{curr = Curr,
                                advertised = Advertised,
                                supported = Supported,
                                peer = Peer}) ->
-    <<Curr:32/binary,
-      Advertised:32/binary,
-      Supported:32/binary,
-      Peer:32/binary>>;
+	C = enum_to_integer(port_feature_t, Curr),
+	A = enum_to_integer(port_feature_t, Advertised),
+	S = enum_to_integer(port_feature_t, Supported),
+	P = enum_to_integer(port_feature_t, Peer),
+    <<C:32/little,
+      A:32/little,
+      S:32/little,
+      P:32/little>>;
 struct_to_binary(#port_stats{rx_packets = Rx_packets,
                              tx_packets = Tx_packets,
                              rx_bytes = Rx_bytes,
@@ -571,10 +599,14 @@ struct_to_binary(#packet{reason = _Reason,
 struct_to_binary(#port_event{eventMask = EventMask,
                              portNum = PortNum,
                              state = State}) ->
-    <<EventMask:32/binary,PortNum:32/little,State:32/binary>>;
+	M = enum_to_integer(port_event_mask_t, EventMask),
+	S = enum_to_integer(port_state_t, State),
+    <<M:32/little,PortNum:32/little,S:32/little>>;
 struct_to_binary(#flow_event{eventMask = EventMask,
                              flowMatch = FlowMatch}) ->
-    <<EventMask:32/binary,FlowMatch:1792/binary>>;
+	M = enum_to_integer(port_event_mask_t, EventMask),
+	MatchBin = struct_to_binary(FlowMatch),
+    <<M:32/little,MatchBin:224/binary>>;
 struct_to_binary(#flow_table_info{numEntries = NumEntries,
                                   maxEntries = MaxEntries}) ->
     <<NumEntries:32/little,MaxEntries:32/little>>;
@@ -583,11 +615,27 @@ struct_to_binary(#port_queue_stats{txBytes = TxBytes,
                                    duration_seconds = Duration_seconds}) ->
     <<TxBytes:64/little,TxPkts:64/little,Duration_seconds:32/little>>.
 
+binary_to_struct(flow_entry,<<TableId:32/little,
+							  Priority:32/little,
+							  DataBin:200/binary,
+							  HardTime:32/little,
+							  IdleTime:32/little,
+							  Cookie:64/little>>) ->
+	T = integer_to_enum(flow_table_id_t, TableId),
+	#flow_entry{tableId = T,
+				priority = Priority,
+				flowData = binary_to_struct(table_to_struct(T), DataBin),
+				hard_time = HardTime,
+				idle_time = IdleTime,
+				cookie = Cookie};
+
 binary_to_struct(ingress_port_flow_match,
                  <<InPort:32/little,InPortMask:32/little>>) ->
     #ingress_port_flow_match{inPort = InPort,inPortMask = InPortMask};
 binary_to_struct(ingress_port_flow_entry,
-                 <<Match_criteria:64/binary,GotoTableId:32/binary>>) ->
+                 <<MatchBin:8/binary,T:32/little,_/binary>>) ->
+	Match_criteria = binary_to_struct(ingress_port_flow_match, MatchBin),
+	GotoTableId = integer_to_enum(flow_table_id_t, T),
     #ingress_port_flow_entry{match_criteria = Match_criteria,
                              gotoTableId = GotoTableId};
 binary_to_struct(vlan_flow_match,
@@ -598,9 +646,11 @@ binary_to_struct(vlan_flow_match,
                      vlanId = VlanId,
                      vlanIdMask = VlanIdMask};
 binary_to_struct(vlan_flow_entry,
-                 <<Match_criteria:64/binary,
-                   GotoTableId:32/binary,
-                   NewVlanId:16/little>>) ->
+                 <<MatchBin:8/binary,
+                   T:32/little,
+                   NewVlanId:16/little,_/binary>>) ->
+	Match_criteria = binary_to_struct(vlan_flow_match, MatchBin),
+	GotoTableId = integer_to_enum(flow_table_id_t, T),
     #vlan_flow_entry{match_criteria = Match_criteria,
                      gotoTableId = GotoTableId,
                      newVlanId = NewVlanId};
@@ -608,8 +658,8 @@ binary_to_struct(termination_mac_flow_match,
                  <<InPort:32/little,
                    InPortMask:32/little,
                    EtherType:16/little,
-                   DestMac:48/binary,
-                   DestMacMask:48/binary,
+                   DestMac:6/binary,
+                   DestMacMask:6/binary,
                    VlanId:16/little,
                    VlanIdMask:16/little>>) ->
     #termination_mac_flow_match{inPort = InPort,
@@ -620,28 +670,32 @@ binary_to_struct(termination_mac_flow_match,
                                 vlanId = VlanId,
                                 vlanIdMask = VlanIdMask};
 binary_to_struct(termination_mac_flow_entry,
-                 <<Match_criteria:208/binary,
-                   GotoTableId:32/binary,
+                 <<MatchBin:16/binary,
+                   T:32/little,
                    _:16,
-                   OutputPort:32/little>>) ->
+                   OutputPort:32/little,_/binary>>) ->
+	Match_criteria = binary_to_struct(termination_mac_flow_match, MatchBin),
+	GotoTableId = integer_to_enum(flow_table_id_t, T),
     #termination_mac_flow_entry{match_criteria = Match_criteria,
                                 gotoTableId = GotoTableId,
                                 outputPort = OutputPort};
 binary_to_struct(bridging_flow_match,
                  <<VlanId:16/little,
                    TunnelId:16/little,
-                   DestMac:48/binary,
-                   DestMacMask:48/binary>>) ->
+                   DestMac:6/binary,
+                   DestMacMask:6/binary>>) ->
     #bridging_flow_match{vlanId = VlanId,
                          tunnelId = TunnelId,
                          destMac = DestMac,
                          destMacMask = DestMacMask};
 binary_to_struct(bridging_flow_entry,
-                 <<Match_criteria:128/binary,
-                   GotoTableId:32/binary,
+                 <<MatchBin:16/binary,
+                   T:32/little,
                    GroupID:32/little,
                    TunnelLogicalPort:32/little,
-                   OutputPort:32/little>>) ->
+                   OutputPort:32/little,_/binary>>) ->
+	Match_criteria = binary_to_struct(bridging_flow_match, MatchBin),
+	GotoTableId = integer_to_enum(flow_table_id_t, T),
     #bridging_flow_entry{match_criteria = Match_criteria,
                          gotoTableId = GotoTableId,
                          groupID = GroupID,
@@ -649,32 +703,34 @@ binary_to_struct(bridging_flow_entry,
                          outputPort = OutputPort};
 binary_to_struct(unicast_routing_flow_match,
                  <<EtherType:16/little,
-                   DstIp4:32/binary,
-                   DstIp4Mask:32/binary,
-                   DstIp6:128/binary,
-                   DstIp6Mask:128/binary>>) ->
+                   DstIp4:4/binary,
+                   DstIp4Mask:4/binary,
+                   DstIp6:16/binary,
+                   DstIp6Mask:16/binary>>) ->
     #unicast_routing_flow_match{etherType = EtherType,
                                 dstIp4 = DstIp4,
                                 dstIp4Mask = DstIp4Mask,
                                 dstIp6 = DstIp6,
                                 dstIp6Mask = DstIp6Mask};
 binary_to_struct(unicast_routing_flow_entry,
-                 <<Match_criteria:336/binary,
-                   GotoTableId:32/binary,
+                 <<MatchBin:42/binary,
+                   T:32/little,
                    _:16,
-                   GroupID:32/little>>) ->
+                   GroupID:32/little,_/binary>>) ->
+	Match_criteria = binary_to_struct(unicast_routing_flow_match, MatchBin),
+	GotoTableId = integer_to_enum(flow_table_id_t, T),
     #unicast_routing_flow_entry{match_criteria = Match_criteria,
                                 gotoTableId = GotoTableId,
                                 groupID = GroupID};
 binary_to_struct(multicast_routing_flow_match,
                  <<EtherType:16/little,
                    VlanId:16/little,
-                   SrcIp4:32/binary,
-                   SrcIp4Mask:32/binary,
-                   DstIp4:32/binary,
-                   SrcIp6:128/binary,
-                   SrcIp6Mask:128/binary,
-                   DstIp6:128/binary>>) ->
+                   SrcIp4:4/binary,
+                   SrcIp4Mask:4/binary,
+                   DstIp4:4/binary,
+                   SrcIp6:16/binary,
+                   SrcIp6Mask:16/binary,
+                   DstIp6:16/binary>>) ->
     #multicast_routing_flow_match{etherType = EtherType,
                                   vlanId = VlanId,
                                   srcIp4 = SrcIp4,
@@ -684,19 +740,21 @@ binary_to_struct(multicast_routing_flow_match,
                                   srcIp6Mask = SrcIp6Mask,
                                   dstIp6 = DstIp6};
 binary_to_struct(multicast_routing_flow_entry,
-                 <<Match_criteria:512/binary,
-                   GotoTableId:32/binary,
-                   GroupID:32/little>>) ->
+                 <<MatchBin:64/binary,
+                   T:32/little,
+                   GroupID:32/little,_/binary>>) ->
+	Match_criteria = binary_to_struct(multicast_routing_flow_match, MatchBin),
+	GotoTableId = integer_to_enum(flow_table_id_t, T),
     #multicast_routing_flow_entry{match_criteria = Match_criteria,
                                   gotoTableId = GotoTableId,
                                   groupID = GroupID};
 binary_to_struct(policy_acl_flow_match,
                  <<InPort:32/little,
                    InPortMask:32/little,
-                   SrcMac:48/binary,
-                   SrcMacMask:48/binary,
-                   DestMac:48/binary,
-                   DestMacMask:48/binary,
+                   SrcMac:6/binary,
+                   SrcMacMask:6/binary,
+                   DestMac:6/binary,
+                   DestMacMask:6/binary,
                    EtherType:16/little,
                    VlanId:16/little,
                    VlanIdMask:16/little,
@@ -704,14 +762,14 @@ binary_to_struct(policy_acl_flow_match,
                    VlanPcpMask:16/little,
                    _:16,
                    TunnelId:32/little,
-                   SourceIp4:32/binary,
-                   SourceIp4Mask:32/binary,
-                   DestIp4:32/binary,
-                   DestIp4Mask:32/binary,
-                   SourceIp6:128/binary,
-                   SourceIp6Mask:128/binary,
-                   DestIp6:128/binary,
-                   DestIp6Mask:128/binary,
+                   SourceIp4:4/binary,
+                   SourceIp4Mask:4/binary,
+                   DestIp4:4/binary,
+                   DestIp4Mask:4/binary,
+                   SourceIp6:16/binary,
+                   SourceIp6Mask:16/binary,
+                   DestIp6:16/binary,
+                   DestIp6Mask:16/binary,
                    Ipv4ArpSpa:32/little,
                    Ipv4ArpSpaMask:32/little,
                    IpProto:16/little,
@@ -769,7 +827,7 @@ binary_to_struct(policy_acl_flow_match,
                            ipv6FlowLabel = Ipv6FlowLabel,
                            ipv6FlowLabelMask = Ipv6FlowLabelMask};
 binary_to_struct(policy_acl_flow_entry,
-                 <<Match_criteria:1408/binary,
+                 <<MatchBin:176/binary,
                    GroupID:32/little,
                    QueueIDAction:8/little,
                    QueueID:8/little,
@@ -780,7 +838,8 @@ binary_to_struct(policy_acl_flow_entry,
                    _:16,
                    OutputTunnelPort:32/little,
                    OutputPort:32/little,
-                   ClearActions:32/little>>) ->
+                   ClearActions:32/little,_/binary>>) ->
+	Match_criteria = binary_to_struct(flow_match, MatchBin),
     #policy_acl_flow_entry{match_criteria = Match_criteria,
                            groupID = GroupID,
                            queueIDAction = QueueIDAction,
@@ -792,19 +851,6 @@ binary_to_struct(policy_acl_flow_entry,
                            outputTunnelPort = OutputTunnelPort,
                            outputPort = OutputPort,
                            clearActions = ClearActions};
-binary_to_struct(flow_entry,
-                 <<TableId:32/binary,
-                   Priority:32/little,
-                   FlowData:1600/binary,
-                   Hard_time:32/little,
-                   Idle_time:32/little,
-                   Cookie:64/little>>) ->
-    #flow_entry{tableId = TableId,
-                priority = Priority,
-                flowData = FlowData,
-                hard_time = Hard_time,
-                idle_time = Idle_time,
-                cookie = Cookie};
 binary_to_struct(flow_entry_stats,
                  <<DurationSec:32/little,
                    _:32,
@@ -827,10 +873,10 @@ binary_to_struct(l_2_interface_group_bucket_data,
     #l_2_interface_group_bucket_data{outputPort = OutputPort,
                                      popVlanTag = PopVlanTag};
 binary_to_struct(l_3_interface_group_bucket_data,
-                 <<VlanId:32/little,SrcMac:48/binary>>) ->
+                 <<VlanId:32/little,SrcMac:6/binary>>) ->
     #l_3_interface_group_bucket_data{vlanId = VlanId,srcMac = SrcMac};
 binary_to_struct(l_3_unicast_group_bucket_data,
-                 <<SrcMac:48/binary,DstMac:48/binary,VlanId:32/little>>) ->
+                 <<SrcMac:6/binary,DstMac:6/binary,VlanId:32/little>>) ->
     #l_3_unicast_group_bucket_data{srcMac = SrcMac,
                                    dstMac = DstMac,
                                    vlanId = VlanId};
@@ -838,19 +884,21 @@ binary_to_struct(l_2_overlay_group_bucket_data,
                  <<OutputPort:32/little>>) ->
     #l_2_overlay_group_bucket_data{outputPort = OutputPort};
 binary_to_struct(l_2_rewrite_group_bucket_data,
-                 <<SrcMac:48/binary,DstMac:48/binary,VlanId:32/little>>) ->
+                 <<SrcMac:6/binary,DstMac:6/binary,VlanId:32/little>>) ->
     #l_2_rewrite_group_bucket_data{srcMac = SrcMac,
                                    dstMac = DstMac,
                                    vlanId = VlanId};
 binary_to_struct(group_bucket_entry,
-                 <<GroupId:32/little,
-                   BucketIndex:32/little,
-                   ReferenceGroupId:32/little,
-                   BucketData:128/binary>>) ->
-    #group_bucket_entry{groupId = GroupId,
-                        bucketIndex = BucketIndex,
-                        referenceGroupId = ReferenceGroupId,
-                        bucketData = BucketData};
+                 <<_GroupId:32/little,
+                   _BucketIndex:32/little,
+                   _ReferenceGroupId:32/little,
+                   _DataBin:16/binary>>) ->
+	erlang:error(not_implemented);
+%%	BucketData = binary_to_struct(?, DataBin),
+%%    #group_bucket_entry{groupId = GroupId,
+%%                        bucketIndex = BucketIndex,
+%%                        referenceGroupId = ReferenceGroupId,
+%%                        bucketData = BucketData};
 binary_to_struct(group_table_info,
                  <<NumGroupEntries:32/little,
                    MaxGroupEntries:32/little,
@@ -859,10 +907,14 @@ binary_to_struct(group_table_info,
                       maxGroupEntries = MaxGroupEntries,
                       maxBucketEntries = MaxBucketEntries};
 binary_to_struct(port_feature,
-                 <<Curr:32/binary,
-                   Advertised:32/binary,
-                   Supported:32/binary,
-                   Peer:32/binary>>) ->
+                 <<C:32/little,
+                   A:32/little,
+                   S:32/little,
+                   P:32/little>>) ->
+	Curr = integer_to_enum(port_feature_t, C),
+	Advertised = integer_to_enum(port_feature_t, A),
+	Supported = integer_to_enum(port_feature_t, S),
+	Peer = integer_to_enum(port_feature_t, P),
     #port_feature{curr = Curr,
                   advertised = Advertised,
                   supported = Supported,
@@ -897,10 +949,14 @@ binary_to_struct(port_stats,
 binary_to_struct(packet, _) ->
     implement_manually;
 binary_to_struct(port_event,
-                 <<EventMask:32/binary,PortNum:32/little,State:32/binary>>) ->
+                 <<M:32/little,PortNum:32/little,S:32/little>>) ->
+	EventMask = integer_to_enum(port_event_mask_t, M),
+	State = integer_to_enum(port_state_t, S),
     #port_event{eventMask = EventMask,portNum = PortNum,state = State};
 binary_to_struct(flow_event,
-                 <<EventMask:32/binary,FlowMatch:1792/binary>>) ->
+                 <<M:32/little,MatchBin:224/binary>>) ->
+	EventMask = integer_to_enum(flow_event_mask_t, M),
+	FlowMatch = binary_to_struct(flow_entry, MatchBin),
     #flow_event{eventMask = EventMask,flowMatch = FlowMatch};
 binary_to_struct(flow_table_info,
                  <<NumEntries:32/little,MaxEntries:32/little>>) ->
@@ -913,13 +969,22 @@ binary_to_struct(port_queue_stats,
                       txPkts = TxPkts,
                       duration_seconds = Duration_seconds}.
 
+%% added manually
+
+table_to_struct(flow_table_id_ingress_port) -> ingress_port_flow_entry;
+table_to_struct(flow_table_id_vlan) -> vlan_flow_entry;
+table_to_struct(flow_table_id_termination_mac) -> termination_mac_flow_entry;
+table_to_struct(flow_table_id_unicast_routing) -> unicast_routing_flow_entry;
+table_to_struct(flow_table_id_multicast_routing) -> multicast_routing_flow_entry;
+table_to_struct(flow_table_id_bridging) -> bridging_flow_entry;
+table_to_struct(flow_table_id_acl_policy) -> acl_policy_flow_entry.
+ 
 %% generated using 'genera stubs'
 
-ofdpaFlowEntryInit(TableId, Flow) ->
+ofdpaFlowEntryInit(TableId) ->
     call([{enum,error_t},{struct,flow_entry}],
          100,
-         [{uint32_t,enum_to_integer(flow_table_id_t, TableId)},
-          struct_to_binary(Flow)]).
+         [{uint32_t,enum_to_integer(flow_table_id_t, TableId)}]).
 
 ofdpaFlowAdd(Flow) ->
     call([{enum,error_t}], 101, [struct_to_binary(Flow)]).
@@ -930,22 +995,20 @@ ofdpaFlowModify(Flow) ->
 ofdpaFlowDelete(Flow) ->
     call([{enum,error_t}], 103, [struct_to_binary(Flow)]).
 
-ofdpaFlowNextGet(Flow, NextFlow) ->
+ofdpaFlowNextGet(Flow) ->
     call([{enum,error_t},{struct,flow_entry}],
          104,
-         [struct_to_binary(Flow),struct_to_binary(NextFlow)]).
+         [struct_to_binary(Flow)]).
 
-ofdpaFlowStatsGet(Flow, FlowStats) ->
+ofdpaFlowStatsGet(Flow) ->
     call([{enum,error_t},{struct,flow_entry_stats}],
          105,
-         [struct_to_binary(Flow),struct_to_binary(FlowStats)]).
+         [struct_to_binary(Flow)]).
 
-ofdpaFlowByCookieGet(Cookie, Flow, FlowStats) ->
+ofdpaFlowByCookieGet(Cookie) ->
     call([{enum,error_t},{struct,flow_entry},{struct,flow_entry_stats}],
          106,
-         [{uint64_t,Cookie},
-          struct_to_binary(Flow),
-          struct_to_binary(FlowStats)]).
+         [{uint64_t,Cookie}]).
 
 ofdpaFlowByCookieDelete(Cookie) ->
     call([{enum,error_t}], 107, [{uint64_t,Cookie}]).

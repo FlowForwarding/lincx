@@ -13,5 +13,6 @@
                     {datapath_desc,<<"Dummy">>}]},
               {modules,[linc_ofdpa,
 						linc_ofdpa_demo,
+						linc_ofdpa_tests,
 						ofdpa,
 						ofdpa_link]}]}.

@@ -44,7 +44,7 @@ int main(int argc, char *argv[])
 	apr_socket_t *listener;
 	apr_sockaddr_t *sa;
 
-	//printf("sizeof(ofdpaPortQueueStats_t) = %d\n", sizeof(ofdpaPortQueueStats_t));
+	printf("sizeof(ofdpaFlowEntry_t) = %d\n", sizeof(ofdpaFlowEntry_t));
 
 	apr_initialize();
 	rs = apr_pool_create(&p, 0);
@@ -121,12 +121,12 @@ apr_status_t handle_link(int *done, apr_socket_t *sock, apr_pool_t *cont)
 	if (rs == 0)
 	{
 		pfd.desc.s = event_sock;
-		rs = apr_pollset_add(pollset, &pfd);
+		//rs = apr_pollset_add(pollset, &pfd);
 	}
 	if (rs == 0)
 	{
 		pfd.desc.s = pkt_sock;
-		rs = apr_pollset_add(pollset, &pfd);
+		//rs = apr_pollset_add(pollset, &pfd);
 	}
 	if (rs != 0)
 		return rs;
@@ -137,7 +137,7 @@ apr_status_t handle_link(int *done, apr_socket_t *sock, apr_pool_t *cont)
 		const apr_pollfd_t *pfds;
 
 		rs = apr_pollset_poll(pollset, POLL_TIMEO, &n, &pfds);
-		if (rs != 0)
+		if (rs != 0 && rs != APR_TIMEUP)
 			return rs;
 
 		int i;
@@ -149,6 +149,12 @@ apr_status_t handle_link(int *done, apr_socket_t *sock, apr_pool_t *cont)
 				rs = async_event(sock, cont);
 			else if (pfds[i].desc.s == pkt_sock)
 				rs = incoming_pkt(sock, cont);
+
+			if (rs == APR_EOF)
+			{
+				*done = 1;
+				return 0;
+			}
 			
 			if (rs != 0)
 				return rs;

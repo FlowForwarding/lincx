@@ -8,49 +8,58 @@
 // Flow entries
 OFDPA_ERROR_t ofdpaFlowEntryInit(OFDPA_FLOW_TABLE_ID_t tableId, ofdpaFlowEntry_t *flow)
 {
-	//TODO
+	flow->tableId = tableId;
 	return OFDPA_E_NONE;
 }
 
 OFDPA_ERROR_t ofdpaFlowAdd(ofdpaFlowEntry_t *flow)
 {
-	//TODO
 	return OFDPA_E_NONE;
 }
 
 OFDPA_ERROR_t ofdpaFlowModify(ofdpaFlowEntry_t *flow)
 {
-	//TODO
 	return OFDPA_E_NONE;
 }
 
 OFDPA_ERROR_t ofdpaFlowDelete(ofdpaFlowEntry_t *flow)
 {
-	//TODO
 	return OFDPA_E_NONE;
 }
 
 OFDPA_ERROR_t ofdpaFlowNextGet(ofdpaFlowEntry_t *flow, ofdpaFlowEntry_t *nextFlow)
 {
-	//TODO
+	nextFlow->tableId = OFDPA_FLOW_TABLE_ID_BRIDGING;
+	nextFlow->priority = 133;
+	nextFlow->hard_time = 7;
+	nextFlow->idle_time = 6;
+	nextFlow->cookie = 101;
 	return OFDPA_E_NONE;
 }
 
 OFDPA_ERROR_t ofdpaFlowStatsGet(ofdpaFlowEntry_t *flow, ofdpaFlowEntryStats_t *flowStats)
 {
-	//TODO
+	flowStats->durationSec = 100;
+	flowStats->receivedPackets = 200;
+	flowStats->receivedBytes = 300;
 	return OFDPA_E_NONE;
 }
 
 OFDPA_ERROR_t ofdpaFlowByCookieGet(uint64_t cookie, ofdpaFlowEntry_t *flow, ofdpaFlowEntryStats_t *flowStats)
 {
-	//TODO
+	flow->tableId = OFDPA_FLOW_TABLE_ID_BRIDGING;
+	flow->priority = 1;
+	flow->hard_time = 2;
+	flow->idle_time = 3;
+	flow->cookie = 4;
+	flowStats->durationSec = 10;
+	flowStats->receivedPackets = 20;
+	flowStats->receivedBytes = 30;
 	return OFDPA_E_NONE;
 }
 
 OFDPA_ERROR_t ofdpaFlowByCookieDelete(uint64_t cookie)
 {
-	//TODO
 	return OFDPA_E_NONE;
 }
 
