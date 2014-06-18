@@ -18,30 +18,31 @@ documentation.
 
 ## Bridges
 
-You will need to add two Linux bridges to the system named br-linc1 and
-br-linc2. The following commands do the trick:
+You will need to add two Linux bridges to the system named br1 and br2. The
+following commands do the trick:
 
 ```
-sudo brctl addbr br-linc1
-sudo brctl addbr br-linc2
+sudo brctl addbr br1
+sudo brctl addbr br2
 ```
 
 The standard Xen bridge --- xenbr0 --- must be present too and it must have the
 IP address of 192.168.0.1/24:
 
+```
 ip addr add 192.168.0.1/24 dev xenbr0
+```
 
-If you want to use a different IP address for xenbr0 than you should edit
-Makefile. Look for a line that starts with 'EXTRA := -ipaddr ...'.
+Check that all bridges are 'up'.
 
 ## Test virtual machines
 
 The tutorial assumes that you have two virtual machines running: vm1 and vm2.
-Their virtual interfaces must be bridged to br-linc1 and br-linc2 respectively:
+Their virtual interfaces must be bridged to br1 and br2 respectively:
 
 ```
-sudo brctl addif br-linc1 vif100.0		# vm1
-sudo brctl addif br-linc2 vif101.0		# vm2
+sudo brctl addif br1 vif100.0		# vm1
+sudo brctl addif br2 vif101.0		# vm2
 ```
 
 IP addresses must be assigned to eth0 interfaces inside the virtual machines.
@@ -58,12 +59,29 @@ For the TCP throughput test you will need iperf.
 
 Use `git clone` to create a local copy of the lincx repository.
 
-## Build vmling image
+## LINGConfig.mk
+
+Create LINGConfig.mk file using LINGConfig.mk.sample as a template:
 
 ```
-./rebar get-deps
-./rebar compile
+cp LINGConfig.mk.sample LINGConfig.mk
 ```
+
+Edit the file to set the variables as follows:
+
+```
+LING_NETSPEC := -ipaddr 192.168.0.2 -netmask 255.255.255.0 -gateway 192.168.0.1
+NUM_PORTS := 2
+DEFAULT_BRIDGE := xenbr0
+BRIDGE_PREFIX := br
+```
+
+Most of these values are set as above by default.
+
+## Build vmling image
+
+For the first time you need to invoke `make compile` to retrive and compile all
+dependencies.
 
 Now is the tricky part. You are about to invoke the remote Erlang on Xen build
 service (build.erlangonxen.org) to produce the Xen image that contains everything
@@ -72,23 +90,22 @@ build service at http://build.erlangonxen.org/register and edit the credentials
 in rebar.config under ling\_builder\_opts. Alternatively, you may use the test
 account. Then keep the credentials intact.
 
-Run `make me`.
+Run `make`.
 
 The remote build service takes about 10s to produce the image. The 'LBS: image
 saved to vmling' message indicates the success.
 
-## Start LINC
+## Start LINCX
 
 The recipe assumes that the configuration file --- priv/sys.config --- is
-unmodified. It sets up LINC with two ports, linc\_max backend, passively waiting
+unmodified. It sets up LINCX with two ports, linc\_max backend, passively waiting
 for connections from an OpenFlow controller on port 6634.
 
-Run `sudo ./lincx`.
+Run `sudo make boot`.
 
-The lincx script check the prerequisites, then launches a new Xen domain using
-vmling image, starts Erlang applications that comprise the LINC switch,
-reattach virtual network interfaces to correct bridges, and opens a console to
-the lincx domain.
+This launches a new Xen domain using vmling image, starts Erlang applications
+that comprise the LINC switch, reattach virtual network interfaces to correct
+bridges, and opens a console to the lincx domain.
 
 ## Run fake OpenFlow controller
 
