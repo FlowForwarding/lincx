@@ -29,6 +29,42 @@ flow_test_() ->
 		{"ofdpaFlowByCookieDelete", fun flow_by_cookie_delete/0}
 	  ]}].
 
+group_test_() ->
+	[{setup,
+	  fun() -> ensure_link() end,
+	  fun(_) -> ok end,
+	  [
+		{"ofdpaGroupTypeGet", fun group_type_get/0},
+		{"ofdpaGroupVlanGet", fun group_vlan_get/0},
+		{"ofdpaGroupPortIdGet", fun group_port_id_get/0},
+		{"ofdpaGroupIndexShortGet", fun group_index_short_get/0},
+		{"ofdpaGroupIndexGet", fun group_index_get/0},
+		{"ofdpaGroupTypeSet", fun group_type_set/0},
+		{"ofdpaGroupVlanSet", fun group_vlan_set/0},
+		{"ofdpaGroupOverlayTunnelIdSet", fun group_overlay_tunnel_id_set/0},
+		{"ofdpaGroupOverlaySubTypeSet", fun group_overlay_sub_type_set/0},
+		{"ofdpaGroupOverlayIndexSet", fun group_overlay_index_set/0},
+		{"ofdpaGroupPortIdSet", fun group_port_id_set/0},
+		{"ofdpaGroupIndexShortSet", fun group_index_short_set/0},
+		{"ofdpaGroupIndexSet", fun group_index_set/0},
+		{"ofdpaGroupDecode", fun group_decode/0},
+		{"ofdpaGroupEntryInit", fun group_entry_init/0},
+		{"ofdpaGroupAdd", fun group_add/0},
+		{"ofdpaGroupDelete", fun group_delete/0},
+		{"ofdpaGroupNextGet", fun group_next_get/0},
+		{"ofdpaGroupTypeNextGet", fun group_type_next_get/0},
+		{"ofdpaGroupStatsGet", fun group_stats_get/0},
+		{"ofdpaGroupBucketEntryInit", fun group_bucket_entry_init/0},
+		{"ofdpaGroupBucketEntryAdd", fun group_bucket_entry_add/0},
+		{"ofdpaGroupBucketEntryDelete", fun group_bucket_entry_delete/0},
+		{"ofdpaGroupBucketsDeleteAll", fun group_buckets_delete_all/0},
+		{"ofdpaGroupBucketEntryGet", fun group_bucket_entry_get/0},
+		{"ofdpaGroupBucketEntryFirstGet", fun group_bucket_entry_first_get/0},
+		{"ofdpaGroupBucketEntryNextGet", fun group_bucket_entry_next_get/0},
+		{"ofdpaGroupBucketEntryModify", fun group_bucket_entry_modify/0},
+		{"ofdpaGroupTableInfoGet", fun group_table_info_get/0}
+	  ]}].
+
 %% OFDPA_ERROR_t ofdpaFlowEntryInit(OFDPA_FLOW_TABLE_ID_t tableId, ofdpaFlowEntry_t *flow);
 flow_entry_init() ->
 	{ok,E,F} = ofdpa:ofdpaFlowEntryInit(flow_table_id_vlan),
@@ -146,42 +182,182 @@ flow_by_cookie_get() ->
 flow_by_cookie_delete() ->
 	{ok,E} = ofdpa:ofdpaFlowByCookieDelete(1),
 	?assertEqual(E, e_none).
-	
-%% Groups
+
 %% OFDPA_ERROR_t ofdpaGroupTypeGet(uint32_t groupId, uint32_t *type);
+group_type_get() ->
+	{ok,E,X} = ofdpa:ofdpaGroupTypeGet(1),
+	?assertEqual(E, e_none),
+	?assertEqual(X, 2).
+
 %% OFDPA_ERROR_t ofdpaGroupVlanGet(uint32_t groupId, uint32_t *vlanId);
+group_vlan_get() ->
+	{ok,E,X} = ofdpa:ofdpaGroupVlanGet(1),
+	?assertEqual(E, e_none),
+	?assertEqual(X, 3).
+
 %% OFDPA_ERROR_t ofdpaGroupPortIdGet(uint32_t groupId, uint32_t *portId);
+group_port_id_get() ->
+	{ok,E,X} = ofdpa:ofdpaGroupPortIdGet(1),
+	?assertEqual(E, e_none),
+	?assertEqual(X, 4).
+
 %% OFDPA_ERROR_t ofdpaGroupIndexShortGet(uint32_t groupId, uint32_t *index);
+group_index_short_get() ->
+	{ok,E,X} = ofdpa:ofdpaGroupIndexShortGet(1),
+	?assertEqual(E, e_none),
+	?assertEqual(X, 5).
+
 %% OFDPA_ERROR_t ofdpaGroupIndexGet(uint32_t groupId, uint32_t *index);
+group_index_get() ->
+	{ok,E,X} = ofdpa:ofdpaGroupIndexGet(1),
+	?assertEqual(E, e_none),
+	?assertEqual(X, 6).
+
 %% OFDPA_ERROR_t ofdpaGroupTypeSet(uint32_t *groupId [inout], uint32_t type);
+group_type_set() ->
+	{ok,E,X} = ofdpa:ofdpaGroupTypeSet(199, 7),
+	?assertEqual(E, e_none),
+	?assertEqual(X, 200).
+
 %% OFDPA_ERROR_t ofdpaGroupVlanSet(uint32_t *groupId [inout], uint32_t vlanId);
+group_vlan_set() ->
+	{ok,E,X} = ofdpa:ofdpaGroupVlanSet(299, 7),
+	?assertEqual(E, e_none),
+	?assertEqual(X, 300).
+
 %% OFDPA_ERROR_t ofdpaGroupOverlayTunnelIdSet(uint32_t *groupId [inout], uint32_t tunnelId);
+group_overlay_tunnel_id_set() ->
+	{ok,E,X} = ofdpa:ofdpaGroupOverlayTunnelIdSet(399, 7),
+	?assertEqual(E, e_none),
+	?assertEqual(X, 400).
+
 %% OFDPA_ERROR_t ofdpaGroupOverlaySubTypeSet(uint32_t *groupId [inout], OFDPA_L2_OVERLAY_SUBTYPE_t subType);
+group_overlay_sub_type_set() ->
+	{ok,E,X} = ofdpa:ofdpaGroupOverlaySubTypeSet(499,
+						 l2_overlay_flood_multicast_tunnel),
+	?assertEqual(E, e_none),
+	?assertEqual(X, 500).
+
 %% OFDPA_ERROR_t ofdpaGroupOverlayIndexSet(uint32_t *groupId [inout], uint32_t index);
+group_overlay_index_set() ->
+	{ok,E,X} = ofdpa:ofdpaGroupOverlayIndexSet(599, 7),
+	?assertEqual(E, e_none),
+	?assertEqual(X, 600).
+
 %% OFDPA_ERROR_t ofdpaGroupPortIdSet(uint32_t *groupId [inout], uint32_t portId);
+group_port_id_set() ->
+	{ok,E,X} = ofdpa:ofdpaGroupPortIdSet(699, 7),
+	?assertEqual(E, e_none),
+	?assertEqual(X, 700).
+
 %% OFDPA_ERROR_t ofdpaGroupIndexShortSet(uint32_t *groupId [inout], uint32_t index);
+group_index_short_set() ->
+	{ok,E,X} = ofdpa:ofdpaGroupIndexShortSet(799, 7),
+	?assertEqual(E, e_none),
+	?assertEqual(X, 800).
+
 %% OFDPA_ERROR_t ofdpaGroupIndexSet(uint32_t *groupId [inout], uint32_t index);
+group_index_set() ->
+	{ok,E,X} = ofdpa:ofdpaGroupIndexSet(899, 7),
+	?assertEqual(E, e_none),
+	?assertEqual(X, 900).
+
 %% OFDPA_ERROR_t ofdpaGroupDecode(uint32_t groupId, char *outBuf, int bufSize); %% special
+group_decode() ->
+	{ok,E,S} = ofdpa:ofdpaGroupDecode(7, 1024),
+	?assertEqual(E, e_none),
+	?assertEqual(S, <<"Hey there">>).
+
 %% OFDPA_ERROR_t ofdpaGroupEntryInit(OFDPA_GROUP_ENTRY_TYPE_t groupType, ofdpaGroupEntry_t *group);
+group_entry_init() ->
+	{ok,E,G} = ofdpa:ofdpaGroupEntryInit(group_entry_type_l3_unicast),
+	?assertEqual(E, e_none),
+	?assertEqual(G#group_entry.groupId, 111).
+
 %% OFDPA_ERROR_t ofdpaGroupAdd(ofdpaGroupEntry_t *group [in]);
+group_add() ->
+	{ok,E} = ofdpa:ofdpaGroupAdd(#group_entry{groupId = 13}),
+	?assertEqual(E, e_none).
+
 %% OFDPA_ERROR_t ofdpaGroupDelete(uint32_t groupId);
+group_delete() ->
+	{ok,E} = ofdpa:ofdpaGroupDelete(14),
+	?assertEqual(E, e_none).
+
 %% OFDPA_ERROR_t ofdpaGroupNextGet(uint32_t groupId, ofdpaGroupEntry_t *nextGroup);
+group_next_get() ->
+	{ok,E,G} = ofdpa:ofdpaGroupNextGet(9),
+	?assertEqual(E, e_none),
+	?assertEqual(G#group_entry.groupId, 222).
+
 %% OFDPA_ERROR_t ofdpaGroupTypeNextGet(uint32_t groupId,
 %%                                     OFDPA_GROUP_ENTRY_TYPE_t groupType,
 %%                                     ofdpaGroupEntry_t *nextGroup);
+group_type_next_get() ->
+	{ok,E,G} = ofdpa:ofdpaGroupTypeNextGet(9, group_entry_type_l2_multicast),
+	?assertEqual(E, e_none),
+	?assertEqual(G#group_entry.groupId, 333).
+
 %% OFDPA_ERROR_t ofdpaGroupStatsGet(uint32_t groupId, ofdpaGroupEntryStats_t *groupStats);
+group_stats_get() ->
+	{ok,E,S} = ofdpa:ofdpaGroupStatsGet(9),
+	?assertEqual(E, e_none),
+	?assertEqual(S#group_entry_stats.refCount, 1),
+	?assertEqual(S#group_entry_stats.duration, 2),
+	?assertEqual(S#group_entry_stats.bucketCount, 3).
+
 %% OFDPA_ERROR_t ofdpaGroupBucketEntryInit(OFDPA_GROUP_ENTRY_TYPE_t groupType, ofdpaGroupBucketEntry_t *bucket);
+group_bucket_entry_init() ->
+	{ok,E,B} = ofdpa:ofdpaGroupBucketEntryInit(group_entry_type_l2_overlay),
+	D = B#group_bucket_entry.bucketData,
+	?assertEqual(E, e_none),
+	?assertEqual(B#group_bucket_entry.groupId, 7),
+	?assertEqual(B#group_bucket_entry.bucketIndex, 8),
+	?assertEqual(B#group_bucket_entry.referenceGroupId, 9),
+	?assertEqual(D#l_2_overlay_group_bucket_data.outputPort, 10).
+
 %% OFDPA_ERROR_t ofdpaGroupBucketEntryAdd(ofdpaGroupBucketEntry_t *bucket [in]);
+group_bucket_entry_add() ->
+	D = #l_2_overlay_group_bucket_data{outputPort = 20},
+	B = #group_bucket_entry{groupId =1,
+							bucketIndex =2,
+							referenceGroupId =3,
+							bucketData =D},
+	{ok,E} = ofdpa:ofdpaGroupBucketEntryAdd(B),
+	?assertEqual(E, e_none).
+
 %% OFDPA_ERROR_t ofdpaGroupBucketEntryDelete(uint32_t groupId, uint32_t bucketIndex);
+group_bucket_entry_delete() ->
+	{ok,E} = ofdpa:ofdpaGroupBucketEntryDelete(1, 2),
+	?assertEqual(E, e_none).
+
 %% OFDPA_ERROR_t ofdpaGroupBucketsDeleteAll(uint32_t groupId);
+group_buckets_delete_all() ->
+	{ok,E} = ofdpa:ofdpaGroupBucketsDeleteAll(1),
+	?assertEqual(E, e_none).
+
 %% OFDPA_ERROR_t ofdpaGroupBucketEntryGet(uint32_t groupId, uint32_t bucketIndex,
 %%                                        ofdpaGroupBucketEntry_t *groupBucket);
+group_bucket_entry_get() ->
+	todo.
+
 %% OFDPA_ERROR_t ofdpaGroupBucketEntryFirstGet(uint32_t groupId,
 %%                                             ofdpaGroupBucketEntry_t *firstGroupBucket);
+group_bucket_entry_first_get() ->
+	todo.
+
 %% OFDPA_ERROR_t ofdpaGroupBucketEntryNextGet(uint32_t groupId, uint32_t bucketIndex,
 %%                                            ofdpaGroupBucketEntry_t *nextBucketEntry);
+group_bucket_entry_next_get() ->
+	todo.
+	
 %% OFDPA_ERROR_t ofdpaGroupBucketEntryModify(ofdpaGroupBucketEntry_t *bucket [in]);
+group_bucket_entry_modify() ->
+	todo.
+
 %% OFDPA_ERROR_t ofdpaGroupTableInfoGet(OFDPA_GROUP_ENTRY_TYPE_t groupType, ofdpaGroupTableInfo_t *info);
+group_table_info_get() ->
+	todo.
 
 %% Ports
 %% void ofdpaPortTypeGet(uint32_t portNum, uint32_t *type);

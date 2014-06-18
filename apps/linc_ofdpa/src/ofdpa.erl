@@ -15,11 +15,11 @@
          ofdpaFlowStatsGet/1,
          ofdpaFlowByCookieGet/1,
          ofdpaFlowByCookieDelete/1,
-         ofdpaGroupTypeGet/2,
-         ofdpaGroupVlanGet/2,
-         ofdpaGroupPortIdGet/2,
-         ofdpaGroupIndexShortGet/2,
-         ofdpaGroupIndexGet/2,
+         ofdpaGroupTypeGet/1,
+         ofdpaGroupVlanGet/1,
+         ofdpaGroupPortIdGet/1,
+         ofdpaGroupIndexShortGet/1,
+         ofdpaGroupIndexGet/1,
          ofdpaGroupTypeSet/2,
          ofdpaGroupVlanSet/2,
          ofdpaGroupOverlayTunnelIdSet/2,
@@ -28,14 +28,14 @@
          ofdpaGroupPortIdSet/2,
          ofdpaGroupIndexShortSet/2,
          ofdpaGroupIndexSet/2,
-         ofdpaGroupDecode/3,
-         ofdpaGroupEntryInit/2,
+         ofdpaGroupDecode/2,
+         ofdpaGroupEntryInit/1,
          ofdpaGroupAdd/1,
          ofdpaGroupDelete/1,
-         ofdpaGroupNextGet/2,
-         ofdpaGroupTypeNextGet/3,
-         ofdpaGroupStatsGet/2,
-         ofdpaGroupBucketEntryInit/2,
+         ofdpaGroupNextGet/1,
+         ofdpaGroupTypeNextGet/2,
+         ofdpaGroupStatsGet/1,
+         ofdpaGroupBucketEntryInit/1,
          ofdpaGroupBucketEntryAdd/1,
          ofdpaGroupBucketEntryDelete/2,
          ofdpaGroupBucketsDeleteAll/1,
@@ -123,7 +123,9 @@ decode_args(<<N:32/little,Blob/binary>>, [uint32_t|Rs], Acc) ->
 decode_args(<<N:64/little,Blob/binary>>, [uint64_t|Rs], Acc) ->
 	decode_args(Blob, Rs, [N|Acc]);
 decode_args(<<Sz:32/little,Bin:(Sz)/binary,Blob/binary>>, [{struct,S}|Rs], Acc) ->
-	decode_args(Blob, Rs, [binary_to_struct(S, Bin)|Acc]).
+	decode_args(Blob, Rs, [binary_to_struct(S, Bin)|Acc]);
+decode_args(<<Sz:32/little,Str:(Sz)/binary,Blob/binary>>, [string|Rs], Acc) ->
+	decode_args(Blob, Rs, [Str|Acc]).
 
 %% enum_to_integer/2 and integer_to_enum/2 generated using 'genera enums'
 
@@ -542,7 +544,7 @@ struct_to_binary(#group_bucket_entry{groupId = GroupId,
                                      bucketIndex = BucketIndex,
                                      referenceGroupId = ReferenceGroupId,
                                      bucketData = BucketData}) ->
-	DataBin = struct_to_binary(BucketData),
+	DataBin = pad_binary(struct_to_binary(BucketData), 16),
     <<GroupId:32/little,
       BucketIndex:32/little,
       ReferenceGroupId:32/little,
@@ -869,36 +871,37 @@ binary_to_struct(group_entry_stats,
                        duration = Duration,
                        bucketCount = BucketCount};
 binary_to_struct(l_2_interface_group_bucket_data,
-                 <<OutputPort:32/little,PopVlanTag:32/little>>) ->
+                 <<OutputPort:32/little,PopVlanTag:32/little,_binary>>) ->
     #l_2_interface_group_bucket_data{outputPort = OutputPort,
                                      popVlanTag = PopVlanTag};
 binary_to_struct(l_3_interface_group_bucket_data,
-                 <<VlanId:32/little,SrcMac:6/binary>>) ->
+                 <<VlanId:32/little,SrcMac:6/binary,_/binary>>) ->
     #l_3_interface_group_bucket_data{vlanId = VlanId,srcMac = SrcMac};
 binary_to_struct(l_3_unicast_group_bucket_data,
-                 <<SrcMac:6/binary,DstMac:6/binary,VlanId:32/little>>) ->
+                 <<SrcMac:6/binary,DstMac:6/binary,VlanId:32/little,_binary>>) ->
     #l_3_unicast_group_bucket_data{srcMac = SrcMac,
                                    dstMac = DstMac,
                                    vlanId = VlanId};
 binary_to_struct(l_2_overlay_group_bucket_data,
-                 <<OutputPort:32/little>>) ->
+                 <<OutputPort:32/little,_/binary>>) ->
     #l_2_overlay_group_bucket_data{outputPort = OutputPort};
 binary_to_struct(l_2_rewrite_group_bucket_data,
-                 <<SrcMac:6/binary,DstMac:6/binary,VlanId:32/little>>) ->
+                 <<SrcMac:6/binary,DstMac:6/binary,VlanId:32/little,_/binary>>) ->
     #l_2_rewrite_group_bucket_data{srcMac = SrcMac,
                                    dstMac = DstMac,
                                    vlanId = VlanId};
 binary_to_struct(group_bucket_entry,
-                 <<_GroupId:32/little,
-                   _BucketIndex:32/little,
-                   _ReferenceGroupId:32/little,
-                   _DataBin:16/binary>>) ->
-	erlang:error(not_implemented);
-%%	BucketData = binary_to_struct(?, DataBin),
-%%    #group_bucket_entry{groupId = GroupId,
-%%                        bucketIndex = BucketIndex,
-%%                        referenceGroupId = ReferenceGroupId,
-%%                        bucketData = BucketData};
+				 <<GroupType:32/little,		%% added manually
+                   GroupId:32/little,		%% C struct starts here
+                   BucketIndex:32/little,
+                   ReferenceGroupId:32/little,
+                   DataBin:16/binary>>) ->
+	T = integer_to_enum(group_entry_type_t, GroupType),
+	BucketData = binary_to_struct(bucket_type(T), DataBin),
+    #group_bucket_entry{groupId = GroupId,
+                        bucketIndex = BucketIndex,
+                        referenceGroupId = ReferenceGroupId,
+                        bucketData = BucketData};
 binary_to_struct(group_table_info,
                  <<NumGroupEntries:32/little,
                    MaxGroupEntries:32/little,
@@ -978,7 +981,13 @@ table_to_struct(flow_table_id_unicast_routing) -> unicast_routing_flow_entry;
 table_to_struct(flow_table_id_multicast_routing) -> multicast_routing_flow_entry;
 table_to_struct(flow_table_id_bridging) -> bridging_flow_entry;
 table_to_struct(flow_table_id_acl_policy) -> acl_policy_flow_entry.
- 
+
+bucket_type(group_entry_type_l2_interface) -> l_2_interface_group_bucket_data;
+bucket_type(group_entry_type_l3_interface) -> l_3_interface_group_bucket_data;
+bucket_type(group_entry_type_l3_unicast) -> l_3_unicast_group_bucket_data;
+bucket_type(group_entry_type_l2_overlay) -> l_2_overlay_group_bucket_data;
+bucket_type(group_entry_type_l2_rewrite) -> l_2_rewrite_group_bucket_data.
+
 %% generated using 'genera stubs'
 
 ofdpaFlowEntryInit(TableId) ->
@@ -1013,30 +1022,30 @@ ofdpaFlowByCookieGet(Cookie) ->
 ofdpaFlowByCookieDelete(Cookie) ->
     call([{enum,error_t}], 107, [{uint64_t,Cookie}]).
 
-ofdpaGroupTypeGet(GroupId, Type) ->
+ofdpaGroupTypeGet(GroupId) ->
     call([{enum,error_t},uint32_t],
          108,
-         [{uint32_t,GroupId},{uint32_t,Type}]).
+         [{uint32_t,GroupId}]).
 
-ofdpaGroupVlanGet(GroupId, VlanId) ->
+ofdpaGroupVlanGet(GroupId) ->
     call([{enum,error_t},uint32_t],
          109,
-         [{uint32_t,GroupId},{uint32_t,VlanId}]).
+         [{uint32_t,GroupId}]).
 
-ofdpaGroupPortIdGet(GroupId, PortId) ->
+ofdpaGroupPortIdGet(GroupId) ->
     call([{enum,error_t},uint32_t],
          110,
-         [{uint32_t,GroupId},{uint32_t,PortId}]).
+         [{uint32_t,GroupId}]).
 
-ofdpaGroupIndexShortGet(GroupId, Index) ->
+ofdpaGroupIndexShortGet(GroupId) ->
     call([{enum,error_t},uint32_t],
          111,
-         [{uint32_t,GroupId},{uint32_t,Index}]).
+         [{uint32_t,GroupId}]).
 
-ofdpaGroupIndexGet(GroupId, Index) ->
+ofdpaGroupIndexGet(GroupId) ->
     call([{enum,error_t},uint32_t],
          112,
-         [{uint32_t,GroupId},{uint32_t,Index}]).
+         [{uint32_t,GroupId}]).
 
 ofdpaGroupTypeSet(GroupId, Type) ->
     call([{enum,error_t},uint32_t],
@@ -1079,16 +1088,15 @@ ofdpaGroupIndexSet(GroupId, Index) ->
          120,
          [{uint32_t,GroupId},{uint32_t,Index}]).
 
-ofdpaGroupDecode(GroupId, OutBuf, BufSize) ->
-    call([{enum,error_t},char],
+ofdpaGroupDecode(GroupId, BufSize) ->
+    call([{enum,error_t},string],
          121,
-         [{uint32_t,GroupId},{char,OutBuf},{int,BufSize}]).
+         [{uint32_t,GroupId},{uint32_t,BufSize}]).
 
-ofdpaGroupEntryInit(GroupType, Group) ->
+ofdpaGroupEntryInit(GroupType) ->
     call([{enum,error_t},{struct,group_entry}],
          122,
-         [{uint32_t,enum_to_integer(group_entry_type_t, GroupType)},
-          struct_to_binary(Group)]).
+         [{uint32_t,enum_to_integer(group_entry_type_t, GroupType)}]).
 
 ofdpaGroupAdd(Group) ->
     call([{enum,error_t}], 123, [struct_to_binary(Group)]).
@@ -1096,28 +1104,26 @@ ofdpaGroupAdd(Group) ->
 ofdpaGroupDelete(GroupId) ->
     call([{enum,error_t}], 124, [{uint32_t,GroupId}]).
 
-ofdpaGroupNextGet(GroupId, NextGroup) ->
+ofdpaGroupNextGet(GroupId) ->
     call([{enum,error_t},{struct,group_entry}],
          125,
-         [{uint32_t,GroupId},struct_to_binary(NextGroup)]).
+         [{uint32_t,GroupId}]).
 
-ofdpaGroupTypeNextGet(GroupId, GroupType, NextGroup) ->
+ofdpaGroupTypeNextGet(GroupId, GroupType) ->
     call([{enum,error_t},{struct,group_entry}],
          126,
          [{uint32_t,GroupId},
-          {uint32_t,enum_to_integer(group_entry_type_t, GroupType)},
-          struct_to_binary(NextGroup)]).
+          {uint32_t,enum_to_integer(group_entry_type_t, GroupType)}]).
 
-ofdpaGroupStatsGet(GroupId, GroupStats) ->
+ofdpaGroupStatsGet(GroupId) ->
     call([{enum,error_t},{struct,group_entry_stats}],
          127,
-         [{uint32_t,GroupId},struct_to_binary(GroupStats)]).
+         [{uint32_t,GroupId}]).
 
-ofdpaGroupBucketEntryInit(GroupType, Bucket) ->
+ofdpaGroupBucketEntryInit(GroupType) ->
     call([{enum,error_t},{struct,group_bucket_entry}],
          128,
-         [{uint32_t,enum_to_integer(group_entry_type_t, GroupType)},
-          struct_to_binary(Bucket)]).
+         [{uint32_t,enum_to_integer(group_entry_type_t, GroupType)}]).
 
 ofdpaGroupBucketEntryAdd(Bucket) ->
     call([{enum,error_t}], 129, [struct_to_binary(Bucket)]).

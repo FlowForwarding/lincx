@@ -5,6 +5,8 @@
 #include "ofdpa_datatypes.h"
 #include "ofdpa_api.h"
 
+#include "string.h"
+
 // Flow entries
 OFDPA_ERROR_t ofdpaFlowEntryInit(OFDPA_FLOW_TABLE_ID_t tableId, ofdpaFlowEntry_t *flow)
 {
@@ -67,109 +69,107 @@ OFDPA_ERROR_t ofdpaFlowByCookieDelete(uint64_t cookie)
 // Groups
 OFDPA_ERROR_t ofdpaGroupTypeGet(uint32_t groupId, uint32_t *type)
 {
-	//TODO
+	*type = 2;
 	return OFDPA_E_NONE;
 }
 
 OFDPA_ERROR_t ofdpaGroupVlanGet(uint32_t groupId, uint32_t *vlanId)
 {
-	//TODO
+	*vlanId = 3;
 	return OFDPA_E_NONE;
 }
 
 OFDPA_ERROR_t ofdpaGroupPortIdGet(uint32_t groupId, uint32_t *portId)
 {
-	//TODO
+	*portId = 4;
 	return OFDPA_E_NONE;
 }
 
 OFDPA_ERROR_t ofdpaGroupIndexShortGet(uint32_t groupId, uint32_t *index)
 {
-	//TODO
+	*index = 5;
 	return OFDPA_E_NONE;
 }
 
 OFDPA_ERROR_t ofdpaGroupIndexGet(uint32_t groupId, uint32_t *index)
 {
-	//TODO
+	*index = 6;
 	return OFDPA_E_NONE;
 }
 
 OFDPA_ERROR_t ofdpaGroupTypeSet(uint32_t *groupId, uint32_t type)
 {
-	//TODO
+	*groupId = 200;
 	return OFDPA_E_NONE;
 }
 
 OFDPA_ERROR_t ofdpaGroupVlanSet(uint32_t *groupId, uint32_t vlanId)
 {
-	//TODO
+	*groupId = 300;
 	return OFDPA_E_NONE;
 }
 
 OFDPA_ERROR_t ofdpaGroupOverlayTunnelIdSet(uint32_t *groupId, uint32_t tunnelId)
 {
-	//TODO
+	*groupId = 400;
 	return OFDPA_E_NONE;
 }
 
 OFDPA_ERROR_t ofdpaGroupOverlaySubTypeSet(uint32_t *groupId, OFDPA_L2_OVERLAY_SUBTYPE_t subType)
 {
-	//TODO
+	*groupId = 500;
 	return OFDPA_E_NONE;
 }
 
 OFDPA_ERROR_t ofdpaGroupOverlayIndexSet(uint32_t *groupId, uint32_t index)
 {
-	//TODO
+	*groupId = 600;
 	return OFDPA_E_NONE;
 }
 
 OFDPA_ERROR_t ofdpaGroupPortIdSet(uint32_t *groupId, uint32_t portId)
 {
-	//TODO
+	*groupId = 700;
 	return OFDPA_E_NONE;
 }
 
 OFDPA_ERROR_t ofdpaGroupIndexShortSet(uint32_t *groupId, uint32_t index)
 {
-	//TODO
+	*groupId = 800;
 	return OFDPA_E_NONE;
 }
 
 OFDPA_ERROR_t ofdpaGroupIndexSet(uint32_t *groupId, uint32_t index)
 {
-	//TODO
+	*groupId = 900;
 	return OFDPA_E_NONE;
 }
 
 OFDPA_ERROR_t ofdpaGroupDecode(uint32_t groupId, char *outBuf, int bufSize)
 {
-	//TODO
+	strcpy(outBuf, "Hey there"); // bufSize disregarded
 	return OFDPA_E_NONE;
 }
- // special
+ 
 OFDPA_ERROR_t ofdpaGroupEntryInit(OFDPA_GROUP_ENTRY_TYPE_t groupType, ofdpaGroupEntry_t *group)
 {
-	//TODO
+	group->groupId = 111;
 	return OFDPA_E_NONE;
 }
 
 OFDPA_ERROR_t ofdpaGroupAdd(ofdpaGroupEntry_t *group)
 {
-	//TODO
 	return OFDPA_E_NONE;
 }
 
 OFDPA_ERROR_t ofdpaGroupDelete(uint32_t groupId)
 {
-	//TODO
 	return OFDPA_E_NONE;
 }
 
 OFDPA_ERROR_t ofdpaGroupNextGet(uint32_t groupId, ofdpaGroupEntry_t *nextGroup)
 {
-	//TODO
+	nextGroup->groupId = 222;
 	return OFDPA_E_NONE;
 }
 
@@ -177,37 +177,39 @@ OFDPA_ERROR_t ofdpaGroupTypeNextGet(uint32_t groupId,
                                     OFDPA_GROUP_ENTRY_TYPE_t groupType,
                                     ofdpaGroupEntry_t *nextGroup)
 {
-	//TODO
+	nextGroup->groupId = 333;
 	return OFDPA_E_NONE;
 }
 
 OFDPA_ERROR_t ofdpaGroupStatsGet(uint32_t groupId, ofdpaGroupEntryStats_t *groupStats)
 {
-	//TODO
+	groupStats->refCount = 1;
+	groupStats->duration = 2;
+	groupStats->bucketCount = 3;
 	return OFDPA_E_NONE;
 }
 
 OFDPA_ERROR_t ofdpaGroupBucketEntryInit(OFDPA_GROUP_ENTRY_TYPE_t groupType, ofdpaGroupBucketEntry_t *bucket)
 {
-	//TODO
+	bucket->groupId = 7;
+	bucket->bucketIndex = 8;
+	bucket->referenceGroupId = 9;
+	bucket->bucketData.l2Overlay.outputPort = 10;
 	return OFDPA_E_NONE;
 }
 
 OFDPA_ERROR_t ofdpaGroupBucketEntryAdd(ofdpaGroupBucketEntry_t *bucket)
 {
-	//TODO
 	return OFDPA_E_NONE;
 }
 
 OFDPA_ERROR_t ofdpaGroupBucketEntryDelete(uint32_t groupId, uint32_t bucketIndex)
 {
-	//TODO
 	return OFDPA_E_NONE;
 }
 
 OFDPA_ERROR_t ofdpaGroupBucketsDeleteAll(uint32_t groupId)
 {
-	//TODO
 	return OFDPA_E_NONE;
 }
 

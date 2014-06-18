@@ -16,6 +16,8 @@
 #include "agentx.h"
 #include "getput.h"
 
+#include <string.h>
+
 #define AGENTX_PORT		5005
 
 #define TAG_CALL	0xca11
@@ -45,6 +47,7 @@ int main(int argc, char *argv[])
 	apr_sockaddr_t *sa;
 
 	printf("sizeof(ofdpaFlowEntry_t) = %d\n", sizeof(ofdpaFlowEntry_t));
+	printf("sizeof(ofdpaGroupBucketEntry_t) = %d\n", sizeof(ofdpaGroupBucketEntry_t));
 
 	apr_initialize();
 	rs = apr_pool_create(&p, 0);
@@ -822,21 +825,31 @@ apr_status_t invoke(uint16_t what, uint32_t cookie,
 	}
 	case GROUP_DECODE:
 	{
-//		assert(roff +4 <= *ret_len);
-//		// make space for OFDPA_ERROR_t
-//		roff += 4;
-//
-//		//TODO: {outBuf,char,out,scalar}
-//
-//		assert(off +4 <= arg_len);
-//		uint32_t groupId = GET32(arg_buf +off);
-//		off += 4;
-//		//TODO: {bufSize,int,in,scalar}
-//
-//		OFDPA_ERROR_t err = ofdpaGroupDecode(groupId, outBuf, bufSize);
-//		PUT32(ret_buf, err);
-//
-//		*ret_len = roff;
+		assert(off +4 <= arg_len);
+		uint32_t groupId = GET32(arg_buf +off);
+		off += 4;
+		assert(off +4 <= arg_len);
+		uint32_t bufSize = GET32(arg_buf +off);
+		off += 4;
+
+		assert(roff +4 <= *ret_len);
+		// make space for OFDPA_ERROR_t
+		roff += 4;
+		assert(roff +4 <= *ret_len);
+		uint32_t *saveSize = (uint32_t *)(ret_buf +roff);
+		roff += 4;
+		assert(roff +bufSize <= *ret_len);
+		char *outBuf = (char *)(ret_buf +roff);
+		// roff not updated
+
+		OFDPA_ERROR_t err = ofdpaGroupDecode(groupId, outBuf, bufSize);
+		PUT32(ret_buf, err);
+		
+		uint32_t len = strlen(outBuf);
+		PUT32(saveSize, len);
+		roff += len;
+
+		*ret_len = roff;
 		break;
 	}
 	case GROUP_ENTRY_INIT:
@@ -977,16 +990,22 @@ apr_status_t invoke(uint16_t what, uint32_t cookie,
 		// make space for OFDPA_ERROR_t
 		roff += 4;
 
-		assert(roff +4 <= *ret_len);
-		PUT32(ret_buf +roff, sizeof(ofdpaGroupBucketEntry_t));
-		roff += 4;
-		assert(roff +sizeof(ofdpaGroupBucketEntry_t) <= *ret_len);
-		ofdpaGroupBucketEntry_t *bucket = (ofdpaGroupBucketEntry_t *)(ret_buf +roff);
-		roff += sizeof(ofdpaGroupBucketEntry_t);
-
 		assert(off +4 <= arg_len);
 		OFDPA_GROUP_ENTRY_TYPE_t groupType = (OFDPA_GROUP_ENTRY_TYPE_t)GET32(arg_buf +off);
 		off += 4;
+
+		assert(roff +4 <= *ret_len);
+		PUT32(ret_buf +roff, sizeof(ofdpaGroupBucketEntry_t) +4);
+		roff += 4;
+		
+		// GroupType added to the reply for RPC to make sense of the BucketData
+		assert(roff +4 <= *ret_len);
+		PUT32(ret_buf +roff, groupType);
+		roff += 4;
+
+		assert(roff +sizeof(ofdpaGroupBucketEntry_t) <= *ret_len);
+		ofdpaGroupBucketEntry_t *bucket = (ofdpaGroupBucketEntry_t *)(ret_buf +roff);
+		roff += sizeof(ofdpaGroupBucketEntry_t);
 
 		OFDPA_ERROR_t err = ofdpaGroupBucketEntryInit(groupType, bucket);
 		PUT32(ret_buf, err);
