@@ -39,11 +39,11 @@
          ofdpaGroupBucketEntryAdd/1,
          ofdpaGroupBucketEntryDelete/2,
          ofdpaGroupBucketsDeleteAll/1,
-         ofdpaGroupBucketEntryGet/3,
-         ofdpaGroupBucketEntryFirstGet/2,
-         ofdpaGroupBucketEntryNextGet/3,
+         ofdpaGroupBucketEntryGet/2,
+         ofdpaGroupBucketEntryFirstGet/1,
+         ofdpaGroupBucketEntryNextGet/2,
          ofdpaGroupBucketEntryModify/1,
-         ofdpaGroupTableInfoGet/2,
+         ofdpaGroupTableInfoGet/1,
          ofdpaPortTypeGet/2,
          ofdpaPortTypeSet/2,
          ofdpaPortIndexGet/2,
@@ -1136,33 +1136,30 @@ ofdpaGroupBucketEntryDelete(GroupId, BucketIndex) ->
 ofdpaGroupBucketsDeleteAll(GroupId) ->
     call([{enum,error_t}], 131, [{uint32_t,GroupId}]).
 
-ofdpaGroupBucketEntryGet(GroupId, BucketIndex, GroupBucket) ->
+ofdpaGroupBucketEntryGet(GroupId, BucketIndex) ->
     call([{enum,error_t},{struct,group_bucket_entry}],
          132,
          [{uint32_t,GroupId},
-          {uint32_t,BucketIndex},
-          struct_to_binary(GroupBucket)]).
+          {uint32_t,BucketIndex}]).
 
-ofdpaGroupBucketEntryFirstGet(GroupId, FirstGroupBucket) ->
+ofdpaGroupBucketEntryFirstGet(GroupId) ->
     call([{enum,error_t},{struct,group_bucket_entry}],
          133,
-         [{uint32_t,GroupId},struct_to_binary(FirstGroupBucket)]).
+         [{uint32_t,GroupId}]).
 
-ofdpaGroupBucketEntryNextGet(GroupId, BucketIndex, NextBucketEntry) ->
+ofdpaGroupBucketEntryNextGet(GroupId, BucketIndex) ->
     call([{enum,error_t},{struct,group_bucket_entry}],
          134,
          [{uint32_t,GroupId},
-          {uint32_t,BucketIndex},
-          struct_to_binary(NextBucketEntry)]).
+          {uint32_t,BucketIndex}]).
 
 ofdpaGroupBucketEntryModify(Bucket) ->
     call([{enum,error_t}], 135, [struct_to_binary(Bucket)]).
 
-ofdpaGroupTableInfoGet(GroupType, Info) ->
+ofdpaGroupTableInfoGet(GroupType) ->
     call([{enum,error_t},{struct,group_table_info}],
          136,
-         [{uint32_t,enum_to_integer(group_entry_type_t, GroupType)},
-          struct_to_binary(Info)]).
+         [{uint32_t,enum_to_integer(group_entry_type_t, GroupType)}]).
 
 ofdpaPortTypeGet(PortNum, Type) ->
     call([uint32_t], 137, [{uint32_t,PortNum},{uint32_t,Type}]).

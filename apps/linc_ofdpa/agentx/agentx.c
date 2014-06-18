@@ -46,8 +46,8 @@ int main(int argc, char *argv[])
 	apr_socket_t *listener;
 	apr_sockaddr_t *sa;
 
-	printf("sizeof(ofdpaFlowEntry_t) = %d\n", sizeof(ofdpaFlowEntry_t));
-	printf("sizeof(ofdpaGroupBucketEntry_t) = %d\n", sizeof(ofdpaGroupBucketEntry_t));
+	//printf("sizeof(ofdpaFlowEntry_t) = %d\n", sizeof(ofdpaFlowEntry_t));
+	//printf("sizeof(ofdpaGroupBucketEntry_t) = %d\n", sizeof(ofdpaGroupBucketEntry_t));
 
 	apr_initialize();
 	rs = apr_pool_create(&p, 0);
@@ -1072,23 +1072,33 @@ apr_status_t invoke(uint16_t what, uint32_t cookie,
 	}
 	case GROUP_BUCKET_ENTRY_GET:
 	{
-		assert(roff +4 <= *ret_len);
-		// make space for OFDPA_ERROR_t
-		roff += 4;
-
-		assert(roff +4 <= *ret_len);
-		PUT32(ret_buf +roff, sizeof(ofdpaGroupBucketEntry_t));
-		roff += 4;
-		assert(roff +sizeof(ofdpaGroupBucketEntry_t) <= *ret_len);
-		ofdpaGroupBucketEntry_t *groupBucket = (ofdpaGroupBucketEntry_t *)(ret_buf +roff);
-		roff += sizeof(ofdpaGroupBucketEntry_t);
-
 		assert(off +4 <= arg_len);
 		uint32_t groupId = GET32(arg_buf +off);
 		off += 4;
 		assert(off +4 <= arg_len);
 		uint32_t bucketIndex = GET32(arg_buf +off);
 		off += 4;
+
+		// get group type
+		uint32_t type;
+		OFDPA_ERROR_t e = ofdpaGroupTypeGet(groupId, &type);
+		assert(e == OFDPA_E_NONE);
+
+		assert(roff +4 <= *ret_len);
+		// make space for OFDPA_ERROR_t
+		roff += 4;
+
+		assert(roff +4 <= *ret_len);
+		PUT32(ret_buf +roff, sizeof(ofdpaGroupBucketEntry_t) +4);
+		roff += 4;
+
+		assert(roff +4 <= *ret_len);
+		PUT32(ret_buf +roff, type);
+		roff += 4;
+
+		assert(roff +sizeof(ofdpaGroupBucketEntry_t) <= *ret_len);
+		ofdpaGroupBucketEntry_t *groupBucket = (ofdpaGroupBucketEntry_t *)(ret_buf +roff);
+		roff += sizeof(ofdpaGroupBucketEntry_t);
 
 		OFDPA_ERROR_t err = ofdpaGroupBucketEntryGet(groupId, bucketIndex, groupBucket);
 		PUT32(ret_buf, err);
@@ -1098,20 +1108,29 @@ apr_status_t invoke(uint16_t what, uint32_t cookie,
 	}
 	case GROUP_BUCKET_ENTRY_FIRST_GET:
 	{
+		assert(off +4 <= arg_len);
+		uint32_t groupId = GET32(arg_buf +off);
+		off += 4;
+
+		uint32_t type;
+		OFDPA_ERROR_t e = ofdpaGroupTypeGet(groupId, &type);
+		assert(e == OFDPA_E_NONE);
+
 		assert(roff +4 <= *ret_len);
 		// make space for OFDPA_ERROR_t
 		roff += 4;
 
 		assert(roff +4 <= *ret_len);
-		PUT32(ret_buf +roff, sizeof(ofdpaGroupBucketEntry_t));
+		PUT32(ret_buf +roff, sizeof(ofdpaGroupBucketEntry_t) +4);
 		roff += 4;
+
+		assert(roff +4 <= *ret_len);
+		PUT32(ret_buf +roff, type);
+		roff += 4;
+
 		assert(roff +sizeof(ofdpaGroupBucketEntry_t) <= *ret_len);
 		ofdpaGroupBucketEntry_t *firstGroupBucket = (ofdpaGroupBucketEntry_t *)(ret_buf +roff);
 		roff += sizeof(ofdpaGroupBucketEntry_t);
-
-		assert(off +4 <= arg_len);
-		uint32_t groupId = GET32(arg_buf +off);
-		off += 4;
 
 		OFDPA_ERROR_t err = ofdpaGroupBucketEntryFirstGet(groupId, firstGroupBucket);
 		PUT32(ret_buf, err);
@@ -1121,23 +1140,32 @@ apr_status_t invoke(uint16_t what, uint32_t cookie,
 	}
 	case GROUP_BUCKET_ENTRY_NEXT_GET:
 	{
-		assert(roff +4 <= *ret_len);
-		// make space for OFDPA_ERROR_t
-		roff += 4;
-
-		assert(roff +4 <= *ret_len);
-		PUT32(ret_buf +roff, sizeof(ofdpaGroupBucketEntry_t));
-		roff += 4;
-		assert(roff +sizeof(ofdpaGroupBucketEntry_t) <= *ret_len);
-		ofdpaGroupBucketEntry_t *nextBucketEntry = (ofdpaGroupBucketEntry_t *)(ret_buf +roff);
-		roff += sizeof(ofdpaGroupBucketEntry_t);
-
 		assert(off +4 <= arg_len);
 		uint32_t groupId = GET32(arg_buf +off);
 		off += 4;
 		assert(off +4 <= arg_len);
 		uint32_t bucketIndex = GET32(arg_buf +off);
 		off += 4;
+
+		uint32_t type;
+		OFDPA_ERROR_t e = ofdpaGroupTypeGet(groupId, &type);
+		assert(e == OFDPA_E_NONE);
+
+		assert(roff +4 <= *ret_len);
+		// make space for OFDPA_ERROR_t
+		roff += 4;
+
+		assert(roff +4 <= *ret_len);
+		PUT32(ret_buf +roff, sizeof(ofdpaGroupBucketEntry_t) +4);
+		roff += 4;
+
+		assert(roff +4 <= *ret_len);
+		PUT32(ret_buf +roff, type);
+		roff += 4;
+
+		assert(roff +sizeof(ofdpaGroupBucketEntry_t) <= *ret_len);
+		ofdpaGroupBucketEntry_t *nextBucketEntry = (ofdpaGroupBucketEntry_t *)(ret_buf +roff);
+		roff += sizeof(ofdpaGroupBucketEntry_t);
 
 		OFDPA_ERROR_t err = ofdpaGroupBucketEntryNextGet(groupId, bucketIndex, nextBucketEntry);
 		PUT32(ret_buf, err);
@@ -1150,7 +1178,6 @@ apr_status_t invoke(uint16_t what, uint32_t cookie,
 		assert(roff +4 <= *ret_len);
 		// make space for OFDPA_ERROR_t
 		roff += 4;
-
 
 		assert(off +4 <= arg_len);
 		sz = GET32(arg_buf +off);

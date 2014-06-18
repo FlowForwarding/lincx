@@ -11,6 +11,11 @@
 OFDPA_ERROR_t ofdpaFlowEntryInit(OFDPA_FLOW_TABLE_ID_t tableId, ofdpaFlowEntry_t *flow)
 {
 	flow->tableId = tableId;
+	flow->priority = 1;
+	flow->flowData.vlanFlowEntry.gotoTableId = 0;
+	flow->hard_time = 2;
+	flow->idle_time = 3;
+	flow->cookie = 4;
 	return OFDPA_E_NONE;
 }
 
@@ -69,7 +74,7 @@ OFDPA_ERROR_t ofdpaFlowByCookieDelete(uint64_t cookie)
 // Groups
 OFDPA_ERROR_t ofdpaGroupTypeGet(uint32_t groupId, uint32_t *type)
 {
-	*type = 2;
+	*type = 8;	// l2Overlay
 	return OFDPA_E_NONE;
 }
 
@@ -216,36 +221,45 @@ OFDPA_ERROR_t ofdpaGroupBucketsDeleteAll(uint32_t groupId)
 OFDPA_ERROR_t ofdpaGroupBucketEntryGet(uint32_t groupId, uint32_t bucketIndex,
                                        ofdpaGroupBucketEntry_t *groupBucket)
 {
-	//TODO
+	groupBucket->groupId = 17;
+	groupBucket->bucketIndex = 18;
+	groupBucket->referenceGroupId = 19;
+	groupBucket->bucketData.l2Overlay.outputPort = 110;
 	return OFDPA_E_NONE;
 }
 
 OFDPA_ERROR_t ofdpaGroupBucketEntryFirstGet(uint32_t groupId,
                                             ofdpaGroupBucketEntry_t *firstGroupBucket)
 {
-	//TODO
+	firstGroupBucket->groupId = 27;
+	firstGroupBucket->bucketIndex = 28;
+	firstGroupBucket->referenceGroupId = 29;
+	firstGroupBucket->bucketData.l2Overlay.outputPort = 210;
 	return OFDPA_E_NONE;
 }
 
 OFDPA_ERROR_t ofdpaGroupBucketEntryNextGet(uint32_t groupId, uint32_t bucketIndex,
                                            ofdpaGroupBucketEntry_t *nextBucketEntry)
 {
-	//TODO
+	nextBucketEntry->groupId = 37;
+	nextBucketEntry->bucketIndex = 38;
+	nextBucketEntry->referenceGroupId = 39;
+	nextBucketEntry->bucketData.l2Overlay.outputPort = 310;
 	return OFDPA_E_NONE;
 }
 
 OFDPA_ERROR_t ofdpaGroupBucketEntryModify(ofdpaGroupBucketEntry_t *bucket)
 {
-	//TODO
 	return OFDPA_E_NONE;
 }
 
 OFDPA_ERROR_t ofdpaGroupTableInfoGet(OFDPA_GROUP_ENTRY_TYPE_t groupType, ofdpaGroupTableInfo_t *info)
 {
-	//TODO
+	info->numGroupEntries = 10;
+	info->maxGroupEntries = 20;
+	info->maxBucketEntries = 30;
 	return OFDPA_E_NONE;
 }
-
 
 // Ports
 void ofdpaPortTypeGet(uint32_t portNum, uint32_t *type)
