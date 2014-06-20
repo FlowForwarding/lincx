@@ -264,96 +264,113 @@ OFDPA_ERROR_t ofdpaGroupTableInfoGet(OFDPA_GROUP_ENTRY_TYPE_t groupType, ofdpaGr
 // Ports
 void ofdpaPortTypeGet(uint32_t portNum, uint32_t *type)
 {
-	//TODO
+	*type = 100;
 }
 
 void ofdpaPortTypeSet(uint32_t *portNum, uint32_t type)
 {
-	//TODO
+	*portNum = 3;
 }
 
 void ofdpaPortIndexGet(uint32_t portNum, uint32_t *index)
 {
-	//TODO
+	*index = 7;
 }
 
 void ofdpaPortIndexSet(uint32_t *portNum, uint32_t index)
 {
-	//TODO
+	*portNum = 8;
 }
 
 OFDPA_ERROR_t ofdpaPortNextGet(uint32_t portNum, uint32_t *nextPortNum)
 {
-	//TODO
+	*nextPortNum = 9;
 	return OFDPA_E_NONE;
 }
 
 OFDPA_ERROR_t ofdpaPortMacGet(uint32_t portNum, ofdpaMacAddr_t *mac)
 {
-	//TODO
+	mac->addr[0] = 1;
+	mac->addr[1] = 2;
+	mac->addr[2] = 3;
+	mac->addr[3] = 4;
+	mac->addr[4] = 5;
+	mac->addr[5] = 6;
 	return OFDPA_E_NONE;
 }
 
 OFDPA_ERROR_t ofdpaPortNameGet(uint32_t portNum, ofdpa_buffdesc *name)
 {
-	//TODO
+	strcpy(name->pstart, "Port-1");
+	name->size = 7;
 	return OFDPA_E_NONE;
 }
-	// special
+
 OFDPA_ERROR_t ofdpaPortStateGet(uint32_t  portNum, OFDPA_PORT_STATE_t  *state)
 {
-	//TODO
+	*state = OFDPA_PORT_STATE_LINK_DOWN;
 	return OFDPA_E_NONE;
 }
 
 OFDPA_ERROR_t ofdpaPortConfigSet(uint32_t portNum, OFDPA_PORT_CONFIG_t config)
 {
-	//TODO
 	return OFDPA_E_NONE;
 }
 
 OFDPA_ERROR_t ofdpaPortConfigGet(uint32_t portNum, OFDPA_PORT_CONFIG_t  *config)
 {
-	//TODO
+	*config = OFDPA_PORT_CONFIG_DOWN;
 	return OFDPA_E_NONE;
 }
 
 OFDPA_ERROR_t ofdpaPortMaxSpeedGet(uint32_t portNum, uint32_t  *maxSpeed)
 {
-	//TODO
+	*maxSpeed = 1001;
 	return OFDPA_E_NONE;
 }
 
 OFDPA_ERROR_t ofdpaPortCurrSpeedGet(uint32_t portNum, uint32_t  *currSpeed)
 {
-	//TODO
+	*currSpeed = 999;
 	return OFDPA_E_NONE;
 }
 
 OFDPA_ERROR_t ofdpaPortFeatureGet(uint32_t portNum, ofdpaPortFeature_t *feature)
 {
-	//TODO
+	feature->curr = 1;
+	feature->advertised = 2;
+	feature->supported = 3;
+	feature->peer = 13;
 	return OFDPA_E_NONE;
 }
 
 OFDPA_ERROR_t ofdpaPortAdvertiseFeatureSet(uint32_t portNum, uint32_t advertise)
 {
-	//TODO
 	return OFDPA_E_NONE;
 }
 
 OFDPA_ERROR_t ofdpaPortStatsClear(uint32_t portNum)
 {
-	//TODO
 	return OFDPA_E_NONE;
 }
 
 OFDPA_ERROR_t ofdpaPortStatsGet(uint32_t portNum, ofdpaPortStats_t *stats)
 {
-	//TODO
+	stats->rx_packets = 1;
+	stats->tx_packets = 2;
+	stats->rx_bytes = 3;
+	stats->tx_bytes = 4;
+	stats->rx_errors = 5;
+	stats->tx_errors = 6;
+	stats->rx_drops = 7;
+	stats->tx_drops = 8;
+	stats->rx_frame_err = 9;
+	stats->rx_over_err = 10;
+	stats->rx_crc_err = 11;
+	stats->collisions = 12;
+	stats->duration_seconds = 13;
 	return OFDPA_E_NONE;
 }
-
 
 // Packet-out
 OFDPA_ERROR_t ofdpaPktSend(ofdpa_buffdesc *pkt, uint32_t flags, uint32_t outPortNum, uint32_t inPortNum)

@@ -1323,20 +1323,34 @@ apr_status_t invoke(uint16_t what, uint32_t cookie,
 	}
 	case PORT_NAME_GET:
 	{
-//		assert(roff +4 <= *ret_len);
-//		// make space for OFDPA_ERROR_t
-//		roff += 4;
-//
-//		//TODO: {name,ofdpa_buffdesc,out,scalar}
-//
-//		assert(off +4 <= arg_len);
-//		uint32_t portNum = GET32(arg_buf +off);
-//		off += 4;
-//
-//		OFDPA_ERROR_t err = ofdpaPortNameGet(portNum, name);
-//		PUT32(ret_buf, err);
-//
-//		*ret_len = roff;
+		char buf[1024];
+		ofdpa_buffdesc name = {
+			.pstart = buf,
+			.size = sizeof(buf)
+		};
+
+		assert(off +4 <= arg_len);
+		uint32_t portNum = GET32(arg_buf +off);
+		off += 4;
+
+		assert(roff +4 <= *ret_len);
+		// make space for OFDPA_ERROR_t
+		roff += 4;
+
+		OFDPA_ERROR_t err = ofdpaPortNameGet(portNum, &name);
+		PUT32(ret_buf, err);
+
+		uint32_t len = strlen(buf);
+
+		assert(roff +4 <= *ret_len);
+		PUT32(ret_buf +roff, len);
+		roff += 4;
+
+		assert(roff +len <= *ret_len);
+		memcpy(ret_buf +roff, buf, len);
+		roff += len;
+
+		*ret_len = roff;
 		break;
 	}
 	case PORT_STATE_GET:

@@ -65,6 +65,29 @@ group_test_() ->
 		{"ofdpaGroupTableInfoGet", fun group_table_info_get/0}
 	  ]}].
 
+port_test_() ->
+	[{setup,
+	  fun() -> ensure_link() end,
+	  fun(_) -> ok end,
+	  [
+		{"ofdpaPortTypeGet", fun port_type_get/0},
+		{"ofdpaPortTypeSet", fun port_type_set/0},
+		{"ofdpaPortIndexGet", fun port_index_get/0},
+		{"ofdpaPortIndexSet", fun port_index_set/0},
+		{"ofdpaPortNextGet", fun port_next_get/0},
+		{"ofdpaPortMacGet", fun port_mac_get/0},
+		{"ofdpaPortNameGet", fun port_name_get/0},
+		{"ofdpaPortStateGet", fun port_state_get/0},
+		{"ofdpaPortConfigSet", fun port_config_set/0},
+		{"ofdpaPortConfigGet", fun port_config_get/0},
+		{"ofdpaPortMaxSpeedGet", fun port_max_speed_get/0},
+		{"ofdpaPortCurrSpeedGet", fun port_curr_speed_get/0},
+		{"ofdpaPortFeatureGet", fun port_feature_get/0},
+		{"ofdpaPortAdvertiseFeatureSet", fun port_advertise_feature_set/0},
+		{"ofdpaPortStatsClear", fun port_stats_clear/0},
+		{"ofdpaPortStatsGet", fun port_stats_get/0}
+	  ]}].
+
 %% OFDPA_ERROR_t ofdpaFlowEntryInit(OFDPA_FLOW_TABLE_ID_t tableId, ofdpaFlowEntry_t *flow);
 flow_entry_init() ->
 	{ok,E,F} = ofdpa:ofdpaFlowEntryInit(flow_table_id_vlan),
@@ -391,23 +414,109 @@ group_table_info_get() ->
 	?assertEqual(I#group_table_info.maxGroupEntries, 20),
 	?assertEqual(I#group_table_info.maxBucketEntries, 30).
 
-%% Ports
 %% void ofdpaPortTypeGet(uint32_t portNum, uint32_t *type);
+port_type_get() ->
+	{ok,T} = ofdpa:ofdpaPortTypeGet(1),
+	?assertEqual(T, 100).
+
 %% void ofdpaPortTypeSet(uint32_t *portNum [inout], uint32_t type);
+port_type_set() ->
+	{ok,P} = ofdpa:ofdpaPortTypeSet(1, 2),
+	?assertEqual(P, 3).
+
 %% void ofdpaPortIndexGet(uint32_t portNum, uint32_t *index);
+port_index_get() ->
+	{ok,I} = ofdpa:ofdpaPortIndexGet(1),
+	?assertEqual(I, 7).
+
 %% void ofdpaPortIndexSet(uint32_t *portNum [inout], uint32_t index);
+port_index_set() ->
+	{ok,P} = ofdpa:ofdpaPortIndexSet(1, 2),
+	?assertEqual(P, 8).
+
 %% OFDPA_ERROR_t ofdpaPortNextGet(uint32_t portNum, uint32_t *nextPortNum);
+port_next_get() ->
+	{ok,E,P} = ofdpa:ofdpaPortNextGet(1),
+	?assertEqual(E, e_none),
+	?assertEqual(P, 9).
+
 %% OFDPA_ERROR_t ofdpaPortMacGet(uint32_t portNum, ofdpaMacAddr_t *mac);
+port_mac_get() ->
+	{ok,E,M} = ofdpa:ofdpaPortMacGet(1),
+	?assertEqual(E, e_none),
+	?assertEqual(M, <<1,2,3,4,5,6>>).
+
 %% OFDPA_ERROR_t ofdpaPortNameGet(uint32_t portNum, ofdpa_buffdesc *name);	%% special
+port_name_get() ->
+	{ok,E,N} = ofdpa:ofdpaPortNameGet(1),
+	?assertEqual(E, e_none),
+	?assertEqual(N, <<"Port-1">>).
+
 %% OFDPA_ERROR_t ofdpaPortStateGet(uint32_t  portNum, OFDPA_PORT_STATE_t  *state);
+port_state_get() ->
+	{ok,E,S} = ofdpa:ofdpaPortStateGet(1),
+	?assertEqual(E, e_none),
+	?assertEqual(S, port_state_link_down).
+
 %% OFDPA_ERROR_t ofdpaPortConfigSet(uint32_t portNum, OFDPA_PORT_CONFIG_t config);
+port_config_set() ->
+	{ok,E} = ofdpa:ofdpaPortConfigSet(1, port_config_down),
+	?assertEqual(E, e_none).
+
 %% OFDPA_ERROR_t ofdpaPortConfigGet(uint32_t portNum, OFDPA_PORT_CONFIG_t  *config);
+port_config_get() ->
+	{ok,E,C} = ofdpa:ofdpaPortConfigGet(1),
+	?assertEqual(E, e_none),
+	?assertEqual(C, port_config_down).
+
 %% OFDPA_ERROR_t ofdpaPortMaxSpeedGet(uint32_t portNum, uint32_t  *maxSpeed);
+port_max_speed_get() ->
+	{ok,E,S} = ofdpa:ofdpaPortMaxSpeedGet(1),
+	?assertEqual(E, e_none),
+	?assertEqual(S, 1001).
+
 %% OFDPA_ERROR_t ofdpaPortCurrSpeedGet(uint32_t portNum, uint32_t  *currSpeed);
+port_curr_speed_get() ->
+	{ok,E,S} = ofdpa:ofdpaPortCurrSpeedGet(1),
+	?assertEqual(E, e_none),
+	?assertEqual(S, 999).
+
 %% OFDPA_ERROR_t ofdpaPortFeatureGet(uint32_t portNum, ofdpaPortFeature_t *feature);
+port_feature_get() ->
+	{ok,E,F} = ofdpa:ofdpaPortFeatureGet(1),
+	?assertEqual(E, e_none),
+	?assertEqual(F#port_feature.curr, port_feat_10mb_hd), %% 1
+	?assertEqual(F#port_feature.advertised, port_feat_10mb_fd), %% 2
+	?assertEqual(F#port_feature.supported, [port_feat_10mb_fd,port_feat_10mb_hd]), %% 3
+	?assertEqual(F#port_feature.peer, [port_feat_100mb_fd,port_feat_100mb_hd,port_feat_10mb_hd]). %% 13
+
 %% OFDPA_ERROR_t ofdpaPortAdvertiseFeatureSet(uint32_t portNum, uint32_t advertise);
+port_advertise_feature_set() ->
+	{ok,E} = ofdpa:ofdpaPortAdvertiseFeatureSet(1, 12),
+	?assertEqual(E, e_none).
+
 %% OFDPA_ERROR_t ofdpaPortStatsClear(uint32_t portNum);
+port_stats_clear() ->
+	{ok,E} = ofdpa:ofdpaPortStatsClear(1),
+	?assertEqual(E, e_none).
+
 %% OFDPA_ERROR_t ofdpaPortStatsGet(uint32_t portNum, ofdpaPortStats_t *stats);
+port_stats_get() ->
+	{ok,E,S} = ofdpa:ofdpaPortStatsGet(1),
+	?assertEqual(E, e_none),
+	?assertEqual(S#port_stats.rx_packets, 1),
+	?assertEqual(S#port_stats.tx_packets, 2),
+	?assertEqual(S#port_stats.rx_bytes, 3),
+	?assertEqual(S#port_stats.tx_bytes, 4),
+	?assertEqual(S#port_stats.rx_errors, 5),
+	?assertEqual(S#port_stats.tx_errors, 6),
+	?assertEqual(S#port_stats.rx_drops, 7),
+	?assertEqual(S#port_stats.tx_drops, 8),
+	?assertEqual(S#port_stats.rx_frame_err, 9),
+	?assertEqual(S#port_stats.rx_over_err, 10),
+	?assertEqual(S#port_stats.rx_crc_err, 11),
+	?assertEqual(S#port_stats.collisions, 12),
+	?assertEqual(S#port_stats.duration_seconds, 13).
 
 %% Packet-out
 %% OFDPA_ERROR_t ofdpaPktSend(ofdpa_buffdesc *pkt, uint32_t flags, uint32_t outPortNum, uint32_t inPortNum); %% special

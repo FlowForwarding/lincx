@@ -44,22 +44,22 @@
          ofdpaGroupBucketEntryNextGet/2,
          ofdpaGroupBucketEntryModify/1,
          ofdpaGroupTableInfoGet/1,
-         ofdpaPortTypeGet/2,
+         ofdpaPortTypeGet/1,
          ofdpaPortTypeSet/2,
-         ofdpaPortIndexGet/2,
+         ofdpaPortIndexGet/1,
          ofdpaPortIndexSet/2,
-         ofdpaPortNextGet/2,
-         ofdpaPortMacGet/2,
-         ofdpaPortNameGet/2,
-         ofdpaPortStateGet/2,
+         ofdpaPortNextGet/1,
+         ofdpaPortMacGet/1,
+         ofdpaPortNameGet/1,
+         ofdpaPortStateGet/1,
          ofdpaPortConfigSet/2,
-         ofdpaPortConfigGet/2,
-         ofdpaPortMaxSpeedGet/2,
-         ofdpaPortCurrSpeedGet/2,
-         ofdpaPortFeatureGet/2,
+         ofdpaPortConfigGet/1,
+         ofdpaPortMaxSpeedGet/1,
+         ofdpaPortCurrSpeedGet/1,
+         ofdpaPortFeatureGet/1,
          ofdpaPortAdvertiseFeatureSet/2,
          ofdpaPortStatsClear/1,
-         ofdpaPortStatsGet/2,
+         ofdpaPortStatsGet/1,
          ofdpaPktSend/4,
          ofdpaMaxPktSizeGet/1,
          ofdpaPktReceive/2,
@@ -124,6 +124,8 @@ decode_args(<<N:64/little,Blob/binary>>, [uint64_t|Rs], Acc) ->
 	decode_args(Blob, Rs, [N|Acc]);
 decode_args(<<Sz:32/little,Bin:(Sz)/binary,Blob/binary>>, [{struct,S}|Rs], Acc) ->
 	decode_args(Blob, Rs, [binary_to_struct(S, Bin)|Acc]);
+decode_args(<<Mac:6/binary,Blob/binary>>, [ofdpaMacAddr_t|Rs], Acc) ->
+	decode_args(Blob, Rs, [Mac|Acc]);
 decode_args(<<Sz:32/little,Str:(Sz)/binary,Blob/binary>>, [string|Rs], Acc) ->
 	decode_args(Blob, Rs, [Str|Acc]).
 
@@ -273,7 +275,33 @@ integer_to_enum(l2_overlay_subtype_t, 3) ->
 integer_to_enum(port_config_t, 1) ->
     port_config_down;
 integer_to_enum(port_state_t, 1) ->
-    port_state_link_down.
+    port_state_link_down;
+
+%% added manually
+
+integer_to_enum(port_feature_t, 1) -> port_feat_10mb_hd;
+integer_to_enum(port_feature_t, 2) -> port_feat_10mb_fd;
+integer_to_enum(port_feature_t, 4) -> port_feat_100mb_hd;
+integer_to_enum(port_feature_t, 8) -> port_feat_100mb_fd;
+integer_to_enum(port_feature_t, 16) -> port_feat_1gb_hd;
+integer_to_enum(port_feature_t, 32) -> port_feat_1gb_fd;
+integer_to_enum(port_feature_t, 64) -> port_feat_10gb_fd;
+integer_to_enum(port_feature_t, 128) -> port_feat_40gb_fd;
+integer_to_enum(port_feature_t, 256) -> port_feat_100gb_fd;
+integer_to_enum(port_feature_t, 512) -> port_feat_1tb_fd;
+integer_to_enum(port_feature_t, 1024) -> port_feat_other;
+integer_to_enum(port_feature_t, 2048) -> port_feat_cooper;
+integer_to_enum(port_feature_t, 4096) -> port_feat_fiber;
+integer_to_enum(port_feature_t, 8192) -> port_feat_autoneg;
+integer_to_enum(port_feature_t, 16384) -> port_feat_pause;
+integer_to_enum(port_feature_t, 32768) -> port_feat_pause_asym;
+
+integer_to_enum(port_feature_t, Bits) ->
+	lists:foldl(fun(M, Fs)  when Bits band M =/= 0 ->
+		[integer_to_enum(port_feature_t, M)|Fs];
+	(_, Fs) ->
+		Fs
+	end, [], [1 bsl N || N <- lists:seq(0, 15)]).
 
 %% manually
 
@@ -935,7 +963,7 @@ binary_to_struct(port_stats,
                    Rx_over_err:64/little,
                    Rx_crc_err:64/little,
                    Collisions:64/little,
-                   Duration_seconds:32/little>>) ->
+                   Duration_seconds:32/little,_/binary>>) ->
     #port_stats{rx_packets = Rx_packets,
                 tx_packets = Tx_packets,
                 rx_bytes = Rx_bytes,
@@ -1161,38 +1189,37 @@ ofdpaGroupTableInfoGet(GroupType) ->
          136,
          [{uint32_t,enum_to_integer(group_entry_type_t, GroupType)}]).
 
-ofdpaPortTypeGet(PortNum, Type) ->
-    call([uint32_t], 137, [{uint32_t,PortNum},{uint32_t,Type}]).
+ofdpaPortTypeGet(PortNum) ->
+    call([uint32_t], 137, [{uint32_t,PortNum}]).
 
 ofdpaPortTypeSet(PortNum, Type) ->
     call([uint32_t], 138, [{uint32_t,PortNum},{uint32_t,Type}]).
 
-ofdpaPortIndexGet(PortNum, Index) ->
-    call([uint32_t], 139, [{uint32_t,PortNum},{uint32_t,Index}]).
+ofdpaPortIndexGet(PortNum) ->
+    call([uint32_t], 139, [{uint32_t,PortNum}]).
 
 ofdpaPortIndexSet(PortNum, Index) ->
     call([uint32_t], 140, [{uint32_t,PortNum},{uint32_t,Index}]).
 
-ofdpaPortNextGet(PortNum, NextPortNum) ->
+ofdpaPortNextGet(PortNum) ->
     call([{enum,error_t},uint32_t],
          141,
-         [{uint32_t,PortNum},{uint32_t,NextPortNum}]).
+         [{uint32_t,PortNum}]).
 
-ofdpaPortMacGet(PortNum, Mac) ->
+ofdpaPortMacGet(PortNum) ->
     call([{enum,error_t},ofdpaMacAddr_t],
          142,
-         [{uint32_t,PortNum},{ofdpaMacAddr_t,Mac}]).
+         [{uint32_t,PortNum}]).
 
-ofdpaPortNameGet(PortNum, Name) ->
-    call([{enum,error_t},ofdpa_buffdesc],
+ofdpaPortNameGet(PortNum) ->
+    call([{enum,error_t},string],
          143,
-         [{uint32_t,PortNum},{ofdpa_buffdesc,Name}]).
+         [{uint32_t,PortNum}]).
 
-ofdpaPortStateGet(PortNum, State) ->
+ofdpaPortStateGet(PortNum) ->
     call([{enum,error_t},{enum,port_state_t}],
          144,
-         [{uint32_t,PortNum},
-          {uint32_t,enum_to_integer(port_state_t, State)}]).
+         [{uint32_t,PortNum}]).
 
 ofdpaPortConfigSet(PortNum, Config) ->
     call([{enum,error_t}],
@@ -1200,26 +1227,25 @@ ofdpaPortConfigSet(PortNum, Config) ->
          [{uint32_t,PortNum},
           {uint32_t,enum_to_integer(port_config_t, Config)}]).
 
-ofdpaPortConfigGet(PortNum, Config) ->
+ofdpaPortConfigGet(PortNum) ->
     call([{enum,error_t},{enum,port_config_t}],
          146,
-         [{uint32_t,PortNum},
-          {uint32_t,enum_to_integer(port_config_t, Config)}]).
+         [{uint32_t,PortNum}]).
 
-ofdpaPortMaxSpeedGet(PortNum, MaxSpeed) ->
+ofdpaPortMaxSpeedGet(PortNum) ->
     call([{enum,error_t},uint32_t],
          147,
-         [{uint32_t,PortNum},{uint32_t,MaxSpeed}]).
+         [{uint32_t,PortNum}]).
 
-ofdpaPortCurrSpeedGet(PortNum, CurrSpeed) ->
+ofdpaPortCurrSpeedGet(PortNum) ->
     call([{enum,error_t},uint32_t],
          148,
-         [{uint32_t,PortNum},{uint32_t,CurrSpeed}]).
+         [{uint32_t,PortNum}]).
 
-ofdpaPortFeatureGet(PortNum, Feature) ->
+ofdpaPortFeatureGet(PortNum) ->
     call([{enum,error_t},{struct,port_feature}],
          149,
-         [{uint32_t,PortNum},struct_to_binary(Feature)]).
+         [{uint32_t,PortNum}]).
 
 ofdpaPortAdvertiseFeatureSet(PortNum, Advertise) ->
     call([{enum,error_t}],
@@ -1229,10 +1255,10 @@ ofdpaPortAdvertiseFeatureSet(PortNum, Advertise) ->
 ofdpaPortStatsClear(PortNum) ->
     call([{enum,error_t}], 151, [{uint32_t,PortNum}]).
 
-ofdpaPortStatsGet(PortNum, Stats) ->
+ofdpaPortStatsGet(PortNum) ->
     call([{enum,error_t},{struct,port_stats}],
          152,
-         [{uint32_t,PortNum},struct_to_binary(Stats)]).
+         [{uint32_t,PortNum}]).
 
 ofdpaPktSend(Pkt, Flags, OutPortNum, InPortNum) ->
     call([{enum,error_t},ofdpa_buffdesc],
