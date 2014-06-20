@@ -22,8 +22,8 @@ ether(Packet, eth_dst, ValueBin) ->
 	splice_binary(Packet, 0, 6, ValueBin);
 ether(Packet, eth_src, ValueBin) ->
 	splice_binary(Packet, 48, 6, ValueBin);
-ether(_Packet, eth_type, _Value) ->
-	protected;
+ether(Packet, eth_type, Value) ->
+	splice_bits(Packet, 96, 16, Value);
 ether(<<_:12/binary,Rest/binary>> =Packet, Field, Value) ->
 	ether(Packet, Field, Value, 96, Rest).
 
