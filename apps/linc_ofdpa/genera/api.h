@@ -86,7 +86,7 @@ OFDPA_ERROR_t ofdpaPortStatsClear(uint32_t portNum);
 OFDPA_ERROR_t ofdpaPortStatsGet(uint32_t portNum, ofdpaPortStats_t *stats);
 
 // Packet-out
-OFDPA_ERROR_t ofdpaPktSend(ofdpa_buffdesc *pkt, uint32_t flags, uint32_t outPortNum, uint32_t inPortNum); // special
+OFDPA_ERROR_t ofdpaPktSend(ofdpa_buffdesc *pkt [in], uint32_t flags, uint32_t outPortNum, uint32_t inPortNum); // special
 OFDPA_ERROR_t ofdpaMaxPktSizeGet(uint32_t *pktSize);
 
 // Events

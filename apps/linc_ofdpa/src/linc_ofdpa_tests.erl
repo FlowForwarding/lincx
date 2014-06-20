@@ -88,6 +88,35 @@ port_test_() ->
 		{"ofdpaPortStatsGet", fun port_stats_get/0}
 	  ]}].
 
+pkt_test_() ->
+	[{setup,
+	  fun() -> ensure_link() end,
+	  fun(_) -> ok end,
+	  [
+		{"ofdpaPktSend", fun pkt_send/0},
+		{"ofdpaMaxPktSizeGet", fun max_pkt_size_get/0}
+	  ]}].
+
+table_test_() ->
+	[{setup,
+	  fun() -> ensure_link() end,
+	  fun(_) -> ok end,
+	  [
+		{"ofdpaFlowTableInfoGet", fun flow_table_info_get/0}
+	  ]}].
+
+queue_test_() ->
+	[{setup,
+	  fun() -> ensure_link() end,
+	  fun(_) -> ok end,
+	  [
+		{"ofdpaNumQueuesGet", fun num_queues_get/0},
+		{"ofdpaQueueStatsGet", fun queue_stats_get/0},
+		{"ofdpaQueueStatsClear", fun queue_stats_clear/0},
+		{"ofdpaQueueRateSet", fun queue_rate_set/0},
+		{"ofdpaQueueRateGet", fun queue_rate_get/0}
+	  ]}].
+
 %% OFDPA_ERROR_t ofdpaFlowEntryInit(OFDPA_FLOW_TABLE_ID_t tableId, ofdpaFlowEntry_t *flow);
 flow_entry_init() ->
 	{ok,E,F} = ofdpa:ofdpaFlowEntryInit(flow_table_id_vlan),
@@ -518,18 +547,53 @@ port_stats_get() ->
 	?assertEqual(S#port_stats.collisions, 12),
 	?assertEqual(S#port_stats.duration_seconds, 13).
 
-%% Packet-out
 %% OFDPA_ERROR_t ofdpaPktSend(ofdpa_buffdesc *pkt, uint32_t flags, uint32_t outPortNum, uint32_t inPortNum); %% special
-%% OFDPA_ERROR_t ofdpaMaxPktSizeGet(uint32_t *pktSize);
- 
-%% Tables
-%% OFDPA_ERROR_t ofdpaFlowTableInfoGet(OFDPA_FLOW_TABLE_ID_t tableId, ofdpaFlowTableInfo_t *info);
+pkt_send() ->
+	{ok,E} = ofdpa:ofdpaPktSend(<<1,2,3>>, 0, 1, 2),
+	?assertEqual(E, e_none).
 
-%% Queues
+%% OFDPA_ERROR_t ofdpaMaxPktSizeGet(uint32_t *pktSize);
+max_pkt_size_get() ->
+	{ok,E,S} = ofdpa:ofdpaMaxPktSizeGet(),
+	?assertEqual(E, e_none),
+	?assertEqual(S, 1500).
+ 
+%% OFDPA_ERROR_t ofdpaFlowTableInfoGet(OFDPA_FLOW_TABLE_ID_t tableId, ofdpaFlowTableInfo_t *info);
+flow_table_info_get() ->
+	{ok,E,I} = ofdpa:ofdpaFlowTableInfoGet(flow_table_id_vlan),
+	?assertEqual(E, e_none),
+	?assertEqual(I#flow_table_info.numEntries, 10),
+	?assertEqual(I#flow_table_info.maxEntries, 20).
+
 %% OFDPA_ERROR_t ofdpaNumQueuesGet(uint32_t portNum, uint32_t *numQueues);
+num_queues_get() ->
+	{ok,E,N} = ofdpa:ofdpaNumQueuesGet(1),
+	?assertEqual(E, e_none),
+	?assertEqual(N, 137).
+
 %% OFDPA_ERROR_t ofdpaQueueStatsGet(uint32_t portNum, uint32_t queueId, ofdpaPortQueueStats_t *stats);
+queue_stats_get() ->
+	{ok,E,S} = ofdpa:ofdpaQueueStatsGet(1, 2),
+	?assertEqual(E, e_none),
+	?assertEqual(S#port_queue_stats.txBytes, 1234),
+	?assertEqual(S#port_queue_stats.txPkts, 5678),
+	?assertEqual(S#port_queue_stats.duration_seconds, 987654321).
+
 %% OFDPA_ERROR_t ofdpaQueueStatsClear(uint32_t portNum, uint32_t queueId);
+queue_stats_clear() ->
+	{ok,E} = ofdpa:ofdpaQueueStatsClear(1, 2),
+	?assertEqual(E, e_none).
+
 %% OFDPA_ERROR_t ofdpaQueueRateSet(uint32_t portNum, uint32_t queueId, uint32_t minRate, uint32_t maxRate);
+queue_rate_set() ->
+	{ok,E} = ofdpa:ofdpaQueueRateSet(1, 2, 10, 20),
+	?assertEqual(E, e_none).
+
 %% OFDPA_ERROR_t ofdpaQueueRateGet(uint32_t portNum, uint32_t queueId, uint32_t *minRate, uint32_t *maxRate);
+queue_rate_get() ->
+	{ok,E,R1,R2} = ofdpa:ofdpaQueueRateGet(1, 2),
+	?assertEqual(E, e_none),
+	?assertEqual(R1, 100),
+	?assertEqual(R2, 200).
 
 %%EOF

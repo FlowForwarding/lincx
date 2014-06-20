@@ -1538,26 +1538,36 @@ apr_status_t invoke(uint16_t what, uint32_t cookie,
 	}
 	case PKT_SEND:
 	{
-//		assert(roff +4 <= *ret_len);
-//		// make space for OFDPA_ERROR_t
-//		roff += 4;
-//
-//		//TODO: {pkt,ofdpa_buffdesc,out,scalar}
-//
-//		assert(off +4 <= arg_len);
-//		uint32_t flags = GET32(arg_buf +off);
-//		off += 4;
-//		assert(off +4 <= arg_len);
-//		uint32_t outPortNum = GET32(arg_buf +off);
-//		off += 4;
-//		assert(off +4 <= arg_len);
-//		uint32_t inPortNum = GET32(arg_buf +off);
-//		off += 4;
-//
-//		OFDPA_ERROR_t err = ofdpaPktSend(pkt, flags, outPortNum, inPortNum);
-//		PUT32(ret_buf, err);
-//
-//		*ret_len = roff;
+		assert(roff +4 <= *ret_len);
+		// make space for OFDPA_ERROR_t
+		roff += 4;
+
+		assert(off +4 <= arg_len);	
+		uint32_t pkt_len = GET32(arg_buf +off);
+		off +4;
+		assert(off +pkt_len <= arg_len);
+		uint8_t *pkt_data = (uint8_t *)(arg_buf +off);
+		off += pkt_len;
+
+		assert(off +4 <= arg_len);
+		uint32_t flags = GET32(arg_buf +off);
+		off += 4;
+		assert(off +4 <= arg_len);
+		uint32_t outPortNum = GET32(arg_buf +off);
+		off += 4;
+		assert(off +4 <= arg_len);
+		uint32_t inPortNum = GET32(arg_buf +off);
+		off += 4;
+
+		ofdpa_buffdesc pkt = {
+			.pstart = pkt_data,
+			.size = pkt_len
+		};
+
+		OFDPA_ERROR_t err = ofdpaPktSend(&pkt, flags, outPortNum, inPortNum);
+		PUT32(ret_buf, err);
+
+		*ret_len = roff;
 		break;
 	}
 	case MAX_PKT_SIZE_GET:
@@ -1569,7 +1579,6 @@ apr_status_t invoke(uint16_t what, uint32_t cookie,
 		assert(roff +4 <= *ret_len);
 		uint32_t *pktSize = (uint32_t *)(ret_buf +roff);
 		roff += 4;
-
 
 		OFDPA_ERROR_t err = ofdpaMaxPktSizeGet(pktSize);
 		PUT32(ret_buf, err);

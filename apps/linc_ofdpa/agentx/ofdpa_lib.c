@@ -375,48 +375,27 @@ OFDPA_ERROR_t ofdpaPortStatsGet(uint32_t portNum, ofdpaPortStats_t *stats)
 // Packet-out
 OFDPA_ERROR_t ofdpaPktSend(ofdpa_buffdesc *pkt, uint32_t flags, uint32_t outPortNum, uint32_t inPortNum)
 {
-	//TODO
 	return OFDPA_E_NONE;
 }
- // special
+
 OFDPA_ERROR_t ofdpaMaxPktSizeGet(uint32_t *pktSize)
 {
-	//TODO
+	*pktSize = 1500;
 	return OFDPA_E_NONE;
 }
-
- // special
-OFDPA_ERROR_t ofdpaEventReceive(struct timeval *timeout)
-{
-	//TODO
-	return OFDPA_E_NONE;
-}
- // special
-OFDPA_ERROR_t ofdpaPortEventNextGet(ofdpaPortEvent_t *eventData)
-{
-	//TODO
-	return OFDPA_E_NONE;
-}
-
-OFDPA_ERROR_t ofdpaFlowEventNextGet(ofdpaFlowEvent_t *eventData)
-{
-	//TODO
-	return OFDPA_E_NONE;
-}
-
 
 // Tables
 OFDPA_ERROR_t ofdpaFlowTableInfoGet(OFDPA_FLOW_TABLE_ID_t tableId, ofdpaFlowTableInfo_t *info)
 {
-	//TODO
+	info->numEntries = 10;
+	info->maxEntries = 20;
 	return OFDPA_E_NONE;
 }
-
 
 // Queues
 OFDPA_ERROR_t ofdpaNumQueuesGet(uint32_t portNum, uint32_t *numQueues)
 {
-	//TODO
+	*numQueues = 137;
 	return OFDPA_E_NONE;
 }
 
@@ -431,23 +410,32 @@ OFDPA_ERROR_t ofdpaQueueStatsGet(uint32_t portNum, uint32_t queueId, ofdpaPortQu
 
 OFDPA_ERROR_t ofdpaQueueStatsClear(uint32_t portNum, uint32_t queueId)
 {
-	//TODO
 	return OFDPA_E_NONE;
 }
 
 OFDPA_ERROR_t ofdpaQueueRateSet(uint32_t portNum, uint32_t queueId, uint32_t minRate, uint32_t maxRate)
 {
-	//TODO
 	return OFDPA_E_NONE;
 }
 
 OFDPA_ERROR_t ofdpaQueueRateGet(uint32_t portNum, uint32_t queueId, uint32_t *minRate, uint32_t *maxRate)
 {
-	//TODO
+	*minRate = 100;
+	*maxRate = 200;
 	return OFDPA_E_NONE;
 }
 
 // Asynchronous events
+
+OFDPA_ERROR_t ofdpaFlowEventNextGet(ofdpaFlowEvent_t *eventData)
+{
+	return OFDPA_E_NONE;
+}
+
+OFDPA_ERROR_t ofdpaPortEventNextGet(ofdpaPortEvent_t *eventData)
+{
+	return OFDPA_E_NONE;
+}
 
 int ofdpaClientEventSockFdGet()
 {

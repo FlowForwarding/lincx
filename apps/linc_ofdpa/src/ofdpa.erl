@@ -61,17 +61,17 @@
          ofdpaPortStatsClear/1,
          ofdpaPortStatsGet/1,
          ofdpaPktSend/4,
-         ofdpaMaxPktSizeGet/1,
+         ofdpaMaxPktSizeGet/0,
          ofdpaPktReceive/2,
          ofdpaEventReceive/1,
          ofdpaPortEventNextGet/1,
          ofdpaFlowEventNextGet/1,
-         ofdpaFlowTableInfoGet/2,
-         ofdpaNumQueuesGet/2,
-         ofdpaQueueStatsGet/3,
+         ofdpaFlowTableInfoGet/1,
+         ofdpaNumQueuesGet/1,
+         ofdpaQueueStatsGet/2,
          ofdpaQueueStatsClear/2,
          ofdpaQueueRateSet/4,
-         ofdpaQueueRateGet/4]).
+         ofdpaQueueRateGet/2]).
 
 -include("ofdpa.hrl").
 
@@ -1261,15 +1261,15 @@ ofdpaPortStatsGet(PortNum) ->
          [{uint32_t,PortNum}]).
 
 ofdpaPktSend(Pkt, Flags, OutPortNum, InPortNum) ->
-    call([{enum,error_t},ofdpa_buffdesc],
+    call([{enum,error_t}],
          153,
-         [{ofdpa_buffdesc,Pkt},
+         [Pkt,
           {uint32_t,Flags},
           {uint32_t,OutPortNum},
           {uint32_t,InPortNum}]).
 
-ofdpaMaxPktSizeGet(PktSize) ->
-    call([{enum,error_t},uint32_t], 154, [{uint32_t,PktSize}]).
+ofdpaMaxPktSizeGet() ->
+    call([{enum,error_t},uint32_t], 154, []).
 
 ofdpaPktReceive(Timeout, Pkt) ->
     call([{enum,error_t},timeval,{struct,packet}],
@@ -1289,21 +1289,20 @@ ofdpaFlowEventNextGet(EventData) ->
          158,
          [struct_to_binary(EventData)]).
 
-ofdpaFlowTableInfoGet(TableId, Info) ->
+ofdpaFlowTableInfoGet(TableId) ->
     call([{enum,error_t},{struct,flow_table_info}],
          159,
-         [{uint32_t,enum_to_integer(flow_table_id_t, TableId)},
-          struct_to_binary(Info)]).
+         [{uint32_t,enum_to_integer(flow_table_id_t, TableId)}]).
 
-ofdpaNumQueuesGet(PortNum, NumQueues) ->
+ofdpaNumQueuesGet(PortNum) ->
     call([{enum,error_t},uint32_t],
          160,
-         [{uint32_t,PortNum},{uint32_t,NumQueues}]).
+         [{uint32_t,PortNum}]).
 
-ofdpaQueueStatsGet(PortNum, QueueId, Stats) ->
+ofdpaQueueStatsGet(PortNum, QueueId) ->
     call([{enum,error_t},{struct,port_queue_stats}],
          161,
-         [{uint32_t,PortNum},{uint32_t,QueueId},struct_to_binary(Stats)]).
+         [{uint32_t,PortNum},{uint32_t,QueueId}]).
 
 ofdpaQueueStatsClear(PortNum, QueueId) ->
     call([{enum,error_t}], 162, [{uint32_t,PortNum},{uint32_t,QueueId}]).
@@ -1316,11 +1315,10 @@ ofdpaQueueRateSet(PortNum, QueueId, MinRate, MaxRate) ->
           {uint32_t,MinRate},
           {uint32_t,MaxRate}]).
 
-ofdpaQueueRateGet(PortNum, QueueId, MinRate, MaxRate) ->
+ofdpaQueueRateGet(PortNum, QueueId) ->
     call([{enum,error_t},uint32_t,uint32_t],
          164,
          [{uint32_t,PortNum},
-          {uint32_t,QueueId},
-          {uint32_t,MinRate},
-          {uint32_t,MaxRate}]).
+          {uint32_t,QueueId}]).
 
+%%EOF
