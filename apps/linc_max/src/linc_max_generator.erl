@@ -176,8 +176,8 @@ pat(#ofp_field{name =vlan_vid,value = <<16#1000:13>>,has_mask =true,mask = <<16#
 	{vlan_tag,[{0,0,0}]};
 pat(#ofp_field{name =vlan_vid,value = <<_:1,Value:12>>,has_mask =false}) ->
 	bit_pat(vlan_tag, 4, 12, Value, nomask);
-pat(#ofp_field{name =vlan_vid,value = <<_:1,Value:12>>,has_mask =HasMask,mask = <<_:1, Mask:12>>}) ->
-	bit_pat(vlan_tag, 4, 12, Value, mask(HasMask, Mask, 12));
+pat(#ofp_field{name =vlan_vid,value = <<_:1,Value:12>>,has_mask =true,mask = <<_:1, Mask:12>>}) ->
+	bit_pat(vlan_tag, 4, 12, Value, Mask);
 pat(#ofp_field{name =vlan_pcp,value = <<Value:3>>}) ->
 	bit_pat(vlan_tag, 0, 3, Value, nomask);
 pat(#ofp_field{name =ip_dscp,value = <<Value:6>>}) ->
