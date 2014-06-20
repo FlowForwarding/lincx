@@ -3,12 +3,12 @@ ACTION:
 
 |                               |req|IPv4  |IPv6  |ARP   |
 |-------------------------------|-|----|----|----|
-|OUTPUT                         |!| ✓  |   ✓  |   ✓  |   
-|PUSH_VLAN                      | | ✓  |   ✓  |   ✓  |   
+|OUTPUT                         |!| +  |   +  |   +  |   
+|PUSH_VLAN                      | | +  |   +  |   +  |   
 |PUSH_MPLS                      | | -  |   -  |   -  |   
 |PUSH_PBB                       | | -  |   -  |   -  |   
-|PUSH_VLAN (multiple)           | | ✓  |   ✓  |   ✓  |   
-|POP_VLAN                       | | ✓  |   ✓  |   ✓  |   
+|PUSH_VLAN (multiple)           | | +  |   +  |   +  |   
+|POP_VLAN                       | | +  |   +  |   +  |   
 |COPY_TTL_OUT                   | | -  |   -  |   
 |COPY_TTL_IN                    | | -  |   -  |   
 |SET_MPLS_TTL                   | | -  |   -  |   -  |   
@@ -22,8 +22,8 @@ ACTION:
 
 |                               |req|ether |vlan  |mpls  |pbb   |
 |-------------------------------|-|----|----|----|----|
-|SET_NW_TTL (IPv4)              | | ✓  |   ✓  |   -  |   -  |   
-|DEC_NW_TTL (IPv4)              | | ✓  |   ✓  |   -  |   -  |   
+|SET_NW_TTL (IPv4)              | | +  |   +  |   -  |   -  |   
+|DEC_NW_TTL (IPv4)              | | +  |   +  |   -  |   -  |   
 |SET_NW_TTL (IPv6)              | | -  |   -  |   -  |   -  |   
 |DEC_NW_TTL (IPv6)              | | -  |   -  |   -  |   -  |   
 
@@ -31,129 +31,130 @@ ACTION: SET_FIELD:
 
 |                               |req|IPv4  |IPv6  |ARP   |
 |-------------------------------|-|----|----|----|
-|ETH_DST                        | | ✓  |   ✓  |   ✓  |   
-|ETH_SRC                        | | ✓  |   ✓  |   ✓  |   
-|ETH_TYPE                       | | -  |   -  |   -  |   
+|ETH_DST                        | | +  |   +  |   +  |   
+|ETH_SRC                        | | +  |   +  |   +  |   
+|ETH_TYPE                       | | +  |   +  |   +  |   
 |TUNNEL_ID                      | | -  |   -  |   -  |   
-|VLAN_VID                       | | -  |   -  |   -  |   
+|VLAN_VID                       | | +  |   +  |   +  |   
 |VLAN_PCP                       | | -  |   -  |   -  |   
 |MPLS_LABEL                     | | -  |   -  |   -  |   
 |MPLS_TC                        | | -  |   -  |   -  |   
 |MPLS_BOS                       | | -  |   -  |   -  |   
-|PBB_ISID                       | | ✓  |   ✓  |   ✓  |   
+|PBB_ISID                       | | +  |   +  |   +  |   
 
 ACTION: SET_FIELD: 
 
 |                               |req|ether |vlan  |mpls  |pbb   |
 |-------------------------------|-|----|----|----|----|
-|IP_DSCP (IPv4)                 | | ✓  |   ✓  |   -  |   -  |   
-|IP_ECN (IPv4)                  | | ✓  |   ✓  |   -  |   -  |   
+|IP_DSCP (IPv4)                 | | +  |   +  |   -  |   -  |   
+|IP_ECN (IPv4)                  | | +  |   +  |   -  |   -  |   
 |IP_PROTO (IPv4)                | | -  |   -  |   -  |   -  |   
 |IPV4_SRC                       | | -  |   -  |   -  |   -  |   
 |IPV4_DST                       | | -  |   -  |   -  |   -  |   
-|TCP_SRC (IPv4)                 | | ✓  |   ✓  |   -  |   -  |   
-|TCP_DST (IPv4)                 | | ✓  |   ✓  |   -  |   -  |   
-|UDP_SRC (IPv4)                 | | ✓  |   ✓  |   -  |   -  |   
-|UDP_DST (IPv4)                 | | ✓  |   ✓  |   -  |   -  |   
+|TCP_SRC (IPv4)                 | | +  |   +  |   -  |   -  |   
+|TCP_DST (IPv4)                 | | +  |   +  |   -  |   -  |   
+|UDP_SRC (IPv4)                 | | +  |   +  |   -  |   -  |   
+|UDP_DST (IPv4)                 | | +  |   +  |   -  |   -  |   
 |SCTP_SRC (IPv4)                | | -  |   -  |   -  |   -  |   
 |SCTP_DST (IPv4)                | | -  |   -  |   -  |   -  |   
 |ICMPV4_TYPE                    | | -  |   -  |   -  |   -  |   
 |ICMPV4_CODE                    | | -  |   -  |   -  |   -  |   
-|IP_DSCP (IPv6)                 | | ✓  |   ✓  |   -  |   -  |   
-|IP_ECN (IPv6)                  | | ✓  |   ✓  |   -  |   -  |   
+|IP_DSCP (IPv6)                 | | +  |   +  |   -  |   -  |   
+|IP_ECN (IPv6)                  | | +  |   +  |   -  |   -  |   
 |IP_PROTO (IPv6)                | | -  |   -  |   -  |   -  |   
-|TCP_SRC (IPv6)                 | | ✓  |   ✓  |   -  |   -  |   
-|TCP_DST (IPv6)                 | | ✓  |   ✓  |   -  |   -  |   
-|UDP_SRC (IPv6)                 | | ✓  |   ✓  |   -  |   -  |   
-|UDP_DST (IPv6)                 | | ✓  |   ✓  |   -  |   -  |   
+|TCP_SRC (IPv6)                 | | +  |   +  |   -  |   -  |   
+|TCP_DST (IPv6)                 | | +  |   +  |   -  |   -  |   
+|UDP_SRC (IPv6)                 | | +  |   +  |   -  |   -  |   
+|UDP_DST (IPv6)                 | | +  |   +  |   -  |   -  |   
 |SCTP_SRC (IPv6)                | | -  |   -  |   -  |   -  |   
 |SCTP_DST (IPv6)                | | -  |   -  |   -  |   -  |   
 |IPV6_SRC                       | | -  |   -  |   -  |   -  |   
 |IPV6_DST                       | | -  |   -  |   -  |   -  |   
-|IPV6_FLABEL                    | | ✓  |   ✓  |   -  |   -  |   
+|IPV6_FLABEL                    | | +  |   +  |   -  |   -  |   
 |ICMPV6_TYPE                    | | -  |   -  |   -  |   -  |   
 |ICMPV6_CODE                    | | -  |   -  |   -  |   -  |   
-|IPV6_ND_TARGET                 | | ✓  |   ✓  |   -  |   -  |   
+|IPV6_ND_TARGET                 | | +  |   +  |   -  |   -  |   
 |IPV6_ND_SLL                    | | -  |   -  |   -  |   -  |   
 |IPV6_ND_TLL                    | | -  |   -  |   -  |   -  |   
-|ARP_OP                         | | ✓  |   ✓  |   -  |   -  |   
-|ARP_SPA                        | | ✓  |   ✓  |   -  |   -  |   
-|ARP_TPA                        | | ✓  |   ✓  |   -  |   -  |   
-|ARP_SHA                        | | ✓  |   ✓  |   -  |   -  |   
-|ARP_THA                        | | ✓  |   ✓  |   -  |   -  |   
+|ARP_OP                         | | +  |   +  |   -  |   -  |   
+|ARP_SPA                        | | +  |   +  |   -  |   -  |   
+|ARP_TPA                        | | +  |   +  |   -  |   -  |   
+|ARP_SHA                        | | +  |   +  |   -  |   -  |   
+|ARP_THA                        | | +  |   +  |   -  |   -  |   
 
 MATCH: 
 
 |                               |req|IPv4  |IPv6  |ARP   |
 |-------------------------------|-|----|----|----|
-|IN_PORT                        |!| ✓✓- |  ✓✓- |  ✓✓-|
-|METADATA                       | | ✓✓- |  ✓✓- |  ✓✓-|
-|METADATA (Mask)                | | ✓✓- |  ✓✓- |  ✓✓-|
-|ETH_DST                        |!| ✓✓- |  ✓✓- |  ✓✓-|
-|ETH_DST (Mask)                 |!| ✓✓- |  ✓✓- |  ✓✓-|
-|ETH_SRC                        |!| ✓✓- |  ✓✓- |  ✓✓-|
-|ETH_SRC (Mask)                 |!| ✓✓- |  ✓✓- |  ✓✓-|
-|ETH_TYPE                       |!| ✓✓- |  ✓✓- |  ✓✓-|
+|IN_PORT                        |!| ++- |  ++- |  ++-|
+|METADATA                       | | ++- |  ++- |  ++-|
+|METADATA (Mask)                | | ++- |  ++- |  ++-|
+|ETH_DST                        |!| ++- |  ++- |  ++-|
+|ETH_DST (Mask)                 |!| ++- |  ++- |  ++-|
+|ETH_SRC                        |!| ++- |  ++- |  ++-|
+|ETH_SRC (Mask)                 |!| ++- |  ++- |  ++-|
+|ETH_TYPE                       |!| ++- |  ++- |  ++-|
 |TUNNEL_ID                      | | --- |  --- |  ---|
 |TUNNEL_ID (Mask)               | | --- |  --- |  ---|
-|VLAN_VID                       | | --- |  --- |  ---|
-|VLAN_VID (Mask)                | | ✓✓- |  ✓✓- |  ✓✓-|
+|VLAN_VID                       | | ++- |  ++- |  ++-|
+|VLAN_VID (Mask)                | | ++- |  ++- |  ++-|
 |VLAN_PCP                       | | --- |  --- |  ---|
 |MPLS_LABEL                     | | --- |  --- |  ---|
 |MPLS_TC                        | | --- |  --- |  ---|
 |MPLS_BOS                       | | --- |  --- |  ---|
-|PBB_ISID                       | | ✓✓- |  ✓✓- |  ✓✓-|
-|PBB_ISID (Mask)                | | ✓✓- |  ✓✓- |  ✓✓-|
+|PBB_ISID                       | | ++- |  ++- |  ++-|
+|PBB_ISID (Mask)                | | ++- |  ++- |  ++-|
 
 MATCH: 
 
 |                               |req|ether |vlan  |mpls  |pbb   |
 |-------------------------------|-|----|----|----|----|
-|IP_DSCP (IPv4)                 | | ✓✓- |  ✓✓-  | ---  | ---|
-|IP_ECN (IPv4)                  | | ✓✓- |  ✓✓-  | ---  | ---|
-|IP_PROTO (IPv4)                |!| ✓✓- |  ✓✓-  | ---  | ---|
-|IPV4_SRC                       |!| ✓✓- |  ✓✓-  | ---  | ---|
-|IPV4_SRC (Mask)                |!| ✓✓- |  ✓✓-  | ---  | ---|
-|IPV4_DST                       |!| ✓✓- |  ✓✓-  | ---  | ---|
-|IPV4_DST (Mask)                |!| ✓✓- |  ✓✓-  | ---  | ---|
-|TCP_SRC (IPv4)                 |!| ✓✓- |  ✓✓-  | ---  | ---|
-|TCP_DST (IPv4)                 |!| ✓✓- |  ✓✓-  | ---  | ---|
-|UDP_SRC (IPv4)                 |!| ✓✓- |  ✓✓-  | ---  | ---|
-|UDP_DST (IPv4)                 |!| ✓✓- |  ✓✓-  | ---  | ---|
-|SCTP_SRC (IPv4)                | | ✓✓- |  ✓✓-  | ---  | ---|
-|SCTP_DST (IPv4)                | | ✓✓- |  ✓✓-  | ---  | ---|
-|ICMPV4_TYPE                    | | ✓✓- |  ✓✓-  | ---  | ---|
-|ICMPV4_CODE                    | | ✓✓- |  ✓✓-  | ---  | ---|
-|IP_DSCP (IPv6)                 | | ✓✓- |  ✓✓-  | ---  | ---|
-|IP_ECN (IPv6)                  | | ✓✓- |  ✓✓-  | ---  | ---|
-|IP_PROTO (IPv6)                |!| ✓✓- |  ✓✓-  | ---  | ---|
-|TCP_SRC (IPv6)                 |!| ✓✓- |  ✓✓-  | ---  | ---|
-|TCP_DST (IPv6)                 |!| ✓✓- |  ✓✓-  | ---  | ---|
-|UDP_SRC (IPv6)                 |!| ✓✓- |  ✓✓-  | ---  | ---|
-|UDP_DST (IPv6)                 |!| ✓✓- |  ✓✓-  | ---  | ---|
-|SCTP_SRC (IPv6)                | | ✓✓- |  ✓✓-  | ---  | ---|
-|SCTP_DST (IPv6)                | | ✓✓- |  ✓✓-  | ---  | ---|
-|IPV6_SRC                       |!| ✓✓- |  ✓✓-  | ---  | ---|
-|IPV6_SRC (Mask)                |!| ✓✓- |  ✓✓-  | ---  | ---|
-|IPV6_DST                       |!| ✓✓- |  ✓✓-  | ---  | ---|
-|IPV6_DST (Mask)                |!| ✓✓- |  ✓✓-  | ---  | ---|
-|IPV6_FLABEL                    | | ✓✓- |  ✓✓-  | ---  | ---|
-|ICMPV6_TYPE                    | | ✓✓- |  ✓✓-  | ---  | ---|
-|ICMPV6_CODE                    | | ✓✓- |  ✓✓-  | ---  | ---|
-|IPV6_ND_TARGET                 | | ✓✓- |  ✓✓-  | ---  | ---|
-|IPV6_ND_SLL                    | | ✓✓- |  ✓✓-  | ---  | ---|
-|IPV6_ND_TLL                    | | ✓✓- |  ✓✓-  | ---  | ---|
+|IP_DSCP (IPv4)                 | | ++- |  ++-  | ---  | ---|
+|IP_ECN (IPv4)                  | | ++- |  ++-  | ---  | ---|
+|IP_PROTO (IPv4)                |!| ++- |  ++-  | ---  | ---|
+|IPV4_SRC                       |!| ++- |  ++-  | ---  | ---|
+|IPV4_SRC (Mask)                |!| ++- |  ++-  | ---  | ---|
+|IPV4_DST                       |!| ++- |  ++-  | ---  | ---|
+|IPV4_DST (Mask)                |!| ++- |  ++-  | ---  | ---|
+|TCP_SRC (IPv4)                 |!| ++- |  ++-  | ---  | ---|
+|TCP_DST (IPv4)                 |!| ++- |  ++-  | ---  | ---|
+|UDP_SRC (IPv4)                 |!| ++- |  ++-  | ---  | ---|
+|UDP_DST (IPv4)                 |!| ++- |  ++-  | ---  | ---|
+|SCTP_SRC (IPv4)                | | ++- |  ++-  | ---  | ---|
+|SCTP_DST (IPv4)                | | ++- |  ++-  | ---  | ---|
+|ICMPV4_TYPE                    | | ++- |  ++-  | ---  | ---|
+|ICMPV4_CODE                    | | ++- |  ++-  | ---  | ---|
+|IP_DSCP (IPv6)                 | | ++- |  ++-  | ---  | ---|
+|IP_ECN (IPv6)                  | | ++- |  ++-  | ---  | ---|
+|IP_PROTO (IPv6)                |!| ++- |  ++-  | ---  | ---|
+|TCP_SRC (IPv6)                 |!| ++- |  ++-  | ---  | ---|
+|TCP_DST (IPv6)                 |!| ++- |  ++-  | ---  | ---|
+|UDP_SRC (IPv6)                 |!| ++- |  ++-  | ---  | ---|
+|UDP_DST (IPv6)                 |!| ++- |  ++-  | ---  | ---|
+|SCTP_SRC (IPv6)                | | ++- |  ++-  | ---  | ---|
+|SCTP_DST (IPv6)                | | ++- |  ++-  | ---  | ---|
+|IPV6_SRC                       |!| ++- |  ++-  | ---  | ---|
+|IPV6_SRC (Mask)                |!| ++- |  ++-  | ---  | ---|
+|IPV6_DST                       |!| ++- |  ++-  | ---  | ---|
+|IPV6_DST (Mask)                |!| ++- |  ++-  | ---  | ---|
+|IPV6_FLABEL                    | | ++- |  ++-  | ---  | ---|
+|IPV6_FLABEL (Mask)             | | ++- |  ++-  | ---  | ---|
+|ICMPV6_TYPE                    | | ++- |  ++-  | ---  | ---|
+|ICMPV6_CODE                    | | ++- |  ++-  | ---  | ---|
+|IPV6_ND_TARGET                 | | ++- |  ++-  | ---  | ---|
+|IPV6_ND_SLL                    | | ++- |  ++-  | ---  | ---|
+|IPV6_ND_TLL                    | | ++- |  ++-  | ---  | ---|
 |IPV6_EXTHDR                    | | --- |  ---  | ---  | ---|
 |IPV6_EXTHDR (Mask)             | | --- |  ---  | ---  | ---|
-|ARP_OP                         | | ✓✓- |  ✓✓-  | ---  | ---|
-|ARP_SPA                        | | ✓✓- |  ✓✓-  | ---  | ---|
-|ARP_SPA (Mask)                 | | ✓✓- |  ✓✓-  | ---  | ---|
-|ARP_TPA                        | | ✓✓- |  ✓✓-  | ---  | ---|
-|ARP_TPA (Mask)                 | | ✓✓- |  ✓✓-  | ---  | ---|
-|ARP_SHA                        | | ✓✓- |  ✓✓-  | ---  | ---|
-|ARP_SHA (Mask)                 | | ✓✓- |  ✓✓-  | ---  | ---|
-|ARP_THA                        | | ✓✓- |  ✓✓-  | ---  | ---|
-|ARP_THA (Mask)                 | | ✓✓- |  ✓✓-  | ---  | ---|
+|ARP_OP                         | | ++- |  ++-  | ---  | ---|
+|ARP_SPA                        | | ++- |  ++-  | ---  | ---|
+|ARP_SPA (Mask)                 | | ++- |  ++-  | ---  | ---|
+|ARP_TPA                        | | ++- |  ++-  | ---  | ---|
+|ARP_TPA (Mask)                 | | ++- |  ++-  | ---  | ---|
+|ARP_SHA                        | | ++- |  ++-  | ---  | ---|
+|ARP_SHA (Mask)                 | | ++- |  ++-  | ---  | ---|
+|ARP_THA                        | | ++- |  ++-  | ---  | ---|
+|ARP_THA (Mask)                 | | ++- |  ++-  | ---  | ---|
 
 METER: 
 
