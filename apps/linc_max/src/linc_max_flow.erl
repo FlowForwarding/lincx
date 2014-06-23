@@ -644,8 +644,7 @@ are_prerequisites_met(#ofp_field{class=Class,name=Name},Previous) ->
 prerequisite_for(openflow_basic, in_phy_port) ->
     [in_port];
 prerequisite_for(openflow_basic, vlan_pcp) ->
-    %% this needs work
-    [{{openflow_basic,vlan_vid},none}];
+    [{{openflow_basic,vlan_vid},any}];
 prerequisite_for(openflow_basic, ip_dscp) ->
     [{{openflow_basic,eth_type},<<16#800:16>>},
      {{openflow_basic,eth_type},<<16#86dd:16>>}];
@@ -718,9 +717,9 @@ prerequisite_for(openflow_basic, ipv6_exthdr) ->
 prerequisite_for(openflow_basic, _) ->
     [].
 
-test_prereq({{openflow_basic,vlan_pcp},_Value},Previous) ->
-    case lists:keyfind(vlan_pcp, #ofp_field.name,Previous) of
-        #ofp_field{value=Value} when Value/=none ->
+test_prereq({{Class,Name},any},Previous) ->
+    case [Field || #ofp_field{class=C,name=N}=Field <- Previous, C==Class, N==Name] of
+        [#ofp_field{}] ->
             true;
         _ ->
             false
