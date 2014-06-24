@@ -62,7 +62,7 @@ Issue. Thanks.
  [ofp2]: https://www.opennetworking.org/images/stories/downloads/specification/openflow-spec-v1.1.0.pdf 
  [ofp3]: https://www.opennetworking.org/images/stories/downloads/specification/openflow-spec-v1.2.pdf 
  [ofp4]: https://www.opennetworking.org/images/stories/downloads/specification/openflow-spec-v1.3.0.pdf 
- [ofc11]: https://www.opennetworking.org/images/stories/downloads/of-config/of-config-1.1.pdf
+ [ofc11]: https://www.opennetworking.org/images/stories/downloads/sdn-resources/onf-specifications/openflow-config/of-config-1-1-1.pdf
  [erlang-src]: http://www.erlang.org/download.html
  [oldlinc]: https://github.com/FlowForwarding/LINC-Switch
 
