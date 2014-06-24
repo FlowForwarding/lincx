@@ -358,17 +358,26 @@ push_mpls(Frame, Off,
 	  EthType:16,Label:20,TClass:3,0:1,TTL:8,
 	  Rest/binary>>;
 push_mpls(Frame, Off,
-	<<4:4,_:60,TTL:8,_/binary>> =Rest, EthType) ->
+	<<?ETH_P_IP:16,4:4,_:60,TTL:8,_/binary>> =Rest, EthType) ->
 	Prefix = binary:part(Frame, 0, Off),
+	<<_:16,Suffix/binary>> = Rest,
 	<<Prefix/binary,
-	  EthType:16,0:20,0:3,0:1,TTL:8,
-	  Rest/binary>>;
+	  EthType:16,0:20,0:3,1:1,TTL:8,
+	  Suffix/binary>>;
 push_mpls(Frame, Off,
-	<<6:4,_:52,TTL:8,_/binary>> =Rest, EthType) ->
+	<<?ETH_P_ARP:16,1:16,_/binary>> =Rest, EthType) ->
 	Prefix = binary:part(Frame, 0, Off),
+	<<_:16,Suffix/binary>> = Rest,
 	<<Prefix/binary,
-	  EthType:16,0:20,0:3,0:1,TTL:8,
-	  Rest/binary>>;
+	  EthType:16,0:20,0:3,1:1,0:8, % ARP has no TTL, so set to 0
+	  Suffix/binary>>;
+push_mpls(Frame, Off,
+	<<?ETH_P_IPV6:16,6:4,_:52,TTL:8,_/binary>> =Rest, EthType) ->
+	Prefix = binary:part(Frame, 0, Off),
+	<<_:16,Suffix/binary>> = Rest,
+	<<Prefix/binary,
+	  EthType:16,0:20,0:3,1:1,TTL:8,
+	  Suffix/binary>>;
 push_mpls(Frame, _, _, _) ->
 	Frame.
 
