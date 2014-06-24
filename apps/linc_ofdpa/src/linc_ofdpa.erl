@@ -66,6 +66,7 @@
 -include_lib("of_protocol/include/ofp_v4.hrl").
 -include_lib("linc/include/linc_logger.hrl").
 -include("linc_ofdpa.hrl").
+-include("ofdpa.hrl").
 
 -record(state, {datapath_mac,
 				switch_config}).
@@ -106,7 +107,7 @@ handle_message(MessageBody, State) ->
 -spec is_port_valid(integer(), ofp_port_no()) -> boolean().
 is_port_valid(?SWITCH_ID, PortNo) -> 
 	case ofdpa:ofdpaPortStateGet(PortNo) of
-	{ok,e_none,_} ->
+	{ok,_} ->
 		true;
 	_ ->
 		false
@@ -115,7 +116,7 @@ is_port_valid(?SWITCH_ID, PortNo) ->
 -spec is_queue_valid(integer(), ofp_port_no(), ofp_queue_id()) -> boolean().
 is_queue_valid(?SWITCH_ID, PortNo, QueueId) ->
 	case ofdpa:ofdpaQueueRateGet(PortNo, QueueId) of
-	{ok,e_none,_,_} ->
+	{ok,_,_} ->
 		true;
 	_ ->
 		false
@@ -171,28 +172,50 @@ ofp_port_mod(State,
              #ofp_port_mod{port_no = PortNo,
 						   hw_addr =Mac,
 						   config =Config,
-						   advertise =Advertise}) ->
-	Reply = case ofdpa:ofdpaPortMacGet(PortNo) of
-	{ok,e_none,Mac} ->
-
-		%%TODO
-		todo;
-
-	{ok,e_none,_WrongMac} ->
-		#ofp_error_msg{type =port_mod_failed,code =bad_hw_addr};
-	{ok,e_not_found,_} ->
-		#ofp_error_msg{type =port_mod_failed,code =bad_port};
-	_ ->
-		#ofp_error_msg{type =bad_request,code =bad_port}
+						   mask =_Mask}) ->
+	%%NB: linc_us4 uses advertise field too
+	Reply = case check_port_mod_config(Config) of
+	badarg ->
+		#ofp_error_msg{type =bad_request,code =bad_port};
+	{ok,Flags} ->
+		case ofdpa:ofdpaPortMacGet(PortNo) of
+		{ok,Mac} ->
+			ok = ofdpa:ofdpaPortConfigSet(PortNo, Flags);
+		{ok,_WrongMac} ->
+			#ofp_error_msg{type =port_mod_failed,code =bad_hw_addr};
+		{error,e_not_found} ->
+			#ofp_error_msg{type =port_mod_failed,code =bad_port};
+		_ ->
+			#ofp_error_msg{type =bad_request,code =bad_port}
+		end
 	end,
 	{reply,Reply,State}.
+
+%% OF-DPA supports port_down only
+check_port_mod_config(Config) ->
+	check_port_mod_config(Config, 0).
+
+check_port_mod_config([], Flags) ->
+	Flags;
+check_port_mod_config([port_down|Config], Flags) ->
+	check_port_mod_config(Config, Flags bor 1);
+check_port_mod_config(_, _) ->
+	badarg.
 
 %% @doc Modify group entry in the group table.
 -spec ofp_group_mod(state(), ofp_group_mod()) ->
                            {noreply, #state{}} |
                            {reply, ofp_message(), #state{}}.
 ofp_group_mod(State,
-              #ofp_group_mod{} = _GroupMod) ->
+			  #ofp_group_mod{command =add,
+							 group_id =GroupId})
+				when is_atom(GroupId); GroupId > ?OFPG_MAX ->
+	{reply,#ofp_error_msg{type =group_mod_failed,code =invalid_group},State};
+ofp_group_mod(State,
+              #ofp_group_mod{command =add,
+							 group_id =_GroupId,
+							 type =_Type,
+							 buckets =_Buckets}) ->
 	%%TODO
 	{reply,#ofp_error_msg{type =group_mod_failed,code =eperm},State}.
 
@@ -205,7 +228,7 @@ ofp_packet_out(State,
                                actions = _Actions,
                                in_port = _InPort,
                                data = _Data}) ->
-	%%TODO
+	%%TODO: use apply_list()
     {noreply,State}.
 
 %% @doc Reply to echo request.
@@ -249,7 +272,6 @@ ofp_barrier_request(State, #ofp_barrier_request{}) ->
                                            #state{}}.
 ofp_queue_get_config_request(State,
                              #ofp_queue_get_config_request{port =Port}) ->
-	%%TODO
     QueueConfigReply = #ofp_queue_get_config_reply{port =Port,
                                                    queues =[]},
     {reply,QueueConfigReply,State}.
@@ -270,9 +292,35 @@ ofp_desc_request(State, #ofp_desc_request{}) ->
 -spec ofp_flow_stats_request(state(), ofp_flow_stats_request()) ->
                                     {reply, ofp_flow_stats_reply(), #state{}}.
 ofp_flow_stats_request(State,
+                       #ofp_flow_stats_request{out_port =any,
+											   out_group =any,
+											   cookie = <<Cookie:64>>,
+											   cookie_mask = <<-1:64>>}) ->
+	Reply = case ofdpa:odpaFlowByCookieGet(Cookie) of
+	{ok,Flow,Stats} ->
+		Tid = ofdpa:enum_to_integer(flow_table_id_t, Flow#ofdpa_flow_entry.tableId),
+		Body = [#ofp_flow_stats{
+        			table_id =Tid,
+					duration_sec =Stats#flow_entry_stats.durationSec,
+					duration_nsec =0,
+					idle_timeout =Flow#ofdpa_flow_entry.idle_time,
+					hard_timeout =Flow#ofdpa_flow_entry.hard_time,
+					flags =0,
+					packet_count =Stats#flow_entry_stats.receivedPackets,
+					byte_count =Stats#flow_entry_stats.receivedBytes,
+					priority =Flow#ofdpa_flow_entry.priority,
+					cookie = <<Cookie:64>>}],
+		%%TODO: fill in match and instruction fields
+		#ofp_flow_stats_reply{body =Body};
+	{error,e_not_found} ->
+		#ofp_flow_stats_reply{body =[]}
+	end,
+    {reply,Reply,State};
+ofp_flow_stats_request(State,
                        #ofp_flow_stats_request{} = _Request) ->
-	%%TODO
-	Reply = #ofp_flow_stats_reply{body =[]},
+	?INFO("Flow stats can be retrieved by cookie only", []),
+	Reply = #ofp_error_msg{type =bad_request,
+						   code =eperm},
     {reply,Reply,State}.
 
 %% @doc Get aggregated flow statistics.
@@ -310,7 +358,11 @@ ofp_table_features_request(State,
                                    {reply, ofp_port_desc_reply(), #state{}}.
 ofp_port_desc_request(State,
                       #ofp_port_desc_request{}) ->
+
 	%%TODO
+	%% Continue here
+	%%TODO
+
 	Reply = #ofp_port_desc_reply{body =[]},
     {reply,Reply,State}.
 

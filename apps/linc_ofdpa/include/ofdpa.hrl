@@ -106,7 +106,8 @@
                                outputPort,
                                clearActions}).
 
--record(flow_entry,{tableId,
+%% #flow_entry{} defined by ofp_v4.hrl
+-record(ofdpa_flow_entry,{tableId,
                     priority,
                     flowData,
                     hard_time,

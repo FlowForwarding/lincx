@@ -120,11 +120,11 @@ queue_test_() ->
 %% OFDPA_ERROR_t ofdpaFlowEntryInit(OFDPA_FLOW_TABLE_ID_t tableId, ofdpaFlowEntry_t *flow);
 flow_entry_init() ->
 	{ok,F} = ofdpa:ofdpaFlowEntryInit(flow_table_id_vlan),
-	?assertEqual(F#flow_entry.tableId, flow_table_id_vlan),
-	?assertEqual(F#flow_entry.priority, 1),
-	?assertEqual(F#flow_entry.hard_time, 2),
-	?assertEqual(F#flow_entry.idle_time, 3),
-	?assertEqual(F#flow_entry.cookie, 4).
+	?assertEqual(F#ofdpa_flow_entry.tableId, flow_table_id_vlan),
+	?assertEqual(F#ofdpa_flow_entry.priority, 1),
+	?assertEqual(F#ofdpa_flow_entry.hard_time, 2),
+	?assertEqual(F#ofdpa_flow_entry.idle_time, 3),
+	?assertEqual(F#ofdpa_flow_entry.cookie, 4).
 
 %% OFDPA_ERROR_t ofdpaFlowAdd(ofdpaFlowEntry_t *flow [in]);
 flow_add() ->
@@ -134,7 +134,7 @@ flow_add() ->
 	V = #vlan_flow_entry{gotoTableId = flow_table_id_termination_mac,
 						  match_criteria = M,
 						  newVlanId = 4},
-	F = #flow_entry{tableId = flow_table_id_vlan,
+	F = #ofdpa_flow_entry{tableId = flow_table_id_vlan,
 					priority = 11,
 					flowData = V,
 					hard_time = 12,
@@ -147,7 +147,7 @@ flow_modify() ->
 	M = #ingress_port_flow_match{inPort = 7,inPortMask = 15},
 	V = #ingress_port_flow_entry{gotoTableId = flow_table_id_termination_mac,
 						  match_criteria = M},
-	F = #flow_entry{tableId = flow_table_id_ingress_port,
+	F = #ofdpa_flow_entry{tableId = flow_table_id_ingress_port,
 					priority = 11,
 					flowData = V,
 					hard_time = 12,
@@ -167,7 +167,7 @@ flow_delete() ->
 	V = #termination_mac_flow_entry{gotoTableId = flow_table_id_vlan,
 						  match_criteria = M,
 						  outputPort = 0},
-	F = #flow_entry{tableId = flow_table_id_termination_mac,
+	F = #ofdpa_flow_entry{tableId = flow_table_id_termination_mac,
 					priority = 41,
 					flowData = V,
 					hard_time = 42,
@@ -183,18 +183,18 @@ flow_next_get() ->
 	V = #vlan_flow_entry{gotoTableId = flow_table_id_termination_mac,
 						  match_criteria = M,
 						  newVlanId = 4},
-	F = #flow_entry{tableId = flow_table_id_vlan,
+	F = #ofdpa_flow_entry{tableId = flow_table_id_vlan,
 					priority = 11,
 					flowData = V,
 					hard_time = 12,
 					idle_time = 13,
 					cookie = 14},
 	{ok,X} = ofdpa:ofdpaFlowNextGet(F),
-	?assertEqual(X#flow_entry.tableId, flow_table_id_bridging),
-	?assertEqual(X#flow_entry.priority, 133),
-	?assertEqual(X#flow_entry.hard_time, 7),
-	?assertEqual(X#flow_entry.idle_time, 6),
-	?assertEqual(X#flow_entry.cookie, 101).
+	?assertEqual(X#ofdpa_flow_entry.tableId, flow_table_id_bridging),
+	?assertEqual(X#ofdpa_flow_entry.priority, 133),
+	?assertEqual(X#ofdpa_flow_entry.hard_time, 7),
+	?assertEqual(X#ofdpa_flow_entry.idle_time, 6),
+	?assertEqual(X#ofdpa_flow_entry.cookie, 101).
 
 %% OFDPA_ERROR_t ofdpaFlowStatsGet(ofdpaFlowEntry_t *flow [in], ofdpaFlowEntryStats_t *flowStats);
 flow_stats_get() ->
@@ -204,7 +204,7 @@ flow_stats_get() ->
 	V = #vlan_flow_entry{gotoTableId = flow_table_id_termination_mac,
 						  match_criteria = M,
 						  newVlanId = 4},
-	F = #flow_entry{tableId = flow_table_id_vlan,
+	F = #ofdpa_flow_entry{tableId = flow_table_id_vlan,
 					priority = 11,
 					flowData = V,
 					hard_time = 12,
@@ -218,11 +218,11 @@ flow_stats_get() ->
 %% OFDPA_ERROR_t ofdpaFlowByCookieGet(uint64_t cookie, ofdpaFlowEntry_t *flow, ofdpaFlowEntryStats_t *flowStats);
 flow_by_cookie_get() ->
 	{ok,X,Y} = ofdpa:ofdpaFlowByCookieGet(1),
-	?assertEqual(X#flow_entry.tableId, flow_table_id_bridging),
-	?assertEqual(X#flow_entry.priority, 1),
-	?assertEqual(X#flow_entry.hard_time, 2),
-	?assertEqual(X#flow_entry.idle_time, 3),
-	?assertEqual(X#flow_entry.cookie, 4),
+	?assertEqual(X#ofdpa_flow_entry.tableId, flow_table_id_bridging),
+	?assertEqual(X#ofdpa_flow_entry.priority, 1),
+	?assertEqual(X#ofdpa_flow_entry.hard_time, 2),
+	?assertEqual(X#ofdpa_flow_entry.idle_time, 3),
+	?assertEqual(X#ofdpa_flow_entry.cookie, 4),
 	?assertEqual(Y#flow_entry_stats.durationSec, 10),
 	?assertEqual(Y#flow_entry_stats.receivedPackets, 20),
 	?assertEqual(Y#flow_entry_stats.receivedBytes, 30).
