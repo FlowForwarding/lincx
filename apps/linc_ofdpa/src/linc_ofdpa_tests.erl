@@ -119,8 +119,7 @@ queue_test_() ->
 
 %% OFDPA_ERROR_t ofdpaFlowEntryInit(OFDPA_FLOW_TABLE_ID_t tableId, ofdpaFlowEntry_t *flow);
 flow_entry_init() ->
-	{ok,E,F} = ofdpa:ofdpaFlowEntryInit(flow_table_id_vlan),
-	?assertEqual(E, e_none),
+	{ok,F} = ofdpa:ofdpaFlowEntryInit(flow_table_id_vlan),
 	?assertEqual(F#flow_entry.tableId, flow_table_id_vlan),
 	?assertEqual(F#flow_entry.priority, 1),
 	?assertEqual(F#flow_entry.hard_time, 2),
@@ -141,8 +140,7 @@ flow_add() ->
 					hard_time = 12,
 					idle_time = 13,
 					cookie = 14},
-	{ok,E} = ofdpa:ofdpaFlowAdd(F),
-	?assertEqual(E, e_none).
+	ok = ofdpa:ofdpaFlowAdd(F).
 
 %% OFDPA_ERROR_t ofdpaFlowModify(ofdpaFlowEntry_t *flow [in]);
 flow_modify() ->
@@ -155,8 +153,7 @@ flow_modify() ->
 					hard_time = 12,
 					idle_time = 13,
 					cookie = 14},
-	{ok,E} = ofdpa:ofdpaFlowModify(F),
-	?assertEqual(E, e_none).
+	ok = ofdpa:ofdpaFlowModify(F).
 
 %% OFDPA_ERROR_t ofdpaFlowDelete(ofdpaFlowEntry_t *flow [in]);
 flow_delete() ->
@@ -176,8 +173,7 @@ flow_delete() ->
 					hard_time = 42,
 					idle_time = 43,
 					cookie = 44},
-	{ok,E} = ofdpa:ofdpaFlowDelete(F),
-	?assertEqual(E, e_none).
+	ok = ofdpa:ofdpaFlowDelete(F).
 
 %% OFDPA_ERROR_t ofdpaFlowNextGet(ofdpaFlowEntry_t *flow [in], ofdpaFlowEntry_t *nextFlow);
 flow_next_get() ->
@@ -193,8 +189,7 @@ flow_next_get() ->
 					hard_time = 12,
 					idle_time = 13,
 					cookie = 14},
-	{ok,E,X} = ofdpa:ofdpaFlowNextGet(F),
-	?assertEqual(E, e_none),
+	{ok,X} = ofdpa:ofdpaFlowNextGet(F),
 	?assertEqual(X#flow_entry.tableId, flow_table_id_bridging),
 	?assertEqual(X#flow_entry.priority, 133),
 	?assertEqual(X#flow_entry.hard_time, 7),
@@ -215,16 +210,14 @@ flow_stats_get() ->
 					hard_time = 12,
 					idle_time = 13,
 					cookie = 14},
-	{ok,E,X} = ofdpa:ofdpaFlowStatsGet(F),
-	?assertEqual(E, e_none),
+	{ok,X} = ofdpa:ofdpaFlowStatsGet(F),
 	?assertEqual(X#flow_entry_stats.durationSec,  100),
 	?assertEqual(X#flow_entry_stats.receivedPackets, 200),
 	?assertEqual(X#flow_entry_stats.receivedBytes, 300).
 
 %% OFDPA_ERROR_t ofdpaFlowByCookieGet(uint64_t cookie, ofdpaFlowEntry_t *flow, ofdpaFlowEntryStats_t *flowStats);
 flow_by_cookie_get() ->
-	{ok,E,X,Y} = ofdpa:ofdpaFlowByCookieGet(1),
-	?assertEqual(E, e_none),
+	{ok,X,Y} = ofdpa:ofdpaFlowByCookieGet(1),
 	?assertEqual(X#flow_entry.tableId, flow_table_id_bridging),
 	?assertEqual(X#flow_entry.priority, 1),
 	?assertEqual(X#flow_entry.hard_time, 2),
@@ -236,137 +229,115 @@ flow_by_cookie_get() ->
 
 %% OFDPA_ERROR_t ofdpaFlowByCookieDelete(uint64_t cookie);
 flow_by_cookie_delete() ->
-	{ok,E} = ofdpa:ofdpaFlowByCookieDelete(1),
-	?assertEqual(E, e_none).
+	ok = ofdpa:ofdpaFlowByCookieDelete(1).
 
 %% OFDPA_ERROR_t ofdpaGroupTypeGet(uint32_t groupId, uint32_t *type);
 group_type_get() ->
-	{ok,E,X} = ofdpa:ofdpaGroupTypeGet(1),
-	?assertEqual(E, e_none),
+	{ok,X} = ofdpa:ofdpaGroupTypeGet(1),
 	?assertEqual(X, 8).
 
 %% OFDPA_ERROR_t ofdpaGroupVlanGet(uint32_t groupId, uint32_t *vlanId);
 group_vlan_get() ->
-	{ok,E,X} = ofdpa:ofdpaGroupVlanGet(1),
-	?assertEqual(E, e_none),
+	{ok,X} = ofdpa:ofdpaGroupVlanGet(1),
 	?assertEqual(X, 3).
 
 %% OFDPA_ERROR_t ofdpaGroupPortIdGet(uint32_t groupId, uint32_t *portId);
 group_port_id_get() ->
-	{ok,E,X} = ofdpa:ofdpaGroupPortIdGet(1),
-	?assertEqual(E, e_none),
+	{ok,X} = ofdpa:ofdpaGroupPortIdGet(1),
 	?assertEqual(X, 4).
 
 %% OFDPA_ERROR_t ofdpaGroupIndexShortGet(uint32_t groupId, uint32_t *index);
 group_index_short_get() ->
-	{ok,E,X} = ofdpa:ofdpaGroupIndexShortGet(1),
-	?assertEqual(E, e_none),
+	{ok,X} = ofdpa:ofdpaGroupIndexShortGet(1),
 	?assertEqual(X, 5).
 
 %% OFDPA_ERROR_t ofdpaGroupIndexGet(uint32_t groupId, uint32_t *index);
 group_index_get() ->
-	{ok,E,X} = ofdpa:ofdpaGroupIndexGet(1),
-	?assertEqual(E, e_none),
+	{ok,X} = ofdpa:ofdpaGroupIndexGet(1),
 	?assertEqual(X, 6).
 
 %% OFDPA_ERROR_t ofdpaGroupTypeSet(uint32_t *groupId [inout], uint32_t type);
 group_type_set() ->
-	{ok,E,X} = ofdpa:ofdpaGroupTypeSet(199, 7),
-	?assertEqual(E, e_none),
+	{ok,X} = ofdpa:ofdpaGroupTypeSet(199, 7),
 	?assertEqual(X, 200).
 
 %% OFDPA_ERROR_t ofdpaGroupVlanSet(uint32_t *groupId [inout], uint32_t vlanId);
 group_vlan_set() ->
-	{ok,E,X} = ofdpa:ofdpaGroupVlanSet(299, 7),
-	?assertEqual(E, e_none),
+	{ok,X} = ofdpa:ofdpaGroupVlanSet(299, 7),
 	?assertEqual(X, 300).
 
 %% OFDPA_ERROR_t ofdpaGroupOverlayTunnelIdSet(uint32_t *groupId [inout], uint32_t tunnelId);
 group_overlay_tunnel_id_set() ->
-	{ok,E,X} = ofdpa:ofdpaGroupOverlayTunnelIdSet(399, 7),
-	?assertEqual(E, e_none),
+	{ok,X} = ofdpa:ofdpaGroupOverlayTunnelIdSet(399, 7),
 	?assertEqual(X, 400).
 
 %% OFDPA_ERROR_t ofdpaGroupOverlaySubTypeSet(uint32_t *groupId [inout], OFDPA_L2_OVERLAY_SUBTYPE_t subType);
 group_overlay_sub_type_set() ->
-	{ok,E,X} = ofdpa:ofdpaGroupOverlaySubTypeSet(499,
+	{ok,X} = ofdpa:ofdpaGroupOverlaySubTypeSet(499,
 						 l2_overlay_flood_multicast_tunnel),
-	?assertEqual(E, e_none),
 	?assertEqual(X, 500).
 
 %% OFDPA_ERROR_t ofdpaGroupOverlayIndexSet(uint32_t *groupId [inout], uint32_t index);
 group_overlay_index_set() ->
-	{ok,E,X} = ofdpa:ofdpaGroupOverlayIndexSet(599, 7),
-	?assertEqual(E, e_none),
+	{ok,X} = ofdpa:ofdpaGroupOverlayIndexSet(599, 7),
 	?assertEqual(X, 600).
 
 %% OFDPA_ERROR_t ofdpaGroupPortIdSet(uint32_t *groupId [inout], uint32_t portId);
 group_port_id_set() ->
-	{ok,E,X} = ofdpa:ofdpaGroupPortIdSet(699, 7),
-	?assertEqual(E, e_none),
+	{ok,X} = ofdpa:ofdpaGroupPortIdSet(699, 7),
 	?assertEqual(X, 700).
 
 %% OFDPA_ERROR_t ofdpaGroupIndexShortSet(uint32_t *groupId [inout], uint32_t index);
 group_index_short_set() ->
-	{ok,E,X} = ofdpa:ofdpaGroupIndexShortSet(799, 7),
-	?assertEqual(E, e_none),
+	{ok,X} = ofdpa:ofdpaGroupIndexShortSet(799, 7),
 	?assertEqual(X, 800).
 
 %% OFDPA_ERROR_t ofdpaGroupIndexSet(uint32_t *groupId [inout], uint32_t index);
 group_index_set() ->
-	{ok,E,X} = ofdpa:ofdpaGroupIndexSet(899, 7),
-	?assertEqual(E, e_none),
+	{ok,X} = ofdpa:ofdpaGroupIndexSet(899, 7),
 	?assertEqual(X, 900).
 
 %% OFDPA_ERROR_t ofdpaGroupDecode(uint32_t groupId, char *outBuf, int bufSize); %% special
 group_decode() ->
-	{ok,E,S} = ofdpa:ofdpaGroupDecode(7, 1024),
-	?assertEqual(E, e_none),
+	{ok,S} = ofdpa:ofdpaGroupDecode(7, 1024),
 	?assertEqual(S, <<"Hey there">>).
 
 %% OFDPA_ERROR_t ofdpaGroupEntryInit(OFDPA_GROUP_ENTRY_TYPE_t groupType, ofdpaGroupEntry_t *group);
 group_entry_init() ->
-	{ok,E,G} = ofdpa:ofdpaGroupEntryInit(group_entry_type_l3_unicast),
-	?assertEqual(E, e_none),
+	{ok,G} = ofdpa:ofdpaGroupEntryInit(group_entry_type_l3_unicast),
 	?assertEqual(G#group_entry.groupId, 111).
 
 %% OFDPA_ERROR_t ofdpaGroupAdd(ofdpaGroupEntry_t *group [in]);
 group_add() ->
-	{ok,E} = ofdpa:ofdpaGroupAdd(#group_entry{groupId = 13}),
-	?assertEqual(E, e_none).
+	ok = ofdpa:ofdpaGroupAdd(#group_entry{groupId = 13}).
 
 %% OFDPA_ERROR_t ofdpaGroupDelete(uint32_t groupId);
 group_delete() ->
-	{ok,E} = ofdpa:ofdpaGroupDelete(14),
-	?assertEqual(E, e_none).
+	ok = ofdpa:ofdpaGroupDelete(14).
 
 %% OFDPA_ERROR_t ofdpaGroupNextGet(uint32_t groupId, ofdpaGroupEntry_t *nextGroup);
 group_next_get() ->
-	{ok,E,G} = ofdpa:ofdpaGroupNextGet(9),
-	?assertEqual(E, e_none),
+	{ok,G} = ofdpa:ofdpaGroupNextGet(9),
 	?assertEqual(G#group_entry.groupId, 222).
 
 %% OFDPA_ERROR_t ofdpaGroupTypeNextGet(uint32_t groupId,
 %%                                     OFDPA_GROUP_ENTRY_TYPE_t groupType,
 %%                                     ofdpaGroupEntry_t *nextGroup);
 group_type_next_get() ->
-	{ok,E,G} = ofdpa:ofdpaGroupTypeNextGet(9, group_entry_type_l2_multicast),
-	?assertEqual(E, e_none),
+	{ok,G} = ofdpa:ofdpaGroupTypeNextGet(9, group_entry_type_l2_multicast),
 	?assertEqual(G#group_entry.groupId, 333).
 
 %% OFDPA_ERROR_t ofdpaGroupStatsGet(uint32_t groupId, ofdpaGroupEntryStats_t *groupStats);
 group_stats_get() ->
-	{ok,E,S} = ofdpa:ofdpaGroupStatsGet(9),
-	?assertEqual(E, e_none),
+	{ok,S} = ofdpa:ofdpaGroupStatsGet(9),
 	?assertEqual(S#group_entry_stats.refCount, 1),
 	?assertEqual(S#group_entry_stats.duration, 2),
 	?assertEqual(S#group_entry_stats.bucketCount, 3).
 
 %% OFDPA_ERROR_t ofdpaGroupBucketEntryInit(OFDPA_GROUP_ENTRY_TYPE_t groupType, ofdpaGroupBucketEntry_t *bucket);
 group_bucket_entry_init() ->
-	{ok,E,B} = ofdpa:ofdpaGroupBucketEntryInit(group_entry_type_l2_overlay),
+	{ok,B} = ofdpa:ofdpaGroupBucketEntryInit(group_entry_type_l2_overlay),
 	D = B#group_bucket_entry.bucketData,
-	?assertEqual(E, e_none),
 	?assertEqual(B#group_bucket_entry.groupId, 7),
 	?assertEqual(B#group_bucket_entry.bucketIndex, 8),
 	?assertEqual(B#group_bucket_entry.referenceGroupId, 9),
@@ -379,25 +350,21 @@ group_bucket_entry_add() ->
 							bucketIndex =2,
 							referenceGroupId =3,
 							bucketData =D},
-	{ok,E} = ofdpa:ofdpaGroupBucketEntryAdd(B),
-	?assertEqual(E, e_none).
+	ok = ofdpa:ofdpaGroupBucketEntryAdd(B).
 
 %% OFDPA_ERROR_t ofdpaGroupBucketEntryDelete(uint32_t groupId, uint32_t bucketIndex);
 group_bucket_entry_delete() ->
-	{ok,E} = ofdpa:ofdpaGroupBucketEntryDelete(1, 2),
-	?assertEqual(E, e_none).
+	ok = ofdpa:ofdpaGroupBucketEntryDelete(1, 2).
 
 %% OFDPA_ERROR_t ofdpaGroupBucketsDeleteAll(uint32_t groupId);
 group_buckets_delete_all() ->
-	{ok,E} = ofdpa:ofdpaGroupBucketsDeleteAll(1),
-	?assertEqual(E, e_none).
+	ok = ofdpa:ofdpaGroupBucketsDeleteAll(1).
 
 %% OFDPA_ERROR_t ofdpaGroupBucketEntryGet(uint32_t groupId, uint32_t bucketIndex,
 %%                                        ofdpaGroupBucketEntry_t *groupBucket);
 group_bucket_entry_get() ->
-	{ok,E,B} = ofdpa:ofdpaGroupBucketEntryGet(1, 2),
+	{ok,B} = ofdpa:ofdpaGroupBucketEntryGet(1, 2),
 	D = B#group_bucket_entry.bucketData,
-	?assertEqual(E, e_none),
 	?assertEqual(B#group_bucket_entry.groupId, 17),
 	?assertEqual(B#group_bucket_entry.bucketIndex, 18),
 	?assertEqual(B#group_bucket_entry.referenceGroupId, 19),
@@ -406,9 +373,8 @@ group_bucket_entry_get() ->
 %% OFDPA_ERROR_t ofdpaGroupBucketEntryFirstGet(uint32_t groupId,
 %%                                             ofdpaGroupBucketEntry_t *firstGroupBucket);
 group_bucket_entry_first_get() ->
-	{ok,E,B} = ofdpa:ofdpaGroupBucketEntryFirstGet(1),
+	{ok,B} = ofdpa:ofdpaGroupBucketEntryFirstGet(1),
 	D = B#group_bucket_entry.bucketData,
-	?assertEqual(E, e_none),
 	?assertEqual(B#group_bucket_entry.groupId, 27),
 	?assertEqual(B#group_bucket_entry.bucketIndex, 28),
 	?assertEqual(B#group_bucket_entry.referenceGroupId, 29),
@@ -417,9 +383,8 @@ group_bucket_entry_first_get() ->
 %% OFDPA_ERROR_t ofdpaGroupBucketEntryNextGet(uint32_t groupId, uint32_t bucketIndex,
 %%                                            ofdpaGroupBucketEntry_t *nextBucketEntry);
 group_bucket_entry_next_get() ->
-	{ok,E,B} = ofdpa:ofdpaGroupBucketEntryNextGet(1, 2),
+	{ok,B} = ofdpa:ofdpaGroupBucketEntryNextGet(1, 2),
 	D = B#group_bucket_entry.bucketData,
-	?assertEqual(E, e_none),
 	?assertEqual(B#group_bucket_entry.groupId, 37),
 	?assertEqual(B#group_bucket_entry.bucketIndex, 38),
 	?assertEqual(B#group_bucket_entry.referenceGroupId, 39),
@@ -432,13 +397,11 @@ group_bucket_entry_modify() ->
 							bucketIndex =42,
 							referenceGroupId =43,
 							bucketData =D},
-	{ok,E} = ofdpa:ofdpaGroupBucketEntryModify(B),
-	?assertEqual(E, e_none).
+	ok = ofdpa:ofdpaGroupBucketEntryModify(B).
 
 %% OFDPA_ERROR_t ofdpaGroupTableInfoGet(OFDPA_GROUP_ENTRY_TYPE_t groupType, ofdpaGroupTableInfo_t *info);
 group_table_info_get() ->
-	{ok,E,I} = ofdpa:ofdpaGroupTableInfoGet(group_entry_type_l2_overlay),
-	?assertEqual(E, e_none),
+	{ok,I} = ofdpa:ofdpaGroupTableInfoGet(group_entry_type_l2_overlay),
 	?assertEqual(I#group_table_info.numGroupEntries, 10),
 	?assertEqual(I#group_table_info.maxGroupEntries, 20),
 	?assertEqual(I#group_table_info.maxBucketEntries, 30).
@@ -465,55 +428,46 @@ port_index_set() ->
 
 %% OFDPA_ERROR_t ofdpaPortNextGet(uint32_t portNum, uint32_t *nextPortNum);
 port_next_get() ->
-	{ok,E,P} = ofdpa:ofdpaPortNextGet(1),
-	?assertEqual(E, e_none),
+	{ok,P} = ofdpa:ofdpaPortNextGet(1),
 	?assertEqual(P, 9).
 
 %% OFDPA_ERROR_t ofdpaPortMacGet(uint32_t portNum, ofdpaMacAddr_t *mac);
 port_mac_get() ->
-	{ok,E,M} = ofdpa:ofdpaPortMacGet(1),
-	?assertEqual(E, e_none),
+	{ok,M} = ofdpa:ofdpaPortMacGet(1),
 	?assertEqual(M, <<1,2,3,4,5,6>>).
 
 %% OFDPA_ERROR_t ofdpaPortNameGet(uint32_t portNum, ofdpa_buffdesc *name);	%% special
 port_name_get() ->
-	{ok,E,N} = ofdpa:ofdpaPortNameGet(1),
-	?assertEqual(E, e_none),
+	{ok,N} = ofdpa:ofdpaPortNameGet(1),
 	?assertEqual(N, <<"Port-1">>).
 
 %% OFDPA_ERROR_t ofdpaPortStateGet(uint32_t  portNum, OFDPA_PORT_STATE_t  *state);
 port_state_get() ->
-	{ok,E,S} = ofdpa:ofdpaPortStateGet(1),
-	?assertEqual(E, e_none),
+	{ok,S} = ofdpa:ofdpaPortStateGet(1),
 	?assertEqual(S, port_state_link_down).
 
 %% OFDPA_ERROR_t ofdpaPortConfigSet(uint32_t portNum, OFDPA_PORT_CONFIG_t config);
 port_config_set() ->
-	{ok,E} = ofdpa:ofdpaPortConfigSet(1, port_config_down),
-	?assertEqual(E, e_none).
+	ok = ofdpa:ofdpaPortConfigSet(1, port_config_down).
 
 %% OFDPA_ERROR_t ofdpaPortConfigGet(uint32_t portNum, OFDPA_PORT_CONFIG_t  *config);
 port_config_get() ->
-	{ok,E,C} = ofdpa:ofdpaPortConfigGet(1),
-	?assertEqual(E, e_none),
+	{ok,C} = ofdpa:ofdpaPortConfigGet(1),
 	?assertEqual(C, port_config_down).
 
 %% OFDPA_ERROR_t ofdpaPortMaxSpeedGet(uint32_t portNum, uint32_t  *maxSpeed);
 port_max_speed_get() ->
-	{ok,E,S} = ofdpa:ofdpaPortMaxSpeedGet(1),
-	?assertEqual(E, e_none),
+	{ok,S} = ofdpa:ofdpaPortMaxSpeedGet(1),
 	?assertEqual(S, 1001).
 
 %% OFDPA_ERROR_t ofdpaPortCurrSpeedGet(uint32_t portNum, uint32_t  *currSpeed);
 port_curr_speed_get() ->
-	{ok,E,S} = ofdpa:ofdpaPortCurrSpeedGet(1),
-	?assertEqual(E, e_none),
+	{ok,S} = ofdpa:ofdpaPortCurrSpeedGet(1),
 	?assertEqual(S, 999).
 
 %% OFDPA_ERROR_t ofdpaPortFeatureGet(uint32_t portNum, ofdpaPortFeature_t *feature);
 port_feature_get() ->
-	{ok,E,F} = ofdpa:ofdpaPortFeatureGet(1),
-	?assertEqual(E, e_none),
+	{ok,F} = ofdpa:ofdpaPortFeatureGet(1),
 	?assertEqual(F#port_feature.curr, port_feat_10mb_hd), %% 1
 	?assertEqual(F#port_feature.advertised, port_feat_10mb_fd), %% 2
 	?assertEqual(F#port_feature.supported, [port_feat_10mb_fd,port_feat_10mb_hd]), %% 3
@@ -521,18 +475,15 @@ port_feature_get() ->
 
 %% OFDPA_ERROR_t ofdpaPortAdvertiseFeatureSet(uint32_t portNum, uint32_t advertise);
 port_advertise_feature_set() ->
-	{ok,E} = ofdpa:ofdpaPortAdvertiseFeatureSet(1, 12),
-	?assertEqual(E, e_none).
+	ok = ofdpa:ofdpaPortAdvertiseFeatureSet(1, 12).
 
 %% OFDPA_ERROR_t ofdpaPortStatsClear(uint32_t portNum);
 port_stats_clear() ->
-	{ok,E} = ofdpa:ofdpaPortStatsClear(1),
-	?assertEqual(E, e_none).
+	ok = ofdpa:ofdpaPortStatsClear(1).
 
 %% OFDPA_ERROR_t ofdpaPortStatsGet(uint32_t portNum, ofdpaPortStats_t *stats);
 port_stats_get() ->
-	{ok,E,S} = ofdpa:ofdpaPortStatsGet(1),
-	?assertEqual(E, e_none),
+	{ok,S} = ofdpa:ofdpaPortStatsGet(1),
 	?assertEqual(S#port_stats.rx_packets, 1),
 	?assertEqual(S#port_stats.tx_packets, 2),
 	?assertEqual(S#port_stats.rx_bytes, 3),
@@ -549,50 +500,42 @@ port_stats_get() ->
 
 %% OFDPA_ERROR_t ofdpaPktSend(ofdpa_buffdesc *pkt, uint32_t flags, uint32_t outPortNum, uint32_t inPortNum); %% special
 pkt_send() ->
-	{ok,E} = ofdpa:ofdpaPktSend(<<1,2,3>>, 0, 1, 2),
-	?assertEqual(E, e_none).
+	ok = ofdpa:ofdpaPktSend(<<1,2,3>>, 0, 1, 2).
 
 %% OFDPA_ERROR_t ofdpaMaxPktSizeGet(uint32_t *pktSize);
 max_pkt_size_get() ->
-	{ok,E,S} = ofdpa:ofdpaMaxPktSizeGet(),
-	?assertEqual(E, e_none),
+	{ok,S} = ofdpa:ofdpaMaxPktSizeGet(),
 	?assertEqual(S, 1500).
  
 %% OFDPA_ERROR_t ofdpaFlowTableInfoGet(OFDPA_FLOW_TABLE_ID_t tableId, ofdpaFlowTableInfo_t *info);
 flow_table_info_get() ->
-	{ok,E,I} = ofdpa:ofdpaFlowTableInfoGet(flow_table_id_vlan),
-	?assertEqual(E, e_none),
+	{ok,I} = ofdpa:ofdpaFlowTableInfoGet(flow_table_id_vlan),
 	?assertEqual(I#flow_table_info.numEntries, 10),
 	?assertEqual(I#flow_table_info.maxEntries, 20).
 
 %% OFDPA_ERROR_t ofdpaNumQueuesGet(uint32_t portNum, uint32_t *numQueues);
 num_queues_get() ->
-	{ok,E,N} = ofdpa:ofdpaNumQueuesGet(1),
-	?assertEqual(E, e_none),
+	{ok,N} = ofdpa:ofdpaNumQueuesGet(1),
 	?assertEqual(N, 137).
 
 %% OFDPA_ERROR_t ofdpaQueueStatsGet(uint32_t portNum, uint32_t queueId, ofdpaPortQueueStats_t *stats);
 queue_stats_get() ->
-	{ok,E,S} = ofdpa:ofdpaQueueStatsGet(1, 2),
-	?assertEqual(E, e_none),
+	{ok,S} = ofdpa:ofdpaQueueStatsGet(1, 2),
 	?assertEqual(S#port_queue_stats.txBytes, 1234),
 	?assertEqual(S#port_queue_stats.txPkts, 5678),
 	?assertEqual(S#port_queue_stats.duration_seconds, 987654321).
 
 %% OFDPA_ERROR_t ofdpaQueueStatsClear(uint32_t portNum, uint32_t queueId);
 queue_stats_clear() ->
-	{ok,E} = ofdpa:ofdpaQueueStatsClear(1, 2),
-	?assertEqual(E, e_none).
+	ok = ofdpa:ofdpaQueueStatsClear(1, 2).
 
 %% OFDPA_ERROR_t ofdpaQueueRateSet(uint32_t portNum, uint32_t queueId, uint32_t minRate, uint32_t maxRate);
 queue_rate_set() ->
-	{ok,E} = ofdpa:ofdpaQueueRateSet(1, 2, 10, 20),
-	?assertEqual(E, e_none).
+	ok = ofdpa:ofdpaQueueRateSet(1, 2, 10, 20).
 
 %% OFDPA_ERROR_t ofdpaQueueRateGet(uint32_t portNum, uint32_t queueId, uint32_t *minRate, uint32_t *maxRate);
 queue_rate_get() ->
-	{ok,E,R1,R2} = ofdpa:ofdpaQueueRateGet(1, 2),
-	?assertEqual(E, e_none),
+	{ok,R1,R2} = ofdpa:ofdpaQueueRateGet(1, 2),
 	?assertEqual(R1, 100),
 	?assertEqual(R2, 200).
 

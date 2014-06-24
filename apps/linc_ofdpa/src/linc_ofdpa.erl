@@ -104,14 +104,22 @@ handle_message(MessageBody, State) ->
 %%%-----------------------------------------------------------------------------
 
 -spec is_port_valid(integer(), ofp_port_no()) -> boolean().
-is_port_valid(?SWITCH_ID, _PortNo) ->
-	%%TODO
-	false.
+is_port_valid(?SWITCH_ID, PortNo) -> 
+	case ofdpa:ofdpaPortStateGet(PortNo) of
+	{ok,e_none,_} ->
+		true;
+	_ ->
+		false
+	end.
 
 -spec is_queue_valid(integer(), ofp_port_no(), ofp_queue_id()) -> boolean().
-is_queue_valid(?SWITCH_ID, _PortNo, _QueueId) ->
-	%%TODO
-	false.
+is_queue_valid(?SWITCH_ID, PortNo, QueueId) ->
+	case ofdpa:ofdpaQueueRateGet(PortNo, QueueId) of
+	{ok,e_none,_,_} ->
+		true;
+	_ ->
+		false
+	end.
 
 set_datapath_mac(State, NewMac) ->
     State#state{datapath_mac = NewMac}.
@@ -160,9 +168,24 @@ ofp_table_mod(State, #ofp_table_mod{} = _TableMod) ->
                           {noreply, #state{}} |
                           {reply, ofp_message(), #state{}}.
 ofp_port_mod(State,
-             #ofp_port_mod{} = _PortMod) ->
-	%%TODO
-	{reply,#ofp_error_msg{type =port_mod_failed,code =eperm},State}.
+             #ofp_port_mod{port_no = PortNo,
+						   hw_addr =Mac,
+						   config =Config,
+						   advertise =Advertise}) ->
+	Reply = case ofdpa:ofdpaPortMacGet(PortNo) of
+	{ok,e_none,Mac} ->
+
+		%%TODO
+		todo;
+
+	{ok,e_none,_WrongMac} ->
+		#ofp_error_msg{type =port_mod_failed,code =bad_hw_addr};
+	{ok,e_not_found,_} ->
+		#ofp_error_msg{type =port_mod_failed,code =bad_port};
+	_ ->
+		#ofp_error_msg{type =bad_request,code =bad_port}
+	end,
+	{reply,Reply,State}.
 
 %% @doc Modify group entry in the group table.
 -spec ofp_group_mod(state(), ofp_group_mod()) ->

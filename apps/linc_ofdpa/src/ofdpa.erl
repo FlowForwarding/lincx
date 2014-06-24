@@ -83,8 +83,21 @@
 %%	-: args
 %%
 
+call([{enum,error_t}|Returns], What, Args) ->
+	case gen_server:call(ofdpa_link, {call,What,encode_args(Args)}) of
+	{ok,<<0:32/little>>} ->
+		ok;
+	{ok,<<0:32/little,RetBlob/binary>>} ->
+		list_to_tuple([ok|decode_args(RetBlob, Returns)]);
+	{ok,<<Code:32/little,_/binary>>} ->
+		{error,integer_to_enum(error_t, Code)};
+	{error,_} =Error ->
+		Error
+	end;
 call(Returns, What, Args) ->
 	case gen_server:call(ofdpa_link, {call,What,encode_args(Args)}) of
+	{ok,<<>>} ->
+		ok;
 	{ok,RetBlob} ->
 		list_to_tuple([ok|decode_args(RetBlob, Returns)]);
 	{error,_} =Error ->
