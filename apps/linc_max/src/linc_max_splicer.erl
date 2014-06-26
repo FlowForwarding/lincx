@@ -400,7 +400,30 @@ splice_ipv4_header_binary(Packet, Pos, Off, ByteLen, ValueBin) ->
 	<<IpHdr:(HLen)/binary-unit:32,Suffix/binary>> =HR,
 	IpHdr1 = splice_binary(IpHdr, Off, ByteLen, ValueBin),
 	IpHdr2 = update_ipv4_checksum(IpHdr1),
-	<<Prefix/binary,IpHdr2/binary,Suffix/binary>>.
+
+	%%
+	%% We must update the TCP checksum if the packet wraps a TCP packet. This
+	%% function updates ipv4_src and ipv4_dst. Both are present in the TCP
+	%% pseudoheader.
+	%%
+
+	Proto = binary:at(HR, 9),
+	if Proto =:= ?IPPROTO_TCP ->
+		%% Suffix contains TCP header and TCP data
+		TcpLen = byte_size(Suffix),
+
+		%% Extract address from the update IPv4 header
+		SrcAddr = binary:part(IpHdr2, 12, 4),
+		DstAddr = binary:part(IpHdr2, 16, 4),
+
+		InitSum = pseudoheader(SrcAddr, DstAddr, ?IPPROTO_TCP, TcpLen),
+		NewSum = checksum(Suffix, 8, InitSum),
+
+		<<Shred:16/binary,_StaleSum:16,Rest/binary>> =Suffix,
+		<<Prefix/binary,IpHdr2/binary,Shred/binary,NewSum:16,Rest/binary>>;
+	true ->
+		<<Prefix/binary,IpHdr2/binary,Suffix/binary>>
+	end.
 
 splice_ipv4_header_bits(Packet, Pos, Off, BitLen, Value) ->
 	<<Prefix:(Pos)/bits,HR/binary>> =Packet,
