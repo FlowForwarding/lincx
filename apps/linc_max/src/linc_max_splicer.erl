@@ -122,7 +122,7 @@ ipv4(Packet, ip_dscp, Value, Pos, _Rest) ->
 ipv4(Packet, ip_ecn, Value, Pos, _Rest) ->
 	splice_ipv4_header_bits(Packet, Pos, 14, 2, Value);
 ipv4(_Packet, ip_proto, _Value, _Pos, _Rest) ->
-	protected;
+	splice_ipv4_header_bits(Packet, Pos, 72, 8, Value);
 ipv4(Packet, ipv4_src, ValueBin, Pos, _Rest) ->
 	splice_ipv4_header_binary(Packet, Pos, 96, 4, ValueBin);
 ipv4(Packet, ipv4_dst, ValueBin, Pos, _Rest) ->
