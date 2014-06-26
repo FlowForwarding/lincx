@@ -584,7 +584,10 @@ copy_ttl_outwards(Frame) ->
                    P, ipv4,
                    fun(T) ->
                            T#ipv4{ ttl = NextOutermostTTL }
-                   end)
+                   end);
+			X ->
+				?INFO("TODO: copy_ttl_outwards: ~p", [X]),
+				P	%% packet not modified
          end,
 	pkt:encapsulate(P2).
 
@@ -616,7 +619,10 @@ copy_ttl_inwards(Frame) ->
                    P, ipv4,
                    fun(T) ->
                            T#ipv4{ ttl = OutermostTTL }
-                   end, 1)
+                   end, 1);
+			X ->
+				?INFO("TODO: copy_ttl_inwards: ~p", [X]),
+				P	%% packet not modified
          end,
 	pkt:encapsulate(P2).
  
