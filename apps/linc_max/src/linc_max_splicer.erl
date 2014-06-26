@@ -121,7 +121,7 @@ ipv4(Packet, ip_dscp, Value, Pos, _Rest) ->
 	splice_ipv4_header_bits(Packet, Pos, 8, 6, Value);
 ipv4(Packet, ip_ecn, Value, Pos, _Rest) ->
 	splice_ipv4_header_bits(Packet, Pos, 14, 2, Value);
-ipv4(_Packet, ip_proto, _Value, _Pos, _Rest) ->
+ipv4(Packet, ip_proto, Value, Pos, _Rest) ->
 	splice_ipv4_header_bits(Packet, Pos, 72, 8, Value);
 ipv4(Packet, ipv4_src, ValueBin, Pos, _Rest) ->
 	splice_ipv4_header_binary(Packet, Pos, 96, 4, ValueBin);
@@ -391,7 +391,7 @@ splice_sctp_header(Packet, Pos, SrcPort, DstPort) ->
 splice_ipv4_header_binary(Packet, Pos, Off, ByteLen, ValueBin) ->
 	<<Prefix:(Pos)/bits,HR/binary>> =Packet,
 	HLen = binary:at(HR, 0) band 15,	%% IHL (in 32-bit words)
-	
+
 	%%
 	%% It is not obvious what is faster. A non-standard unit uses a general case
 	%% (slower) VM instruction.
