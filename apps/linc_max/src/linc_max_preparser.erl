@@ -170,7 +170,7 @@ ether(Packet, VlanTag, EthType, PbbTag, MplsTag,
 		MplsTag,
 		Ip4Hdr,
 		Ip6Hdr,
-		bin16(Ip6Ext),	%% =:= undefined
+		bin9(Ip6Ext),	%% =:= undefined
 		IpTclass,
 		IpProto,
 		Rest,		%% ArpMsg
@@ -199,7 +199,7 @@ ether(Packet, VlanTag, EthType, PbbTag, MplsTag,
 		MplsTag,
 		Ip4Hdr,
 		Ip6Hdr,
-		bin16(Ip6Ext),	%% =:= undefined
+		bin9(Ip6Ext),	%% =:= undefined
 		IpTclass,
 		IpProto,
 		undefined,	%% ArpMsg
@@ -263,7 +263,7 @@ ipv4(Packet, VlanTag, EthType, PbbTag, MplsTag,
 		MplsTag,
 		Ip4Hdr,
 		Ip6Hdr,
-		bin16(Ip6Ext),
+		bin9(Ip6Ext),
 		IpTclass,
 		IpProto,
 		undefined,	%% ArpMsg
@@ -402,7 +402,7 @@ ipv6_chain(Packet, VlanTag, EthType, PbbTag, MplsTag,
 		MplsTag,
 		Ip4Hdr,
 		Ip6Hdr,
-		bin16(ext_flags(Ip6Ext, Q)),
+		bin9(ext_flags(Ip6Ext, Q)),
 		IpTclass,
 		up(IpProto, Q),
 		undefined,	%% ArpMsg
@@ -488,7 +488,7 @@ ipv6_skip(Packet, VlanTag, EthType, PbbTag, MplsTag,
 		MplsTag,
 		Ip4Hdr,
 		Ip6Hdr,
-		bin16(Ip6Ext),
+		bin9(Ip6Ext),
 		IpTclass,
 		IpProto,
 		undefined,	%% ArpMsg
@@ -542,7 +542,7 @@ proto(Packet, VlanTag, EthType, PbbTag, MplsTag,
 		MplsTag,
 		Ip4Hdr,
 		Ip6Hdr,
-		bin16(Ip6Ext),
+		bin9(Ip6Ext),
 		IpTclass,
 		IpProto,
 		undefined,	%% ArpMsg
@@ -579,7 +579,7 @@ proto(Packet, VlanTag, EthType, PbbTag, MplsTag,
 		MplsTag,
 		Ip4Hdr,
 		Ip6Hdr,
-		bin16(Ip6Ext),
+		bin9(Ip6Ext),
 		IpTclass,
 		IpProto,
 		undefined,	%% ArpMsg
@@ -608,7 +608,7 @@ proto(Packet, VlanTag, EthType, PbbTag, MplsTag,
 		MplsTag,
 		Ip4Hdr,
 		Ip6Hdr,
-		bin16(Ip6Ext),
+		bin9(Ip6Ext),
 		IpTclass,
 		IpProto,
 		undefined,	%% ArpMsg
@@ -637,7 +637,7 @@ proto(Packet, VlanTag, EthType, PbbTag, MplsTag,
 		MplsTag,
 		Ip4Hdr,
 		Ip6Hdr,
-		bin16(Ip6Ext),
+		bin9(Ip6Ext),
 		IpTclass,
 		IpProto,
 		undefined,	%% ArpMsg
@@ -666,7 +666,7 @@ proto(Packet, VlanTag, EthType, PbbTag, MplsTag,
 		MplsTag,
 		Ip4Hdr,
 		Ip6Hdr,
-		bin16(Ip6Ext),
+		bin9(Ip6Ext),
 		IpTclass,
 		IpProto,
 		undefined,	%% ArpMsg
@@ -699,7 +699,7 @@ icmpv6(Packet, VlanTag, EthType, PbbTag, MplsTag,
 		MplsTag,
 		Ip4Hdr,
 		Ip6Hdr,
-		bin16(Ip6Ext),
+		bin9(Ip6Ext),
 		IpTclass,
 		IpProto,
 		undefined,	%% ArpMsg
@@ -729,7 +729,7 @@ icmpv6(Packet, VlanTag, EthType, PbbTag, MplsTag,
 		MplsTag,
 		Ip4Hdr,
 		Ip6Hdr,
-		bin16(Ip6Ext),
+		bin9(Ip6Ext),
 		IpTclass,
 		IpProto,
 		undefined,	%% ArpMsg
@@ -758,7 +758,7 @@ icmpv6(Packet, VlanTag, EthType, PbbTag, MplsTag,
 		MplsTag,
 		Ip4Hdr,
 		Ip6Hdr,
-		bin16(Ip6Ext),
+		bin9(Ip6Ext),
 		IpTclass,
 		IpProto,
 		undefined,	%% ArpMsg
@@ -849,7 +849,7 @@ out_of_order(_Ip6Ext, _Mask) -> 0.
 up(undefined, New) -> New;
 up(Old, _New) -> Old.
 
-bin16(undefined) -> undefined;
-bin16(Int) -> <<Int:16>>.
+bin9(undefined) -> undefined;
+bin9(Int) -> <<Int:9>>.
 
 %%EOF
