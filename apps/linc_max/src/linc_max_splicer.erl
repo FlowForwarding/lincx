@@ -402,26 +402,35 @@ splice_ipv4_header_binary(Packet, Pos, Off, ByteLen, ValueBin) ->
 	IpHdr2 = update_ipv4_checksum(IpHdr1),
 
 	%%
-	%% We must update the TCP checksum if the packet wraps a TCP packet. This
-	%% function updates ipv4_src and ipv4_dst. Both are present in the TCP
-	%% pseudoheader.
+	%% We must update the TCP/UDP/SCTP checksum if the packet wraps such a packet. This
+	%% function updates ipv4_src and ipv4_dst. Both are present in TCP/UDP/SCTP
+	%% pseudoheaders.
 	%%
+
+	%% Extract address from the update IPv4 header
+	SrcAddr = binary:part(IpHdr2, 12, 4),
+	DstAddr = binary:part(IpHdr2, 16, 4),
 
 	Proto = binary:at(HR, 9),
 	if Proto =:= ?IPPROTO_TCP ->
 		%% Suffix contains TCP header and TCP data
 		TcpLen = byte_size(Suffix),
 
-		%% Extract address from the update IPv4 header
-		SrcAddr = binary:part(IpHdr2, 12, 4),
-		DstAddr = binary:part(IpHdr2, 16, 4),
-
 		InitSum = pseudoheader(SrcAddr, DstAddr, ?IPPROTO_TCP, TcpLen),
 		NewSum = checksum(Suffix, 8, InitSum),
 
 		<<Shred:16/binary,_StaleSum:16,Rest/binary>> =Suffix,
 		<<Prefix/binary,IpHdr2/binary,Shred/binary,NewSum:16,Rest/binary>>;
+
+	Proto =:= ?IPPROTO_UDP ->
+		%% Suffix contains UDP header and data
+		<<SrcPort:16,DstPort:16,UdpLen:16,_Sum:16,Data/binary>> =Suffix,
+		InitSum = pseudoheader(SrcAddr, DstAddr, ?IPPROTO_UDP, UdpLen),
+		NewSum = checksum(Data, all, InitSum +SrcPort +DstPort +UdpLen), %% no skipping
+		<<Prefix/binary,SrcPort:16,DstPort:16,UdpLen:16,NewSum:16,Data/binary>>;
+
 	true ->
+		%% SCTP does not use pseudoheader
 		<<Prefix/binary,IpHdr2/binary,Suffix/binary>>
 	end.
 
