@@ -5,16 +5,16 @@ ACTION:
 |--------------------------------|-------|-------|-------|
 | **OUTPUT**                     | ✓     | ✓     | ✓     |
 | PUSH_VLAN                      | ✓     | ✓     | ✓     |
-| PUSH_MPLS                      | -     | -     | -     |
+| PUSH_MPLS                      | ✓     | ✓     | ✓     |
 | PUSH_PBB                       | -     | -     | -     |
 | PUSH_VLAN (multiple)           | ✓     | ✓     | ✓     |
 | POP_VLAN                       | ✓     | ✓     | ✓     |
-| COPY_TTL_OUT                   | -     | -     |
-| COPY_TTL_IN                    | -     | -     |
-| SET_MPLS_TTL                   | -     | -     | -     |
-| DEC_MPLS_TTL                   | -     | -     | -     |
+| COPY_TTL_OUT                   | ✓     | -     |
+| COPY_TTL_IN                    | ✓     | -     |
+| SET_MPLS_TTL                   | ✓     | ✓     | -     |
+| DEC_MPLS_TTL                   | ✓     | ✓     | -     |
 | PUSH_MPLS (multiple)           | -     | -     | -     |
-| POP_MPLS                       | -     | -     | -     |
+| POP_MPLS                       | ✓     | ✓     | -     |
 | PUSH_PBB (multiple)            | -     | -     | -     |
 | POP_PBB                        | -     | -     | -     |
 
@@ -36,9 +36,9 @@ ACTION: SET_FIELD:
 | ETH_TYPE                       | ✓     | ✓     | ✓     |
 | TUNNEL_ID                      | -     | -     | -     |
 | VLAN_VID                       | ✓     | ✓     | ✓     |
-| VLAN_PCP                       | -     | -     | -     |
-| MPLS_LABEL                     | -     | -     | -     |
-| MPLS_TC                        | -     | -     | -     |
+| VLAN_PCP                       | ✓     | ✓     | ✓     |
+| MPLS_LABEL                     | ✓     | ✓     | -     |
+| MPLS_TC                        | ✓     | ✓     | -     |
 | MPLS_BOS                       | -     | -     | -     |
 | PBB_ISID                       | ✓     | ✓     | ✓     |
 
@@ -49,8 +49,8 @@ ACTION: SET_FIELD:
 | IP_DSCP (IPv4)                 | ✓     | ✓     | -     | -     |
 | IP_ECN (IPv4)                  | ✓     | ✓     | -     | -     |
 | IP_PROTO (IPv4)                | -     | -     | -     | -     |
-| IPV4_SRC                       | -     | -     | -     | -     |
-| IPV4_DST                       | -     | -     | -     | -     |
+| IPV4_SRC                       | ✓     | ✓     | -     | -     |
+| IPV4_DST                       | ✓     | ✓     | -     | -     |
 | TCP_SRC (IPv4)                 | ✓     | ✓     | -     | -     |
 | TCP_DST (IPv4)                 | ✓     | ✓     | -     | -     |
 | UDP_SRC (IPv4)                 | ✓     | ✓     | -     | -     |
@@ -98,10 +98,10 @@ MATCH:
 | TUNNEL_ID (Mask)               |  ---  |  ---  |  ---  |
 | VLAN_VID                       |  ✓✓-  |  ✓✓-  |  ✓✓-  |
 | VLAN_VID (Mask)                |  ✓✓-  |  ✓✓-  |  ✓✓-  |
-| VLAN_PCP                       |  ---  |  ---  |  ---  |
-| MPLS_LABEL                     |  ---  |  ---  |  ---  |
-| MPLS_TC                        |  ---  |  ---  |  ---  |
-| MPLS_BOS                       |  ---  |  ---  |  ---  |
+| VLAN_PCP                       |  ✓✓-  |  ✓✓-  |  ✓✓-  |
+| MPLS_LABEL                     |  ✓✓-  |  ✓✓-  |  ---  |
+| MPLS_TC                        |  ✓✓-  |  ✓✓-  |  ---  |
+| MPLS_BOS                       |  ✓✓-  |  ✓✓-  |  ---  |
 | PBB_ISID                       |  ✓✓-  |  ✓✓-  |  ✓✓-  |
 | PBB_ISID (Mask)                |  ✓✓-  |  ✓✓-  |  ✓✓-  |
 
@@ -144,8 +144,8 @@ MATCH:
 | IPV6_ND_TARGET                 |  ✓✓-  |  ✓✓-  |  ---  |  ---  |
 | IPV6_ND_SLL                    |  ✓✓-  |  ✓✓-  |  ---  |  ---  |
 | IPV6_ND_TLL                    |  ✓✓-  |  ✓✓-  |  ---  |  ---  |
-| IPV6_EXTHDR                    |  ---  |  ---  |  ---  |  ---  |
-| IPV6_EXTHDR (Mask)             |  ---  |  ---  |  ---  |  ---  |
+| IPV6_EXTHDR                    |  ✓✓-  |  ✓✓-  |  ---  |  ---  |
+| IPV6_EXTHDR (Mask)             |  ✓✓-  |  ✓✓-  |  ---  |  ---  |
 | ARP_OP                         |  ✓✓-  |  ✓✓-  |  ---  |  ---  |
 | ARP_SPA                        |  ✓✓-  |  ✓✓-  |  ---  |  ---  |
 | ARP_SPA (Mask)                 |  ✓✓-  |  ✓✓-  |  ---  |  ---  |
