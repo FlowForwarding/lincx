@@ -1,3 +1,15 @@
+### OpenFlow 1.3 conformance tests with Ryu
+#### Weekly progress 
+
+  Date     | OK  | ERROR
+---------- | --- | ------
+16.06.2014 | 301 | 678
+20.06.2014 | 317 | 674
+27.06.2014 | 365 | 626
+
+#### Current state 
+
+
 
 ACTION: 
 
