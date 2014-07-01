@@ -211,6 +211,12 @@ scenario(apply_actions_max) ->
 	 flow_add([], [{in_port,<<2:32>>}],
 			[{apply_actions,[{output,1,no_buffer}]}])];
 
+scenario(ofdpa_packet_out) ->
+	[message(#ofp_packet_out{buffer_id = no_buffer,
+    	in_port = 13,
+		actions = [#ofp_action_output{port =17}],
+		data = <<"Hey there">>})];
+
 %%------------------------------------------------------------------------------
 
 scenario(all_messages) ->

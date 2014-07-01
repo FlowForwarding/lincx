@@ -80,6 +80,17 @@
 -spec start(any()) -> {ok, Version :: 4, state()}.
 start(BackendOpts) ->
     try
+		%%
+		%% There should be only on switch. The configuration does not know it yet.
+		%%
+        {switch_id, SwitchId} = lists:keyfind(switch_id, 1, BackendOpts),
+        {config, Config} = lists:keyfind(config, 1, BackendOpts),
+		{switch,_,SwitchConfig} = lists:keyfind(SwitchId, 2, Config),
+
+		%% Establish the link to the OF-DPA agent daemon
+		{agentx,{AxHost,AxPort,tcp}} = lists:keyfind(agentx, 1, SwitchConfig),
+		{ok,_Agentx} = ofdpa_link:start_link(AxHost, AxPort),
+
         {datapath_mac, DatapathMac} = lists:keyfind(datapath_mac, 1, BackendOpts),
 		{ok,4,#state{datapath_mac =DatapathMac}}
     catch
@@ -225,11 +236,19 @@ ofp_group_mod(State,
                             {reply, ofp_message(), #state{}}.
 ofp_packet_out(State,
                #ofp_packet_out{buffer_id = no_buffer,
-                               actions = _Actions,
-                               in_port = _InPort,
-                               data = _Data}) ->
-	%%TODO: use apply_list()
-    {noreply,State}.
+                               actions = [#ofp_action_output{port =OutPort}],
+                               in_port = InPort,
+                               data = Data}) ->
+	case ofdpa:ofdpaPktSend(Data, 0, OutPort, InPort) of
+	ok ->
+		ok;
+	{error,Error} ->
+		?ERROR("Packet-out failed: ~p\n", [Error])
+	end,
+    {noreply,State};
+ofp_packet_out(State, Msg) ->
+	?INFO("Packet-out ignored: Msg = ~p\n", [Msg]),
+	{noreply,State}.
 
 %% @doc Reply to echo request.
 -spec ofp_echo_request(state(), ofp_echo_request()) ->

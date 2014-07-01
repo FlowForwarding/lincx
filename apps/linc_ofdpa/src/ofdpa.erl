@@ -89,7 +89,7 @@ call([{enum,error_t}|Returns], What, Args) ->
 		ok;
 	{ok,<<0:32/little,RetBlob/binary>>} ->
 		list_to_tuple([ok|decode_args(RetBlob, Returns)]);
-	{ok,<<Code:32/little,_/binary>>} ->
+	{ok,<<Code:32/signed-little,_/binary>>} ->
 		{error,integer_to_enum(error_t, Code)};
 	{error,_} =Error ->
 		Error
