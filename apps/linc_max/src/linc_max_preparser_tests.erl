@@ -24,7 +24,7 @@ port_info_test_() ->
 	[fun() ->
 		PortInfo = {InPort,InPhyPort,TunnelId},
 		Ms = linc_max_preparser:inject(AnyFrame, AnyMeta, PortInfo,
-									  #fast_actions{}, #blaze{start_at =?MODULE}),
+									  #fast_actions{}, ?MODULE, #blaze{}),
 		present(Present, Ms),
 		absent(Absent, Ms)
 	 end
@@ -43,7 +43,7 @@ metadata_test() ->
 	AnyFrame = pkt:encapsulate([#ether{},#ipv4{},#udp{}]),
 	AnyPortInfo = {1,1,undefined},
 	Ms = linc_max_preparser:inject(AnyFrame, <<42:64>>, AnyPortInfo,
-								  #fast_actions{}, #blaze{start_at =?MODULE}),
+								  #fast_actions{}, ?MODULE, #blaze{}),
 	present([{metadata,<<42:64>>}], Ms).
 
 fields_test_() ->
@@ -56,7 +56,7 @@ fields_test_() ->
 		Frame = pkt:encapsulate(Pkt),
 		io:format("~p: ~p\n", [Present,Frame]),
 		Ms = linc_max_preparser:inject(Frame, AnyMeta, AnyPortInfo,
-									  #fast_actions{}, #blaze{start_at =?MODULE}),
+									  #fast_actions{}, ?MODULE, #blaze{}),
 		present(Present, Ms),
 		absent(Absent, Ms)
 	 end
@@ -157,7 +157,7 @@ exthdr_test_() ->
 		Frame = pkt:encapsulate(Pkt),
 		io:format("Frame = ~p\n", [Frame]),
 		Ms = linc_max_preparser:inject(Frame, AnyMeta, AnyPortInfo,
-									  #fast_actions{}, #blaze{start_at =?MODULE}),
+									  #fast_actions{}, ?MODULE, #blaze{}),
 		io:format("Ms = ~p\n", [Ms]),
 		io:format("Present/Absent = ~p/~p\n", [Present,Absent]),
 		present(Present, Ms),

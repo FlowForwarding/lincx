@@ -30,9 +30,7 @@ start(SwitchConfig, FlowTab0) ->
 	spawn(fun() ->
 		Ports = open_ports(PortConfig),
 		QueueMap = start_queues(Ports, QueueConfig),
-		blaze(#blaze{ports =Ports,
-					 queue_map =QueueMap,
-					 start_at =FlowTab0})
+		blaze(#blaze{ports =Ports,queue_map =QueueMap}, FlowTab0)
 	end).
 
 stop() ->
@@ -142,7 +140,7 @@ stop_queues(QueueMap) ->
 
 %% FAST PATH
 %%
-blaze(Blaze) ->
+blaze(Blaze, FlowTab0) ->
 	register(blaze, self()),
 
 	link(whereis(last_will)),
@@ -151,25 +149,25 @@ blaze(Blaze) ->
 	process_flag(priority, ?BLAZE_PRIORITY),
 	process_flag(suppress_gc, ?SUPPRESS_GC),
 
-	blaze(Blaze, 0).	%% add restart counter
+	blaze(Blaze, FlowTab0, 0).	%% add restart counter
 
-blaze(Blaze, ?REIGNITE_AFTER) ->
-	reignite(Blaze);
-blaze(#blaze{queue_map =QueueMap,ports =Ports} =Blaze, ReigniteCounter) ->
+blaze(Blaze, FlowTab0, ?REIGNITE_AFTER) ->
+	reignite(Blaze, FlowTab0);
+blaze(#blaze{queue_map =QueueMap,ports =Ports} =Blaze, FlowTab0, ReigniteCounter) ->
 	receive
 	{queue_restarting,OldPid,NewPid} ->
 		{value,{Outlet,_},QueueMap1} = lists:keytake(OldPid, 2, QueueMap),
 		OldPid ! queue_restarted,
 		%% #blaze{} copied - happens rarely
-		blaze(Blaze#blaze{queue_map =[{Outlet,NewPid}|QueueMap1]}, ReigniteCounter);
+		blaze(Blaze#blaze{queue_map =[{Outlet,NewPid}|QueueMap1]}, FlowTab0, ReigniteCounter);
 
 	{'EXIT',_,normal} ->
-		blaze(Blaze, ReigniteCounter);	%% queue restarted normally
+		blaze(Blaze, FlowTab0, ReigniteCounter);	%% queue restarted normally
 
 	{'EXIT',QueuePid,Reason} ->
 		?ERROR("queue ~p exits with reason ~p\n", [QueuePid,Reason]),
 		QueueMap1 = lists:keydelete(QueuePid, 2, QueueMap),
-		blaze(Blaze#blaze{queue_map =QueueMap1}, ReigniteCounter);
+		blaze(Blaze#blaze{queue_map =QueueMap1}, FlowTab0, ReigniteCounter);
 
 	{Outlet,{data,Frame}} ->
 		#port_info{port_no =PortNo,
@@ -186,7 +184,7 @@ blaze(#blaze{queue_map =QueueMap,ports =Ports} =Blaze, ReigniteCounter) ->
 
 		%% Inject the frame into the pipeline
 		case linc_max_preparser:inject(Frame,
-				Metadata, PortInfo, #fast_actions{}, Blaze) of
+				Metadata, PortInfo, #fast_actions{}, FlowTab0, Blaze) of
 		{do,Frame1,Actions} ->
 			linc_max_fast_actions:apply_set(Actions, Frame1, Blaze);
 		malformed ->
@@ -197,7 +195,8 @@ blaze(#blaze{queue_map =QueueMap,ports =Ports} =Blaze, ReigniteCounter) ->
 			drop
 		end,
 
-		blaze(Blaze, ReigniteCounter +1);
+
+		blaze(Blaze, FlowTab0, ReigniteCounter +1);
 
 	{stop,From} ->
 		stop_queues(QueueMap),
@@ -210,14 +209,14 @@ blaze(#blaze{queue_map =QueueMap,ports =Ports} =Blaze, ReigniteCounter) ->
 
 	{describe_ports,From} ->
 		From ! {ports,Ports},
-		blaze(Blaze, ReigniteCounter)
+		blaze(Blaze, FlowTab0, ReigniteCounter)
 	end.
 
-reignite(#blaze{ports =Ports} =Blaze) ->
+reignite(#blaze{ports =Ports} =Blaze, FlowTab0) ->
 	unregister(blaze),
 
 	NewPid = spawn(fun() ->
-		blaze(Blaze)
+		blaze(Blaze, FlowTab0)
 	end),
 
 	reconnect_ports(Ports, NewPid),

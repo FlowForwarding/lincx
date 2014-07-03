@@ -279,7 +279,7 @@ port_info(Matches, PortInfo, Expected) ->
 	Ents = [flow_entry(Matches)],
 	linc_max_generator:update_flow_table(flow42, Ents),
 	R = linc_max_preparser:inject(AnyFrame, AnyMeta, PortInfo,
-								  #fast_actions{}, #blaze{start_at =flow42}),
+								  #fast_actions{}, flow42, #blaze{}),
 	expected(Expected, R).
 
 metadata(Matches, Meta, Expected) ->
@@ -288,7 +288,7 @@ metadata(Matches, Meta, Expected) ->
 	Ents = [flow_entry(Matches)],
 	linc_max_generator:update_flow_table(flow42, Ents),
 	R = linc_max_preparser:inject(AnyFrame, Meta, AnyPortInfo,
-								  #fast_actions{}, #blaze{start_at =flow42}),
+								  #fast_actions{}, flow42, #blaze{}),
 	expected(Expected, R).
 
 packet(Pkt, Matches, Expected) ->
@@ -298,7 +298,7 @@ packet(Pkt, Matches, Expected) ->
 	Ents = [flow_entry(Matches)],
 	linc_max_generator:update_flow_table(flow42, Ents),
 	R = linc_max_preparser:inject(Frame, AnyMeta, AnyPortInfo,
-								  #fast_actions{}, #blaze{start_at =flow42}),
+								  #fast_actions{}, flow42, #blaze{}),
 	expected(Expected, R).
 
 flow_entry(Matches) ->
