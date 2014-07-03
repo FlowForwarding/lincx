@@ -1,4 +1,4 @@
-%
+%%
 %%
 %%
 
@@ -9,13 +9,31 @@
 -export([meter/2]).
 -export([apply_set/3]).
 -export([apply_list/3]).
+%% these functions are used in linc_max_generator and always expected to return a binary
+-export([
+	output/3,
+	set_queue/2,
+	group/2,
+	push_vlan/2,
+	pop_vlan/1,
+	push_mpls/2,
+	pop_mpls/2,
+	push_pbb/2,
+	pop_pbb/1,
+	set_field/3,
+	set_mpls_ttl/2,
+	decrement_mpls_ttl/1,
+	set_ip_ttl/2,
+	decrement_ip_ttl/1,
+	copy_ttl_outwards/1,
+	copy_ttl_inwards/1
+]).
 
 -include_lib("of_protocol/include/of_protocol.hrl").
 -include_lib("of_protocol/include/ofp_v4.hrl").
 -include_lib("linc/include/linc_logger.hrl").
 -include_lib("pkt/include/pkt.hrl").
 -include("linc_max.hrl").
-
 -include("fast_path.hrl").
 
 %% FAST PATH
@@ -43,7 +61,7 @@ apply_set(#fast_actions{output =PortNo,queue =QueueNo}, Frame, Blaze)
 	Pid ! Frame;
 
 apply_set(#fast_actions{output =PortNo}, Frame, Blaze) when is_integer(PortNo) ->
-	outgoing_frame(PortNo, Frame, Blaze);
+	output(Frame, PortNo, Blaze);
 
 apply_set(#fast_actions{output =controller}, Frame, _Blaze) ->
 
@@ -71,19 +89,6 @@ apply_set(Actions, _Frame, _Blaze) ->
 	io:format("? ~p\n", [Actions]).
 
 %%------------------------------------------------------------------------------
-	
-outgoing_frame(PortNo, Frame, Blaze) ->
-	#port_info{outlet =Outlet,
-			   tx_pkt_ref =TxPktRef,
-			   tx_data_ref =TxDataRef} =
-					lists:keyfind(PortNo, #port_info.port_no, Blaze#blaze.ports),
-
-	erlang:port_command(Outlet, Frame),
-
-	erlang:update_counter(TxPktRef),
-	erlang:update_counter(TxDataRef, byte_size(Frame)).
-
-%%------------------------------------------------------------------------------
 
 %% Apply-Actions
 
@@ -92,32 +97,17 @@ outgoing_frame(PortNo, Frame, Blaze) ->
 apply_list([], Frame, _Blaze) ->
 	Frame;
 
-apply_list([{output,PortNo}|ActionList], Frame, Blaze) when is_integer(PortNo) ->
-	outgoing_frame(PortNo, Frame, Blaze),
+apply_list([{output,PortNo}|ActionList], Frame, Blaze) ->
+	output(Frame, PortNo, Blaze),
 	apply_list(ActionList, Frame, Blaze);
 
-apply_list([{output,controller}|ActionList], Frame, Blaze) ->
-	%% See comment above
-	SwitchId = 0,	%%XXX
-	TableId = 0,	%%XXX
-	PacketIn = #ofp_packet_in{reason = action,
-							  table_id = TableId,
-							  data = Frame},
-	%%?INFO("Packet-In [2]: ~p\n", [pkt:decapsulate(Frame)]),
-    linc_logic:send_to_controllers(SwitchId, #ofp_message{body = PacketIn}),
-	apply_list(ActionList, Frame, Blaze);
+apply_list([{set_queue,Queue}|ActionList], Frame, Blaze) ->
+	Frame1 = set_queue(Frame, Queue),
+	apply_list(ActionList, Frame1, Blaze);
 
-apply_list([{output,Sink}|ActionList], Frame, Blaze) when is_atom(Sink) ->
-	?ERROR("Output to '~w' not implemented", [Sink]),
-	apply_list(ActionList, Frame, Blaze);
-
-apply_list([{set_queue,_Queue}|ActionList], Frame, Blaze) ->
-	?ERROR("Queues not supported"),
-	apply_list(ActionList, Frame, Blaze);
-
-apply_list([{group,_Group}|ActionList], Frame, Blaze) ->
-	?ERROR("Groups not supported"),
-	apply_list(ActionList, Frame, Blaze);
+apply_list([{group,Group}|ActionList], Frame, Blaze) ->
+	Frame1 = group(Frame, Group),
+	apply_list(ActionList, Frame1, Blaze);
 
 apply_list([{push_vlan,EthType}|ActionList], Frame, Blaze) ->
 	Frame1 = push_vlan(Frame, EthType),
@@ -180,6 +170,43 @@ apply_list([copy_ttl_outwards|ActionList], Frame, Blaze) ->
 apply_list([copy_ttl_inwards|ActionList], Frame, Blaze) ->
 	Frame1  = copy_ttl_inwards(Frame),
 	apply_list(ActionList, Frame1, Blaze).
+
+%%------------------------------------------------------------------------------
+
+output(Frame, controller, _Blaze) ->
+	%% See comment above
+	SwitchId = 0,	%%XXX
+	TableId = 0,	%%XXX
+	PacketIn = #ofp_packet_in{
+		reason = action,
+		table_id = TableId,
+		data = Frame
+	},
+    linc_logic:send_to_controllers(SwitchId, #ofp_message{body = PacketIn}),
+    Frame;
+output(Frame, Sink, _Blaze) when is_atom(Sink) ->
+	?ERROR("Output to '~w' not implemented", [Sink]),
+	Frame;
+output(Frame, PortNo, Blaze) ->
+	#port_info{
+		outlet      =Outlet,
+		tx_pkt_ref  =TxPktRef,
+		tx_data_ref =TxDataRef
+	} = lists:keyfind(PortNo, #port_info.port_no, Blaze#blaze.ports),
+
+	erlang:port_command(Outlet, Frame),
+
+	erlang:update_counter(TxPktRef),
+	erlang:update_counter(TxDataRef, byte_size(Frame)),
+	Frame.
+
+set_queue(Frame, _Queue) ->
+	?ERROR("Queues not supported"),
+	Frame.
+
+group(Frame, _Group) ->
+	?ERROR("Groups not supported"),
+	Frame.
 
 set_field(Frame, Field, FastValue) ->
 	linc_max_splicer:edit(Frame, Field, FastValue).

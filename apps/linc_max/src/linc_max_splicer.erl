@@ -9,6 +9,7 @@
 
 -include_lib("pkt/include/pkt.hrl").
 -include("pkt_max.hrl").
+-include_lib("linc/include/linc_logger.hrl").
 
 %%
 %% Value is an integer for field narrower than 29 bits. For wider fields Value
@@ -45,10 +46,12 @@ ether(Packet, pbb_uca, Value, Pos, <<?ETH_P_PBB_I:16,_/binary>>) ->
 	splice_bits(Packet, Pos +16 +4, 1, Value);
 ether(Packet, pbb_isid, Value, Pos, <<?ETH_P_PBB_I:16,_/binary>>) ->
 	splice_bits(Packet, Pos +16 +8, 24, Value);
-ether(_Packet, vlan_pcp, _Value, _Pos, <<?ETH_P_PBB_I:16,_/binary>>) ->
-	missing;
-ether(_Packet, vlan_vid, _Value, _Pos, <<?ETH_P_PBB_I:16,_/binary>>) ->
-	missing;
+ether(Packet, vlan_pcp, _Value, _Pos, <<?ETH_P_PBB_I:16,_/binary>>) ->
+	?DEBUG("missing vlan_pcp"),
+	Packet;
+ether(Packet, vlan_vid, _Value, _Pos, <<?ETH_P_PBB_I:16,_/binary>>) ->
+	?DEBUG("missing vlan_vid"),
+	Packet;
 ether(Packet, Field, Value, Pos, <<?ETH_P_PBB_I:16,_:4/binary,_:(6+6)/binary,Rest/binary>>) ->
 	ether(Packet, Field, Value, Pos +16 +32 +48 +48, Rest);
 
@@ -56,31 +59,41 @@ ether(Packet, mpls_label, Value, Pos, <<?ETH_P_MPLS_UNI:16,_/binary>>) ->
 	splice_bits(Packet, Pos +16, 20, Value);
 ether(Packet, mpls_tc, Value, Pos, <<?ETH_P_MPLS_UNI:16,_/binary>>) ->
 	splice_bits(Packet, Pos +16 +20, 3, Value);
-ether(_Packet, mpls_bos, _Value, _Pos, <<?ETH_P_MPLS_UNI:16,_/binary>>) ->
-	protected;
+ether(Packet, mpls_bos, _Value, _Pos, <<?ETH_P_MPLS_UNI:16,_/binary>>) ->
+	?DEBUG("protected mpls_bos"),
+	Packet;
 ether(Packet, mpls_label, Value, Pos, <<?ETH_P_MPLS_MULTI:16,_/binary>>) ->
 	splice_bits(Packet, Pos +16, 20, Value);
 ether(Packet, mpls_tc, Value, Pos, <<?ETH_P_MPLS_MULTI:16,_/binary>>) ->
 	splice_bits(Packet, Pos +16 +20, 3, Value);
-ether(_Packet, mpls_bos, _Value, _Pos, <<?ETH_P_MPLS_MULTI:16,_/binary>>) ->
-	protected;
+ether(Packet, mpls_bos, _Value, _Pos, <<?ETH_P_MPLS_MULTI:16,_/binary>>) ->
+	?DEBUG("protected mpls_bos"),
+	Packet;
 %% MPLS tag is always after VLAN/PBB
-ether(_Packet, vlan_pcp, _Value, _Pos, <<?ETH_P_MPLS_UNI:16,_Rest/binary>>) ->
-	missing;
-ether(_Packet, vlan_vid, _Value, _Pos, <<?ETH_P_MPLS_UNI:16,_Rest/binary>>) ->
-	missing;
-ether(_Packet, pbb_uca, _Value, _Pos, <<?ETH_P_MPLS_UNI:16,_Rest/binary>>) ->
-	missing;
-ether(_Packet, pbb_isid, _Value, _Pos, <<?ETH_P_MPLS_UNI:16,_Rest/binary>>) ->
-	missing;
-ether(_Packet, vlan_pcp, _Value, _Pos, <<?ETH_P_MPLS_MULTI:16,_Rest/binary>>) ->
-	missing;
-ether(_Packet, vlan_vid, _Value, _Pos, <<?ETH_P_MPLS_MULTI:16,_Rest/binary>>) ->
-	missing;
-ether(_Packet, pbb_uca, _Value, _Pos, <<?ETH_P_MPLS_MULTI:16,_Rest/binary>>) ->
-	missing;
-ether(_Packet, pbb_isid, _Value, _Pos, <<?ETH_P_MPLS_MULTI:16,_Rest/binary>>) ->
-	missing;
+ether(Packet, vlan_pcp, _Value, _Pos, <<?ETH_P_MPLS_UNI:16,_Rest/binary>>) ->
+	?DEBUG("missing vlan_pcp"),
+	Packet;
+ether(Packet, vlan_vid, _Value, _Pos, <<?ETH_P_MPLS_UNI:16,_Rest/binary>>) ->
+	?DEBUG("missing vlan_vid"),
+	Packet;
+ether(Packet, pbb_uca, _Value, _Pos, <<?ETH_P_MPLS_UNI:16,_Rest/binary>>) ->
+	?DEBUG("missing pbb_uca"),
+	Packet;
+ether(Packet, pbb_isid, _Value, _Pos, <<?ETH_P_MPLS_UNI:16,_Rest/binary>>) ->
+	?DEBUG("missing pbb_isid"),
+	Packet;
+ether(Packet, vlan_pcp, _Value, _Pos, <<?ETH_P_MPLS_MULTI:16,_Rest/binary>>) ->
+	?DEBUG("missing vlan_pcp"),
+	Packet;
+ether(Packet, vlan_vid, _Value, _Pos, <<?ETH_P_MPLS_MULTI:16,_Rest/binary>>) ->
+	?DEBUG("missing vlan_vid"),
+	Packet;
+ether(Packet, pbb_uca, _Value, _Pos, <<?ETH_P_MPLS_MULTI:16,_Rest/binary>>) ->
+	?DEBUG("missing pbb_uca"),
+	Packet;
+ether(Packet, pbb_isid, _Value, _Pos, <<?ETH_P_MPLS_MULTI:16,_Rest/binary>>) ->
+	?DEBUG("missing pbb_isid"),
+	Packet;
 ether(Packet, Field, Value, Pos, <<?ETH_P_MPLS_UNI:16,Rest/binary>>) ->
 	mpls(Packet, Field, Value, Pos +16, Rest);	%% skip mpls stack
 ether(Packet, Field, Value, Pos, <<?ETH_P_MPLS_MULTI:16,Rest/binary>>) ->
@@ -102,8 +115,9 @@ ether(Packet, arp_sha, ValueBin, Pos, <<?ETH_P_ARP:16,_/binary>>) ->
 ether(Packet, arp_tha, ValueBin, Pos, <<?ETH_P_ARP:16,_/binary>>) ->
 	splice_binary(Packet, Pos +16 +144, 6, ValueBin);
 
-ether(_Packet, _Field, _Value, _Pos, _Rest) ->
-	missing.
+ether(Packet, _Field, _Value, _Pos, _Rest) ->
+	?DEBUG("missing ether"),
+	Packet.
 
 mpls(Packet, Field, Value, Pos, <<_:23,1:1,_,Rest/binary>>) ->
 	%% at the bottom
@@ -129,30 +143,42 @@ ipv4(Packet, ipv4_dst, ValueBin, Pos, _Rest) ->
 	splice_ipv4_header_binary(Packet, Pos, 128, 4, ValueBin);
 
 %% Cannot happen: vlan, pbb, mpls, arp
-ipv4(_Packet, vlan_pcp, _Value, _Pos, _Rest) ->
-	missing;
-ipv4(_Packet, vlan_vid, _Value, _Pos, _Rest) ->
-	missing;
-ipv4(_Packet, pbb_uca, _Value, _Pos, _Rest) ->
-	missing;
-ipv4(_Packet, pbb_isid, _Value, _Pos, _Rest) ->
-	missing;
-ipv4(_Packet, mpls_label, _Value, _Pos, _Rest) ->
-	missing;
-ipv4(_Packet, mpls_tc, _Value, _Pos, _Rest) ->
-	missing;
-ipv4(_Packet, mpls_bos, _Value, _Pos, _Rest) ->
-	missing;
-ipv4(_Packet, arp_op, _Value, _Pos, _Rest) ->
-	missing;
-ipv4(_Packet, arp_spa, _Value, _Pos, _Rest) ->
-	missing;
-ipv4(_Packet, arp_tpa, _Value, _Pos, _Rest) ->
-	missing;
-ipv4(_Packet, arp_sha, _Value, _Pos, _Rest) ->
-	missing;
-ipv4(_Packet, arp_tha, _Value, _Pos, _Rest) ->
-	missing;
+ipv4(Packet, vlan_pcp, _Value, _Pos, _Rest) ->
+	?DEBUG("missing ipv4 vlan_pcp"),
+	Packet;
+ipv4(Packet, vlan_vid, _Value, _Pos, _Rest) ->
+	?DEBUG("missing ipv4 vlan_vid"),
+	Packet;
+ipv4(Packet, pbb_uca, _Value, _Pos, _Rest) ->
+	?DEBUG("missing ipv4 pbb_uca"),
+	Packet;
+ipv4(Packet, pbb_isid, _Value, _Pos, _Rest) ->
+	?DEBUG("missing ipv4 pbb_isid"),
+	Packet;
+ipv4(Packet, mpls_label, _Value, _Pos, _Rest) ->
+	?DEBUG("missing ipv4 mpls_label"),
+	Packet;
+ipv4(Packet, mpls_tc, _Value, _Pos, _Rest) ->
+	?DEBUG("missing ipv4 mpls_tc"),
+	Packet;
+ipv4(Packet, mpls_bos, _Value, _Pos, _Rest) ->
+	?DEBUG("missing ipv4 mpls_bos"),
+	Packet;
+ipv4(Packet, arp_op, _Value, _Pos, _Rest) ->
+	?DEBUG("missing ipv4 arp_op"),
+	Packet;
+ipv4(Packet, arp_spa, _Value, _Pos, _Rest) ->
+	?DEBUG("missing ipv4 arp_spa"),
+	Packet;
+ipv4(Packet, arp_tpa, _Value, _Pos, _Rest) ->
+	?DEBUG("missing ipv4 arp_tpa"),
+	Packet;
+ipv4(Packet, arp_sha, _Value, _Pos, _Rest) ->
+	?DEBUG("missing ipv4 arp_sha"),
+	Packet;
+ipv4(Packet, arp_tha, _Value, _Pos, _Rest) ->
+	?DEBUG("missing ipv4 arp_tha"),
+	Packet;
 
 ipv4(Packet, Field, Value, Pos,
 		<<_:4,			%% version (4)
@@ -172,9 +198,9 @@ ipv4(Packet, Field, Value, Pos,
 	%% SrcAddr and DstAddr are needed for possible checksum recalculation
 	proto(Packet, Field, Value, Pos +HLen *8, Rest, Proto, SrcAddr, DstAddr);
 
-ipv4(_Packet, _Field, _Value, _Pos, _Rest) ->
-	%% the fragmented datagram
-	fragmented.
+ipv4(Packet, _Field, _Value, _Pos, _Rest) ->
+	?DEBUG("fragmented ipv4"),
+	Packet.
 
 ipv6(Packet, ipv6_src, ValueBin, Pos, _Rest) ->
 	splice_binary(Packet, Pos +64, 16, ValueBin);
@@ -187,34 +213,47 @@ ipv6(Packet, ip_dscp, Value, Pos, _Rest) ->
 	splice_bits(Packet, Pos +4, 6, Value);
 ipv6(Packet, ip_ecn, Value, Pos, _Rest) ->
 	splice_bits(Packet, Pos +10, 2, Value);
-ipv6(_Packet, ip_proto, _Value, _Pos, _Rest) ->
-	protected;
+ipv6(Packet, ip_proto, _Value, _Pos, _Rest) ->
+	?DEBUG("protected ipv6 ip_proto"),
+	Packet;
 
 %% Cannot happen: vlan, pbb, mpls, arp
-ipv6(_Packet, vlan_pcp, _Value, _Pos, _Rest) ->
-	missing;
-ipv6(_Packet, vlan_vid, _Value, _Pos, _Rest) ->
-	missing;
-ipv6(_Packet, pbb_uca, _Value, _Pos, _Rest) ->
-	missing;
-ipv6(_Packet, pbb_isid, _Value, _Pos, _Rest) ->
-	missing;
-ipv6(_Packet, mpls_label, _Value, _Pos, _Rest) ->
-	missing;
-ipv6(_Packet, mpls_tc, _Value, _Pos, _Rest) ->
-	missing;
-ipv6(_Packet, mpls_bos, _Value, _Pos, _Rest) ->
-	missing;
-ipv6(_Packet, arp_op, _Value, _Pos, _Rest) ->
-	missing;
-ipv6(_Packet, arp_spa, _Value, _Pos, _Rest) ->
-	missing;
-ipv6(_Packet, arp_tpa, _Value, _Pos, _Rest) ->
-	missing;
-ipv6(_Packet, arp_sha, _Value, _Pos, _Rest) ->
-	missing;
-ipv6(_Packet, arp_tha, _Value, _Pos, _Rest) ->
-	missing;
+ipv6(Packet, vlan_pcp, _Value, _Pos, _Rest) ->
+	?DEBUG("missing ipv6 vlan_pcp"),
+	Packet;
+ipv6(Packet, vlan_vid, _Value, _Pos, _Rest) ->
+	?DEBUG("missing ipv6 vlan_vid"),
+	Packet;
+ipv6(Packet, pbb_uca, _Value, _Pos, _Rest) ->
+	?DEBUG("missing ipv6 pbb_uca"),
+	Packet;
+ipv6(Packet, pbb_isid, _Value, _Pos, _Rest) ->
+	?DEBUG("missing ipv6 pbb_isid"),
+	Packet;
+ipv6(Packet, mpls_label, _Value, _Pos, _Rest) ->
+	?DEBUG("missing ipv6 mpls_label"),
+	Packet;
+ipv6(Packet, mpls_tc, _Value, _Pos, _Rest) ->
+	?DEBUG("missing ipv6 mpls_tc"),
+	Packet;
+ipv6(Packet, mpls_bos, _Value, _Pos, _Rest) ->
+	?DEBUG("missing ipv6 mpls_bos"),
+	Packet;
+ipv6(Packet, arp_op, _Value, _Pos, _Rest) ->
+	?DEBUG("missing ipv6 arp_op"),
+	Packet;
+ipv6(Packet, arp_spa, _Value, _Pos, _Rest) ->
+	?DEBUG("missing ipv6 arp_spa"),
+	Packet;
+ipv6(Packet, arp_tpa, _Value, _Pos, _Rest) ->
+	?DEBUG("missing ipv6 arp_tpa"),
+	Packet;
+ipv6(Packet, arp_sha, _Value, _Pos, _Rest) ->
+	?DEBUG("missing ipv6 arp_sha"),
+	Packet;
+ipv6(Packet, arp_tha, _Value, _Pos, _Rest) ->
+	?DEBUG("missing ipv6 arp_tha"),
+	Packet;
 
 %% skip IPv6 extension headers
 ipv6(Packet, Field, Value, Pos,
@@ -261,9 +300,10 @@ ipv6_skip(Packet, Field, Value, Pos,
 		<<Next,Len,_:6/binary,_:(Len)/binary-unit:64,Rest/binary>>,
 				?IPV6_HDR_ESP, SrcAddr, DstAddr) ->
 	ipv6_skip(Packet, Field, Value, Pos +Len*64 +64, Rest, Next, SrcAddr, DstAddr);
-ipv6_skip(_Packet, _Field, _Value, _Pos, _Rest,
+ipv6_skip(Packet, _Field, _Value, _Pos, _Rest,
 				?IPV6_HDR_NO_NEXT_HEADER, _SrcAddr, _DstAddr) ->
-	missing;
+	?DEBUG("missing ipv6 hdr_no_next"),
+	Packet;
 ipv6_skip(Packet, Field, Value, Pos, Rest, Proto, SrcAddr, DstAddr) ->
 	proto(Packet, Field, Value, Pos, Rest, Proto, SrcAddr, DstAddr).
 	
@@ -279,16 +319,18 @@ proto(Packet, Field, Value, Pos,
 		<<SrcPort:16,DstPort:16,_/binary>>, ?IPPROTO_UDP, SrcAddr, DstAddr) ->
 	%% src and dst ports extracted to avoid copy during checksum recalculation
 	udp(Packet, Field, Value, Pos, SrcPort, DstPort, SrcAddr, DstAddr);
-proto(_Packet, Field, _Value, _Pos, _Rest, ?IPPROTO_ICMP, _SrcAddr, _DstAddr) ->
-	icmp(Field);
+proto(Packet, Field, _Value, _Pos, _Rest, ?IPPROTO_ICMP, _SrcAddr, _DstAddr) ->
+	icmp(Field),
+	Packet;
 proto(Packet, Field, Value, Pos,
 		<<?ICMPV6_NDP_NS,_/binary>>, ?IPPROTO_ICMPV6, SrcAddr, DstAddr) ->
 	ndp(Packet, Field, Value, Pos, SrcAddr, DstAddr);
 proto(Packet, Field, Value, Pos,
 		<<?ICMPV6_NDP_NA,_/binary>>, ?IPPROTO_ICMPV6, SrcAddr, DstAddr) ->
 	ndp(Packet, Field, Value, Pos, SrcAddr, DstAddr);
-proto(_Packet, Field, _Value, _Pos, _Rest, ?IPPROTO_ICMPV6, _SrcAddr, _DstAddr) ->
-	icmpv6(Field);
+proto(Packet, Field, _Value, _Pos, _Rest, ?IPPROTO_ICMPV6, _SrcAddr, _DstAddr) ->
+	icmpv6(Field),
+	Packet;
 proto(Packet, Field, Value, Pos,
 		<<SrcPort:16,DstPort:16,_/binary>>, ?IPPROTO_SCTP, _SrcAddr, _DstAddr) ->
 	sctp(Packet, Field, Value, Pos, SrcPort, DstPort).
@@ -297,36 +339,39 @@ tcp(Packet, tcp_src, Value, Pos, _SrcPort, DstPort, SrcAddr, DstAddr) ->
 	splice_tcp_header(Packet, Pos, Value, DstPort, SrcAddr, DstAddr);
 tcp(Packet, tcp_dst, Value, Pos, SrcPort, _DstPort, SrcAddr, DstAddr) ->
 	splice_tcp_header(Packet, Pos, SrcPort, Value, SrcAddr, DstAddr);
-tcp(_Packet, _Field, _Value, _Pos, _SrcPort, _DstPort, _SrcAddr, _DstAddr) ->
-	missing.
+tcp(Packet, _Field, _Value, _Pos, _SrcPort, _DstPort, _SrcAddr, _DstAddr) ->
+	?DEBUG("missing tcp"),
+	Packet.
 
 udp(Packet, udp_src, Value, Pos, _SrcPort, DstPort, SrcAddr, DstAddr) ->
 	splice_udp_header(Packet, Pos, Value, DstPort, SrcAddr, DstAddr);
 udp(Packet, udp_dst, Value, Pos, SrcPort, _DstPort, SrcAddr, DstAddr) ->
 	splice_udp_header(Packet, Pos, SrcPort, Value, SrcAddr, DstAddr);
-udp(_Packet, _Field, _Value, _Pos, _SrcPort, _DstPort, _SrcAddr, _DstAddr) ->
-	missing.
+udp(Packet, _Field, _Value, _Pos, _SrcPort, _DstPort, _SrcAddr, _DstAddr) ->
+	?DEBUG("missing udp"),
+	Packet.
 
 sctp(Packet, sctp_src, Value, Pos, _SrcPort, DstPort) ->
 	splice_sctp_header(Packet, Pos, Value, DstPort);
 sctp(Packet, sctp_dst, Value, Pos, SrcPort, _DstPort) ->
 	splice_sctp_header(Packet, Pos, SrcPort, Value);
-sctp(_Packet, _Field, _Value, _Pos, _SrcPort, _DstPort) ->
-	missing.
+sctp(Packet, _Field, _Value, _Pos, _SrcPort, _DstPort) ->
+	?DEBUG("missing sctp"),
+	Packet.
 
 icmp(icmpv4_type) ->
-	protected;
+	?DEBUG("protected icmpv4_type");
 icmp(icmpv4_code) ->
-	protected;
+	?DEBUG("protected icmpv4_code");
 icmp(_) ->
-	missing.
+	?DEBUG("missing icmp").
 
 icmpv6(icmpv6_type) ->
-	protected;
+	?DEBUG("protected icmpv6_type");
 icmpv6(icmpv6_code) ->
-	protected;
+	?DEBUG("protected icmpv6_code");
 icmpv6(_) ->
-	missing.
+	?DEBUG("missing icmpv6").
 
 ndp(Packet, ipv6_nd_target, ValueBin, Pos, SrcAddr, DstAddr) ->
 	<<Prefix:(Pos)/bits,W1:16,_OldSum:16,W2:16,W3:16,_OldAddr:16/binary,Rest/binary>> =Packet,
@@ -338,12 +383,15 @@ ndp(Packet, ipv6_nd_target, ValueBin, Pos, SrcAddr, DstAddr) ->
 	NewSum = checksum(Rest, all, InitSum),
 	<<Prefix/binary,W1:16,NewSum:16,W2:16,W3:16,ValueBin/binary,Rest/binary>>;
 
-ndp(_Packet, ipv6_nd_sll, _ValueBin, _Pos, _SrcAddr, _DstAddr) ->
-	unimplemented;
-ndp(_Packet, ipv6_nd_tll, _ValueBin, _Pos, _SrcAddr, _DstAddr) ->
-	unimplemented;
-ndp(_Packet, _Field, _ValueBin, _Pos, _SrcAddr, _DstAddr) ->
-	missing.
+ndp(Packet, ipv6_nd_sll, _ValueBin, _Pos, _SrcAddr, _DstAddr) ->
+	?DEBUG("unimplemented ipv6_nd_sll"),
+	Packet;
+ndp(Packet, ipv6_nd_tll, _ValueBin, _Pos, _SrcAddr, _DstAddr) ->
+	?DEBUG("unimplemented ipv6_nd_tll"),
+	Packet;
+ndp(Packet, _Field, _ValueBin, _Pos, _SrcAddr, _DstAddr) ->
+	?DEBUG("missing ndp"),
+	Packet.
 
 %%------------------------------------------------------------------------------
 

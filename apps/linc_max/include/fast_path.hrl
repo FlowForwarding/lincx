@@ -13,8 +13,7 @@
 
 -record(blaze, {
 			ports		:: [#port_info{}],
-			queue_map	:: [{port(),pid()}],
-			start_at	:: atom()
+			queue_map	:: [{port(),pid()}]
 	}).
 
 -record(fast_actions, {
