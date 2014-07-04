@@ -378,11 +378,12 @@ push_mpls(Frame, Off,
 	<<?ETH_P_PBB_I:16,_:32,_:(6+6)/binary,Rest/binary>>, EthType) ->
 	push_mpls(Frame, Off +2 +4 +6 +6, Rest, EthType);
 push_mpls(Frame, Off,
-	<<MplsType:16,Label:20,TClass:3,_BoS:1,TTL:8,_/binary>> =Rest, EthType)
+	<<MplsType:16,Label:20,TClass:3,BoS:1,TTL:8,Rest/binary>>, EthType)
 			when MplsType =:= ?ETH_P_MPLS_UNI orelse MplsType =:= ?ETH_P_MPLS_MULTI ->
 	Prefix = binary:part(Frame, 0, Off),
 	<<Prefix/binary,
 	  EthType:16,Label:20,TClass:3,0:1,TTL:8,
+	  Label:20,TClass:3,BoS:1,TTL:8,
 	  Rest/binary>>;
 push_mpls(Frame, Off,
 	<<?ETH_P_IP:16,4:4,_:60,TTL:8,_/binary>> =Rest, EthType) ->
