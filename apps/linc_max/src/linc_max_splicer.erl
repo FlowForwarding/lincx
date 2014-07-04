@@ -322,15 +322,9 @@ proto(Packet, Field, Value, Pos,
 proto(Packet, Field, _Value, _Pos, _Rest, ?IPPROTO_ICMP, _SrcAddr, _DstAddr) ->
 	icmp(Field),
 	Packet;
-proto(Packet, Field, Value, Pos,
-		<<?ICMPV6_NDP_NS,_/binary>>, ?IPPROTO_ICMPV6, SrcAddr, DstAddr) ->
-	ndp(Packet, Field, Value, Pos, SrcAddr, DstAddr);
-proto(Packet, Field, Value, Pos,
-		<<?ICMPV6_NDP_NA,_/binary>>, ?IPPROTO_ICMPV6, SrcAddr, DstAddr) ->
-	ndp(Packet, Field, Value, Pos, SrcAddr, DstAddr);
-proto(Packet, Field, _Value, _Pos, _Rest, ?IPPROTO_ICMPV6, _SrcAddr, _DstAddr) ->
-	icmpv6(Field),
-	Packet;
+proto(Packet, Field, Value, Pos, <<Type,_/binary>>, ?IPPROTO_ICMPV6, SrcAddr, DstAddr) ->
+	icmpv6(Packet, Field, Value, Pos, Type, SrcAddr, DstAddr);
+
 proto(Packet, Field, Value, Pos,
 		<<SrcPort:16,DstPort:16,_/binary>>, ?IPPROTO_SCTP, _SrcAddr, _DstAddr) ->
 	sctp(Packet, Field, Value, Pos, SrcPort, DstPort).
@@ -366,14 +360,16 @@ icmp(icmpv4_code) ->
 icmp(_) ->
 	?DEBUG("missing icmp").
 
-icmpv6(icmpv6_type) ->
-	?DEBUG("protected icmpv6_type");
-icmpv6(icmpv6_code) ->
-	?DEBUG("protected icmpv6_code");
-icmpv6(_) ->
-	?DEBUG("missing icmpv6").
+icmpv6(Packet, icmpv6_type, Value, Pos, _Type, SrcAddr, DstAddr) ->
+	<<Prefix:Pos/bits, _, Code, _OldSum:16, Rest/binary>> = Packet,
+	Icmpv6Len = byte_size(Rest) + 4,
+	TypeCode = Value * 256 + Code,
+	InitSum = pseudoheader(SrcAddr, DstAddr, ?IPPROTO_ICMPV6, Icmpv6Len) + TypeCode,
+	NewSum = checksum(Rest, all, InitSum),
+	<<Prefix/binary,TypeCode:16,NewSum:16,Rest/binary>>;
 
-ndp(Packet, ipv6_nd_target, ValueBin, Pos, SrcAddr, DstAddr) ->
+icmpv6(Packet, ipv6_nd_target, ValueBin, Pos, Type, SrcAddr, DstAddr)
+	when Type =:= ?ICMPV6_NDP_NS orelse Type =:= ?ICMPV6_NDP_NA ->
 	<<Prefix:(Pos)/bits,W1:16,_OldSum:16,W2:16,W3:16,_OldAddr:16/binary,Rest/binary>> =Packet,
 	<<T1:16,T2:16,T3:16,T4:16,T5:16,T6:16,T7:16,T8:16>> =ValueBin,
 	NdpLen = byte_size(Rest) +2 +2 +2 +2 +16,
@@ -383,14 +379,16 @@ ndp(Packet, ipv6_nd_target, ValueBin, Pos, SrcAddr, DstAddr) ->
 	NewSum = checksum(Rest, all, InitSum),
 	<<Prefix/binary,W1:16,NewSum:16,W2:16,W3:16,ValueBin/binary,Rest/binary>>;
 
-ndp(Packet, ipv6_nd_sll, _ValueBin, _Pos, _SrcAddr, _DstAddr) ->
+icmpv6(Packet, ipv6_nd_sll, _ValueBin, _Pos, Type, _SrcAddr, _DstAddr)
+	when Type =:= ?ICMPV6_NDP_NS orelse Type =:= ?ICMPV6_NDP_NA ->
 	?DEBUG("unimplemented ipv6_nd_sll"),
 	Packet;
-ndp(Packet, ipv6_nd_tll, _ValueBin, _Pos, _SrcAddr, _DstAddr) ->
+icmpv6(Packet, ipv6_nd_tll, _ValueBin, _Pos, Type, _SrcAddr, _DstAddr)
+	when Type =:= ?ICMPV6_NDP_NS orelse Type =:= ?ICMPV6_NDP_NA ->
 	?DEBUG("unimplemented ipv6_nd_tll"),
 	Packet;
-ndp(Packet, _Field, _ValueBin, _Pos, _SrcAddr, _DstAddr) ->
-	?DEBUG("missing ndp"),
+icmpv6(Packet, _Field, _ValueBin, _Pos, _Type, _SrcAddr, _DstAddr) ->
+	?DEBUG("missing icmpv6"),
 	Packet.
 
 %%------------------------------------------------------------------------------
