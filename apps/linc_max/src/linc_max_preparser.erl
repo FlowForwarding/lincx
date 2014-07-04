@@ -161,33 +161,12 @@ ether(Packet, VlanTag, EthType, PbbTag, MplsTag,
 		Rest);
 ether(Packet, VlanTag, EthType, PbbTag, MplsTag,
 	Ip4Hdr, Ip6Hdr, Ip6Ext, IpTclass, IpProto,
-	Metadata, {InPort,InPhyPort,TunnelId} = _PortInfo, Actions, FlowTab, Blaze,
+	Metadata, PortInfo, Actions, FlowTab, Blaze,
 	<<?ETH_P_ARP:16,Rest/binary>>) ->
-	%% ARP frame
-	FlowTab:match(Packet,
-		VlanTag,
-		up(EthType, ?ETH_P_ARP),
-		PbbTag,
-		MplsTag,
-		Ip4Hdr,
-		Ip6Hdr,
-		bin9(Ip6Ext),	%% =:= undefined
-		IpTclass,
-		IpProto,
-		Rest,		%% ArpMsg
-		undefined,	%% IcmpMsg
-		undefined,	%% Icmp6Hdr
-		undefined,	%% Icmp6Sll
-		undefined,	%% Icmp6Tll
-		undefined,	%% TcpHdr
-		undefined,	%% UdpHdr
-		undefined,	%% SctpHdr
-		Metadata,
-		InPort,
-		InPhyPort,
-		TunnelId,
-		Actions,
-		Blaze);
+	arp(Packet, VlanTag, up(EthType, ?ETH_P_ARP), PbbTag, MplsTag,
+		Ip4Hdr, Ip6Hdr, Ip6Ext, IpTclass, IpProto,
+		Metadata, PortInfo, Actions, FlowTab, Blaze,
+		Rest);
 ether(Packet, VlanTag, EthType, PbbTag, MplsTag,
 	Ip4Hdr, Ip6Hdr, Ip6Ext, IpTclass, IpProto,
 	Metadata, {InPort,InPhyPort,TunnelId} = _PortInfo, Actions, FlowTab, Blaze,
@@ -234,6 +213,13 @@ mpls(Packet, VlanTag, EthType, PbbTag, MplsTag,
 				Ip4Hdr, Ip6Hdr, Ip6Ext, IpTclass, IpProto,
 				Metadata, PortInfo, Actions, FlowTab, Blaze,
 				Rest);
+		<<0:8,_/bits>> ->
+			%% it is an ARP Hrdware Type, probably.
+			%% See http://www.iana.org/assignments/arp-parameters/arp-parameters.xhtml
+			arp(Packet, VlanTag, EthType, PbbTag, MplsTag,
+				Ip4Hdr, Ip6Hdr, Ip6Ext, IpTclass, IpProto,
+				Metadata, PortInfo, Actions, FlowTab, Blaze,
+				Rest);
 		_ ->
 			%% MPLS may wrap IPv4 or IPv6 packet only
 			malformed
@@ -251,7 +237,36 @@ mpls(_Packet, _VlanTag, _EthType, _PbbTag, _MplsTag,
 		_Metadata, _PortInfo, _Actions, _FlowTab, _Blaze, _Rest) ->
 	%% The bottom-less MPLS stack
 	malformed.
-	
+
+arp(Packet, VlanTag, EthType, PbbTag, MplsTag,
+		Ip4Hdr, Ip6Hdr, Ip6Ext, IpTclass, IpProto,
+		Metadata, {InPort,InPhyPort,TunnelId}, Actions, FlowTab, Blaze,
+		ArpMsg) ->
+	FlowTab:match(Packet,
+		VlanTag,
+		EthType,
+		PbbTag,
+		MplsTag,
+		Ip4Hdr,
+		Ip6Hdr,
+		bin9(Ip6Ext),	%% =:= undefined
+		IpTclass,
+		IpProto,
+		ArpMsg,
+		undefined,	%% IcmpMsg
+		undefined,	%% Icmp6Hdr
+		undefined,	%% Icmp6Sll
+		undefined,	%% Icmp6Tll
+		undefined,	%% TcpHdr
+		undefined,	%% UdpHdr
+		undefined,	%% SctpHdr
+		Metadata,
+		InPort,
+		InPhyPort,
+		TunnelId,
+		Actions,
+		Blaze).
+
 ipv4(Packet, VlanTag, EthType, PbbTag, MplsTag,
 		Ip4Hdr, Ip6Hdr, Ip6Ext, IpTclass, IpProto,
 		Metadata, {InPort,InPhyPort,TunnelId}, Actions, FlowTab, Blaze,
