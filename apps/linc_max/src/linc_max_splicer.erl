@@ -319,9 +319,8 @@ proto(Packet, Field, Value, Pos,
 		<<SrcPort:16,DstPort:16,_/binary>>, ?IPPROTO_UDP, SrcAddr, DstAddr) ->
 	%% src and dst ports extracted to avoid copy during checksum recalculation
 	udp(Packet, Field, Value, Pos, SrcPort, DstPort, SrcAddr, DstAddr);
-proto(Packet, Field, _Value, _Pos, _Rest, ?IPPROTO_ICMP, _SrcAddr, _DstAddr) ->
-	icmp(Field),
-	Packet;
+proto(Packet, Field, Value, Pos, _Rest, ?IPPROTO_ICMP, _SrcAddr, _DstAddr) ->
+	icmp(Packet, Field, Value, Pos);
 proto(Packet, Field, Value, Pos, <<Type,_/binary>>, ?IPPROTO_ICMPV6, SrcAddr, DstAddr) ->
 	icmpv6(Packet, Field, Value, Pos, Type, SrcAddr, DstAddr);
 
@@ -353,17 +352,34 @@ sctp(Packet, _Field, _Value, _Pos, _SrcPort, _DstPort) ->
 	?DEBUG("missing sctp"),
 	Packet.
 
-icmp(icmpv4_type) ->
-	?DEBUG("protected icmpv4_type");
-icmp(icmpv4_code) ->
-	?DEBUG("protected icmpv4_code");
-icmp(_) ->
-	?DEBUG("missing icmp").
+icmp(Packet, icmpv4_type, Type, Pos) ->
+	<<Prefix:Pos/bits, _OldType, Code, _OldSum:16, Rest/binary>> = Packet,
+	TypeCode = Type * 256 + Code,
+	NewSum = checksum(Rest, all, TypeCode),
+	<<Prefix/binary, Type, Code, NewSum:16, Rest/binary>>;
 
-icmpv6(Packet, icmpv6_type, Value, Pos, _Type, SrcAddr, DstAddr) ->
-	<<Prefix:Pos/bits, _, Code, _OldSum:16, Rest/binary>> = Packet,
+icmp(Packet, icmpv4_code, Code, Pos) ->
+	<<Prefix:Pos/bits, Type, _OldCode, _OldSum:16, Rest/binary>> = Packet,
+	TypeCode = Type * 256 + Code,
+	NewSum = checksum(Rest, all, TypeCode),
+	<<Prefix/binary, Type, Code, NewSum:16, Rest/binary>>;
+
+icmp(Packet, _Field, _Value, _Pos) ->
+	?DEBUG("missing icmp"),
+	Packet.
+
+icmpv6(Packet, icmpv6_type, Type, Pos, _Type, SrcAddr, DstAddr) ->
+	<<Prefix:Pos/bits, _OldType, Code, _OldSum:16, Rest/binary>> = Packet,
 	Icmpv6Len = byte_size(Rest) + 4,
-	TypeCode = Value * 256 + Code,
+	TypeCode = Type * 256 + Code,
+	InitSum = pseudoheader(SrcAddr, DstAddr, ?IPPROTO_ICMPV6, Icmpv6Len) + TypeCode,
+	NewSum = checksum(Rest, all, InitSum),
+	<<Prefix/binary,TypeCode:16,NewSum:16,Rest/binary>>;
+
+icmpv6(Packet, icmpv6_code, Code, Pos, _Type, SrcAddr, DstAddr) ->
+	<<Prefix:Pos/bits, Type, _OldCode, _OldSum:16, Rest/binary>> = Packet,
+	Icmpv6Len = byte_size(Rest) + 4,
+	TypeCode = Type * 256 + Code,
 	InitSum = pseudoheader(SrcAddr, DstAddr, ?IPPROTO_ICMPV6, Icmpv6Len) + TypeCode,
 	NewSum = checksum(Rest, all, InitSum),
 	<<Prefix/binary,TypeCode:16,NewSum:16,Rest/binary>>;
