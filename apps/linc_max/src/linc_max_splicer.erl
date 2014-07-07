@@ -59,16 +59,14 @@ ether(Packet, mpls_label, Value, Pos, <<?ETH_P_MPLS_UNI:16,_/binary>>) ->
 	splice_bits(Packet, Pos +16, 20, Value);
 ether(Packet, mpls_tc, Value, Pos, <<?ETH_P_MPLS_UNI:16,_/binary>>) ->
 	splice_bits(Packet, Pos +16 +20, 3, Value);
-ether(Packet, mpls_bos, _Value, _Pos, <<?ETH_P_MPLS_UNI:16,_/binary>>) ->
-	?DEBUG("protected mpls_bos"),
-	Packet;
+ether(Packet, mpls_bos, Value, Pos, <<?ETH_P_MPLS_UNI:16,_/binary>>) ->
+	splice_bits(Packet, Pos +16 +20 +3, 1, Value);
 ether(Packet, mpls_label, Value, Pos, <<?ETH_P_MPLS_MULTI:16,_/binary>>) ->
 	splice_bits(Packet, Pos +16, 20, Value);
 ether(Packet, mpls_tc, Value, Pos, <<?ETH_P_MPLS_MULTI:16,_/binary>>) ->
 	splice_bits(Packet, Pos +16 +20, 3, Value);
-ether(Packet, mpls_bos, _Value, _Pos, <<?ETH_P_MPLS_MULTI:16,_/binary>>) ->
-	?DEBUG("protected mpls_bos"),
-	Packet;
+ether(Packet, mpls_bos, Value, Pos, <<?ETH_P_MPLS_MULTI:16,_/binary>>) ->
+	splice_bits(Packet, Pos +16 +20 +3, 1, Value);
 %% MPLS tag is always after VLAN/PBB
 ether(Packet, vlan_pcp, _Value, _Pos, <<?ETH_P_MPLS_UNI:16,_Rest/binary>>) ->
 	?DEBUG("missing vlan_pcp"),
