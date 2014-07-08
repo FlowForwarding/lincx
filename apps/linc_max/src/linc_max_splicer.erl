@@ -384,7 +384,7 @@ icmpv6(Packet, icmpv6_code, Code, Pos, _Type, SrcAddr, DstAddr) ->
 
 icmpv6(Packet, ipv6_nd_target, ValueBin, Pos, Type, SrcAddr, DstAddr)
 	when Type =:= ?ICMPV6_NDP_NS orelse Type =:= ?ICMPV6_NDP_NA ->
-	<<Prefix:(Pos)/bits,W1:16,_OldSum:16,W2:16,W3:16,_OldAddr:16/binary,Rest/binary>> =Packet,
+	<<Prefix:Pos/bits,W1:16,_OldSum:16,W2:16,W3:16,_OldAddr:16/binary,Rest/binary>> =Packet,
 	<<T1:16,T2:16,T3:16,T4:16,T5:16,T6:16,T7:16,T8:16>> =ValueBin,
 	NdpLen = byte_size(Rest) +2 +2 +2 +2 +16,
 	InitSum = pseudoheader(SrcAddr, DstAddr, ?IPPROTO_ICMPV6, NdpLen)
@@ -393,17 +393,46 @@ icmpv6(Packet, ipv6_nd_target, ValueBin, Pos, Type, SrcAddr, DstAddr)
 	NewSum = checksum(Rest, all, InitSum),
 	<<Prefix/binary,W1:16,NewSum:16,W2:16,W3:16,ValueBin/binary,Rest/binary>>;
 
-icmpv6(Packet, ipv6_nd_sll, _ValueBin, _Pos, Type, _SrcAddr, _DstAddr)
+icmpv6(Packet, ipv6_nd_sll, ValueBin, Pos, Type, SrcAddr, DstAddr)
 	when Type =:= ?ICMPV6_NDP_NS orelse Type =:= ?ICMPV6_NDP_NA ->
-	?DEBUG("unimplemented ipv6_nd_sll"),
-	Packet;
-icmpv6(Packet, ipv6_nd_tll, _ValueBin, _Pos, Type, _SrcAddr, _DstAddr)
+	ipv6_nd(Packet, Pos, ?NDP_OPT_SLL, ValueBin, SrcAddr, DstAddr);
+icmpv6(Packet, ipv6_nd_tll, ValueBin, Pos, Type, SrcAddr, DstAddr)
 	when Type =:= ?ICMPV6_NDP_NS orelse Type =:= ?ICMPV6_NDP_NA ->
-	?DEBUG("unimplemented ipv6_nd_tll"),
-	Packet;
+	ipv6_nd(Packet, Pos, ?NDP_OPT_TLL, ValueBin, SrcAddr, DstAddr);
 icmpv6(Packet, _Field, _ValueBin, _Pos, _Type, _SrcAddr, _DstAddr) ->
 	?DEBUG("missing icmpv6"),
 	Packet.
+
+ipv6_nd(Packet, Pos, Type, Value, SrcAddr, DstAddr) ->
+	<<Prefix:Pos/bits,W1:16,_OldSum:16,W10:20/binary,Opts/binary>> = Packet,
+	NdpLen = byte_size(Opts) +2 +2 +20,
+	InitSum = pseudoheader(SrcAddr, DstAddr, ?IPPROTO_ICMPV6, NdpLen) + W1,
+	NewOpts = ipv6_nd_opt(Opts, Type, Value, <<>>),
+	Suffix = <<W10/binary,NewOpts/binary>>,
+	NewSum = checksum(Suffix, all, InitSum),
+	<<Prefix/binary,W1:16,NewSum:16,Suffix/binary>>.
+
+ipv6_nd_opt(<<>>, _, _, Acc) ->
+	Acc;
+ipv6_nd_opt(<<T,L,V/binary>>, Type, Value, Acc) ->
+	%% Neighbor Discovery options format:
+	%% http://tools.ietf.org/html/rfc4861#section-4.6
+	Size = L * 8 - 2,
+	case V of
+		<<OldValue:Size/binary, Rest/binary>> ->
+			if
+				T =:= Type ->
+					ipv6_nd_opt(Rest, Type, Value, <<Acc/binary,T,L,Value/binary>>);
+				true ->
+					ipv6_nd_opt(Rest, Type, Value, <<Acc/binary,T,L,OldValue/binary>>)
+			end;
+		_ ->
+			?DEBUG("missing ipv6_nd_opt"),
+			<<Acc/binary,T,L,V/binary>>
+	end;
+ipv6_nd_opt(Rest, _, _, Acc) ->
+	?DEBUG("missing ipv6_nd_opt"),
+	<<Acc/binary,Rest/binary>>.
 
 %%------------------------------------------------------------------------------
 
