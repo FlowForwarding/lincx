@@ -201,9 +201,11 @@ ipv4(Packet, _Field, _Value, _Pos, _Rest) ->
 	Packet.
 
 ipv6(Packet, ipv6_src, ValueBin, Pos, _Rest) ->
-	splice_binary(Packet, Pos +64, 16, ValueBin);
+	Packet1 = splice_binary(Packet, Pos +64, 16, ValueBin),
+	ether(Packet1, tcp_csum, undefined);
 ipv6(Packet, ipv6_dst, ValueBin, Pos, _Rest) ->
-	splice_binary(Packet, Pos +192, 16, ValueBin);
+	Packet1 = splice_binary(Packet, Pos +192, 16, ValueBin),
+	ether(Packet1, tcp_csum, undefined);
 ipv6(Packet, ipv6_flabel, Value, Pos, _Rest) ->
 	splice_bits(Packet, Pos +12, 20, Value);
 
@@ -309,6 +311,11 @@ proto(Packet, Field, Value, Pos, Rest, ?IPPROTO_IP, _SrcAddr, _DstAddr) ->
 	ipv4(Packet, Field, Value, Pos, Rest);
 proto(Packet, Field, Value, Pos, Rest, ?IPPROTO_IPV6, _SrcAddr, _DstAddr) ->
 	ipv6(Packet, Field, Value, Pos, Rest);
+proto(Packet, tcp_csum, _Value, Pos,
+		<<SrcPort:16,DstPort:16,_/binary>>, ?IPPROTO_TCP, SrcAddr, DstAddr) ->
+	splice_tcp_header(Packet, Pos, SrcPort, DstPort, SrcAddr, DstAddr);
+proto(Packet, tcp_csum, _Value, _Pos, _Rest, _Proto, _SrcAddr, _DstAddr) ->
+	Packet;
 proto(Packet, Field, Value, Pos,
 		<<SrcPort:16,DstPort:16,_/binary>>, ?IPPROTO_TCP, SrcAddr, DstAddr) ->
 	%% src and dst ports extracted to avoid copy during checksum recalculation
