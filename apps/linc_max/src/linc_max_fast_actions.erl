@@ -342,11 +342,8 @@ vlan_pcp(_) ->
 %                end,
 %	pkt:encapsulate(NewPacket).
 
-pop_pbb(<<_EthAddrs:12/binary,
-		  ?ETH_P_PBB_B:16,_:16,
-		  ?ETH_P_PBB_I:16,_:32,
-		  ClientFrame/binary>>) ->
-	ClientFrame;
+pop_pbb(<<_EthAddrs:12/binary,?ETH_P_PBB_I:16,_ISID:32,Rest/binary>>) ->
+	Rest;
 pop_pbb(Frame) ->
 	Frame.
 
