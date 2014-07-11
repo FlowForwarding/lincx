@@ -36,7 +36,8 @@
          get_table_config/2,
          update_lookup_counter/2,
          update_match_counters/4,
-         reset_idle_timeout/2]).
+         reset_idle_timeout/2,
+         flow_table_counter/1]).
 
 %% Internal exports
 -export([check_timers/1]).
@@ -99,6 +100,13 @@ initialize(SwitchId) ->
 terminate(#state{switch_id = SwitchId, tref=Tref}) ->
     timer:cancel(Tref),
     [begin
+         #flow_table_counter{
+             packet_lookups = Lookups,
+             packet_matches = Matches
+         } = flow_table_counter(TableId),
+         erlang:release_counter(Lookups),
+         erlang:release_counter(Matches),
+
          TId = flow_table_ets(SwitchId, TableId),
          ets:delete(TId)
      end || TableId <- lists:seq(0, ?OFPTT_MAX)],
@@ -424,8 +432,20 @@ create_flow_table(SwitchId, TableId) ->
                               {read_concurrency, true}]),
     linc:register(SwitchId, TableName, Tid),
     ets:insert(linc:lookup(SwitchId, flow_table_counters),
-               #flow_table_counter{id = TableId}),
+               #flow_table_counter{
+                  id = TableId,
+                  packet_lookups = erlang:new_counter(),
+                  packet_matches = erlang:new_counter()
+              }),
     Tid.
+
+flow_table_counter(TableName) when is_atom(TableName) ->
+  [_, _, TableId] = string:tokens(atom_to_list(TableName),"_"),
+  flow_table_counter(list_to_integer(TableId));
+flow_table_counter(TableId) ->
+  SwitchId = 0,
+  [Counter] = ets:lookup(linc:lookup(SwitchId, flow_table_counters), TableId),
+  Counter.
 
 %% Check if there exists a flowin flow table=TableId with priority=Priority with
 %% a match that overlaps with Match.
@@ -1062,14 +1082,16 @@ get_table_stats(SwitchId) ->
     [get_table_stats1(SwitchId, TableId) || TableId <- lists:seq(0, ?OFPTT_MAX)].
 
 get_table_stats1(SwitchId, TableId) ->
-    [#flow_table_counter{packet_lookups = Lookups,
-                         packet_matches = Matches}]
-        = ets:lookup(linc:lookup(SwitchId, flow_table_counters), TableId),
+    #flow_table_counter{
+        packet_lookups = Lookups,
+        packet_matches = Matches
+    } = flow_table_counter(TableId),
+
     #ofp_table_stats{
        table_id = TableId,
        active_count = ets:info(flow_table_ets(SwitchId, TableId), size),
-       lookup_count = Lookups,
-       matched_count = Matches}.
+       lookup_count = erlang:read_counter(Lookups),
+       matched_count = erlang:read_counter(Matches)}.
 
 %%============================================================================
 %% Various timer functions

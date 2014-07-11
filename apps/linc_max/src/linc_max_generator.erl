@@ -32,44 +32,52 @@ flow_table_forms(TabName, FlowEnts) ->
 
 	F1 = {attribute,0,module,TabName},
 	F2 = {attribute,0,export,[{match,MatchArity}]},
-	F3 = {function,0,match,MatchArity,clauses(FlowEnts)},
+	F3 = {function,0,match,MatchArity,clauses(TabName, FlowEnts)},
 
 	Forms = [F1,F2,F3],
 	{ok,Forms}.
 
-clauses(FlowEnts) ->
-	clauses(FlowEnts, []).
+clauses(TabName, FlowEnts) ->
+	clauses(TabName, FlowEnts, []).
 
-clauses([], Acc) ->
+clauses(TabName, [], Acc) ->
 
 	%%
 	%% OFv1.4: Every flow table must support a table-miss flow entry to process
 	%% table misses.
 	%%
-	%% match(_, _, _, ...) -> miss.
+	%% match(_, _, _, ...) -> erlang:update_counter(integer()), miss.
 	%%
 
+	#flow_table_counter{packet_lookups = Lookups} =
+		linc_max_flow:flow_table_counter(TabName),
+
+	Call = {call,0,{remote,0,{atom,0,erlang},{atom,0,update_counter}},[
+		{integer,0,Lookups}
+	]},
+
 	Wildcards = [{var,0,'_'} || _ <- match_arguments()],
-	Miss = {clause,0,Wildcards,[],[{atom,0,miss}]},
+	Miss = {clause,0,Wildcards,[],[Call, {atom,0,miss}]},
 	lists:reverse([Miss|Acc]);
 
-clauses([#flow_entry{match =#ofp_match{fields =Matches},
+
+clauses(TabName, [#flow_entry{match =#ofp_match{fields =Matches},
 					 instructions =InstrList}|FlowEnts], Acc) ->
 	case catch build_patterns(Matches, InstrList) of
 	nomatch ->
 		%% no chance of a match, suppress the clause
-		clauses(FlowEnts, Acc);
+		clauses(TabName, FlowEnts, Acc);
 
 	{'EXIT',Reason} ->
 		erlang:error(Reason);
 
 	Patterns when is_list(Patterns) ->
 		Clause = {clause,0,Patterns,[],body(InstrList)},
-		clauses(FlowEnts, [Clause|Acc]);
+		clauses(TabName, FlowEnts, [Clause|Acc]);
 
 	{Patterns,Guard} ->
 		Clause = {clause,0,Patterns,Guard,body(InstrList)},
-		clauses(FlowEnts, [Clause|Acc])
+		clauses(TabName, FlowEnts, [Clause|Acc])
 	end.
 
 build_patterns(Matches, InstrList) ->
