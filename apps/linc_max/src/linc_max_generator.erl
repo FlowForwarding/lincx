@@ -378,35 +378,37 @@ body(InstrList) ->
 		undefined,	%% ApplyInstr
 		undefined,	%% ClearWriteInstr
 		undefined,	%% MetadataInstr
-		undefined). %% GotoInstr
+		undefined,	%% TunnelId
+		undefined).	%% GotoInstr
 
-body([], MeterInstr, ApplyInstr, ClearWriteInstr, MetadataInstr, GotoInstr) ->
-	compile_body(MeterInstr, ApplyInstr, ClearWriteInstr, MetadataInstr, GotoInstr);
+body([], MeterInstr, ApplyInstr, ClearWriteInstr, MetadataInstr, TunnelId, GotoInstr) ->
+	compile_body(MeterInstr, ApplyInstr, ClearWriteInstr, MetadataInstr, TunnelId, GotoInstr);
 body([#ofp_instruction_meter{meter_id =Id}|InstrList],
-		_MeterInstr, ApplyInstr, ClearWriteInstr, MetadataInstr, GotoInstr) ->
-	body(InstrList, {meter,Id}, ApplyInstr, ClearWriteInstr, MetadataInstr, GotoInstr);
+		_MeterInstr, ApplyInstr, ClearWriteInstr, MetadataInstr, TunnelId, GotoInstr) ->
+	body(InstrList, {meter,Id}, ApplyInstr, ClearWriteInstr, MetadataInstr, TunnelId, GotoInstr);
 body([#ofp_instruction_apply_actions{actions =As}|InstrList],
-		MeterInstr, _ApplyInstr, ClearWriteInstr, MetadataInstr, GotoInstr) ->
-	body(InstrList, MeterInstr, action_list(As), ClearWriteInstr, MetadataInstr, GotoInstr);
+		MeterInstr, _ApplyInstr, ClearWriteInstr, MetadataInstr, _TunnelId, GotoInstr) ->
+	{ActionList, TunnelId} = action_list(As),
+	body(InstrList, MeterInstr, ActionList, ClearWriteInstr, MetadataInstr, TunnelId, GotoInstr);
 body([#ofp_instruction_clear_actions{}|InstrList],
-		MeterInstr, ApplyInstr, undefined, MetadataInstr, GotoInstr) ->
-	body(InstrList, MeterInstr, ApplyInstr, clear, MetadataInstr, GotoInstr);
+		MeterInstr, ApplyInstr, undefined, MetadataInstr, TunnelId, GotoInstr) ->
+	body(InstrList, MeterInstr, ApplyInstr, clear, MetadataInstr, TunnelId, GotoInstr);
 body([#ofp_instruction_write_actions{actions =Actions}|InstrList],
-		MeterInstr, ApplyInstr, clear, MetadataInstr, GotoInstr) ->
-	body(InstrList, MeterInstr, ApplyInstr, {clear,Actions}, MetadataInstr, GotoInstr);
+		MeterInstr, ApplyInstr, clear, MetadataInstr, TunnelId, GotoInstr) ->
+	body(InstrList, MeterInstr, ApplyInstr, {clear,Actions}, MetadataInstr, TunnelId, GotoInstr);
 body([#ofp_instruction_write_actions{actions =Actions}|InstrList],
-		MeterInstr, ApplyInstr, _ClearWriteInstr, MetadataInstr, GotoInstr) ->
-	body(InstrList, MeterInstr, ApplyInstr, {write,Actions}, MetadataInstr, GotoInstr);
+		MeterInstr, ApplyInstr, _ClearWriteInstr, MetadataInstr, TunnelId, GotoInstr) ->
+	body(InstrList, MeterInstr, ApplyInstr, {write,Actions}, MetadataInstr, TunnelId, GotoInstr);
 body([#ofp_instruction_write_metadata{metadata = <<Value:64>>,
 									  metadata_mask = <<Mask:64>>}|InstrList],
-		MeterInstr, ApplyInstr, ClearWriteInstr, _MetadataInstr, GotoInstr) ->
-	body(InstrList, MeterInstr, ApplyInstr, ClearWriteInstr, {metadata,Value,Mask}, GotoInstr);
+		MeterInstr, ApplyInstr, ClearWriteInstr, _MetadataInstr, TunnelId, GotoInstr) ->
+	body(InstrList, MeterInstr, ApplyInstr, ClearWriteInstr, {metadata,Value,Mask}, TunnelId, GotoInstr);
 body([#ofp_instruction_goto_table{table_id =Id}|InstrList],
-		MeterInstr, ApplyInstr, ClearWriteInstr, MetadataInstr, _GotoInstr) ->
-	body(InstrList, MeterInstr, ApplyInstr, ClearWriteInstr, MetadataInstr, {goto,Id}).
+		MeterInstr, ApplyInstr, ClearWriteInstr, MetadataInstr, TunnelId, _GotoInstr) ->
+	body(InstrList, MeterInstr, ApplyInstr, ClearWriteInstr, MetadataInstr, TunnelId, {goto,Id}).
 
 
-compile_body(MeterInstr, undefined, ClearWriteInstr, _MetadataInstr, undefined) ->
+compile_body(MeterInstr, undefined, ClearWriteInstr, _MetadataInstr, _TunnelId, undefined) ->
 	%%
 	%% No goto table - return (updated) action set
 	%%
@@ -418,7 +420,7 @@ compile_body(MeterInstr, undefined, ClearWriteInstr, _MetadataInstr, undefined) 
 	}],
 	compile_meter(MeterInstr, Goto);
 
-compile_body(MeterInstr, ActionList, ClearWriteInstr, _MetadataInstr, undefined) ->
+compile_body(MeterInstr, ActionList, ClearWriteInstr, _MetadataInstr, _TunnelId, undefined) ->
 	%%
 	%% No goto table - apply action list and return (updated) action set
 	%%
@@ -431,7 +433,7 @@ compile_body(MeterInstr, ActionList, ClearWriteInstr, _MetadataInstr, undefined)
 	}],
 	compile_meter(MeterInstr, Return);
 
-compile_body(MeterInstr, undefined, ClearWriteInstr, MetadataInstr, {goto,Id}) ->
+compile_body(MeterInstr, undefined, ClearWriteInstr, MetadataInstr, TunnelId, {goto,Id}) ->
 	%%
 	%% match(...) ->
 	%%		flow_table_1:match(...).
@@ -448,6 +450,8 @@ compile_body(MeterInstr, undefined, ClearWriteInstr, MetadataInstr, {goto,Id}) -
 					updated_actions(ClearWriteInstr);
 				(metadata) ->
 					updated_metadata(MetadataInstr);
+				(tunnel_id) ->
+					updated_tunnel_id(TunnelId);
 				(A) ->
 					{var,0,var_name(A)}
 			end,
@@ -458,7 +462,7 @@ compile_body(MeterInstr, undefined, ClearWriteInstr, MetadataInstr, {goto,Id}) -
 	Goto = [Call],
 	compile_meter(MeterInstr, Goto);
 
-compile_body(MeterInstr, ActionList, ClearWriteInstr, MetadataInstr, {goto,Id}) ->
+compile_body(MeterInstr, ActionList, ClearWriteInstr, MetadataInstr, TunnelId, {goto,Id}) ->
 	%%
 	%% Apply action list to packet, update action set and metadata
 	%% and reinject them to preparser from next table
@@ -481,7 +485,7 @@ compile_body(MeterInstr, ActionList, ClearWriteInstr, MetadataInstr, {goto,Id}) 
 		{call,0,{remote,0,{atom,0,linc_max_preparser},{atom,0,inject}},[
 			ActionList,
 			updated_metadata(MetadataInstr),
-			{tuple,0,[{var,0,'InPort'},{var,0,'InPhyPort'},{var,0,'TunnelId'}]},
+			{tuple,0,[{var,0,'InPort'},{var,0,'InPhyPort'},updated_tunnel_id(TunnelId)]},
 			updated_actions(ClearWriteInstr),
 			{atom,0,TabName},
 			{var,0,var_name(blaze)}
@@ -507,6 +511,11 @@ compile_meter({meter,Id}, Goto) ->
 	C2 = {clause,0,[{var,0,'_'}],[],[{atom,0,drop}]},
 	Case = {'case',0,Call,[C1,C2]},
 	[Case].
+
+updated_tunnel_id(undefined) ->
+	{var,0,var_name(tunnel_id)};
+updated_tunnel_id(TunnelId) ->
+	TunnelId.
 
 updated_metadata(undefined) ->
 	{var,0,var_name(metadata)};
@@ -564,11 +573,20 @@ updated_actions(Tag, [#ofp_action_group{group_id =Id}|Specs], Actions) ->
 	updated_actions(Tag, Specs, Actions#fast_actions{group =Id}).
 
 action_list(As) ->
-	action_list(As, {var,0,var_name(packet)}).
+	lists:foldl(
+		fun
+			(#ofp_action_set_field{field = #ofp_field{name =tunnel_id,value =Value}}, {ActionList, _}) ->
+				{ActionList, fast_value(Value)};
+			(Action, {ActionList, TunnelId}) ->
+				{action_cast(Action, ActionList), TunnelId}
+		end,
+		{undefined, undefined},
+		As
+	).
 
-action_list([], Packet) ->
-	Packet;
-action_list([#ofp_action_output{port =PortNo}|As], Packet) ->
+action_cast(Action, undefined) ->
+	action_cast(Action, {var,0,var_name(packet)});
+action_cast(#ofp_action_output{port =PortNo}, Packet) ->
 	Sink =
 		if
 			is_atom(PortNo) ->
@@ -576,40 +594,40 @@ action_list([#ofp_action_output{port =PortNo}|As], Packet) ->
 			true ->
 				{integer,0,PortNo}
 		end,
-	action_call(As, output, [Packet,Sink,{var,0,var_name(blaze)}]);
-action_list([#ofp_action_set_queue{queue_id =Queue}|As], Packet) ->
-	action_call(As, set_queue, [Packet,{integer,0,Queue}]);
-action_list([#ofp_action_group{group_id =Group}|As], Packet) ->
-	action_call(As, group, [Packet,{integer,0,Group}]);
-action_list([#ofp_action_push_vlan{ethertype =EthType}|As], Packet) ->
-	action_call(As, push_vlan, [Packet,{integer,0,EthType}]);
-action_list([#ofp_action_pop_vlan{}|As], Packet) ->
-	action_call(As, pop_vlan, [Packet]);
-action_list([#ofp_action_push_mpls{ethertype =EthType}|As], Packet) ->
-	action_call(As, push_mpls, [Packet,{integer,0,EthType}]);
-action_list([#ofp_action_pop_mpls{ethertype =EthType}|As], Packet) ->
-	action_call(As, pop_mpls, [Packet,{integer,0,EthType}]);
-action_list([#ofp_action_push_pbb{ethertype =EthType}|As], Packet) ->
-	action_call(As, push_pbb, [Packet,{integer,0,EthType}]);
-action_list([#ofp_action_pop_pbb{}|As], Packet) ->
-	action_call(As, pop_pbb, [Packet]);
-action_list([#ofp_action_set_field{field = #ofp_field{name =Name,value =Value}}|As], Packet) ->
-	action_call(As, set_field, [Packet,{atom,0,Name}, fast_value(Value)]);
-action_list([#ofp_action_set_mpls_ttl{mpls_ttl =TTL}|As], Packet) ->
-	action_call(As, set_mpls_ttl, [Packet,{integer,0,TTL}]);
-action_list([#ofp_action_dec_mpls_ttl{}|As], Packet) ->
-	action_call(As, decrement_mpls_ttl, [Packet]);
-action_list([#ofp_action_set_nw_ttl{nw_ttl =TTL}|As], Packet) ->
-	action_call(As, set_ip_ttl, [Packet, {integer,0,TTL}]);
-action_list([#ofp_action_dec_nw_ttl{}|As], Packet) ->
-	action_call(As, decrement_ip_ttl, [Packet]);
-action_list([#ofp_action_copy_ttl_out{}|As], Packet) ->
-	action_call(As, copy_ttl_outwards, [Packet]);
-action_list([#ofp_action_copy_ttl_in{}|As], Packet) ->
-	action_call(As, copy_ttl_inwards, [Packet]).
+	action_call(output, [Packet,Sink,{var,0,var_name(blaze)}]);
+action_cast(#ofp_action_set_queue{queue_id =Queue}, Packet) ->
+	action_call(set_queue, [Packet,{integer,0,Queue}]);
+action_cast(#ofp_action_group{group_id =Group}, Packet) ->
+	action_call(group, [Packet,{integer,0,Group}]);
+action_cast(#ofp_action_push_vlan{ethertype =EthType}, Packet) ->
+	action_call(push_vlan, [Packet,{integer,0,EthType}]);
+action_cast(#ofp_action_pop_vlan{}, Packet) ->
+	action_call(pop_vlan, [Packet]);
+action_cast(#ofp_action_push_mpls{ethertype =EthType}, Packet) ->
+	action_call(push_mpls, [Packet,{integer,0,EthType}]);
+action_cast(#ofp_action_pop_mpls{ethertype =EthType}, Packet) ->
+	action_call(pop_mpls, [Packet,{integer,0,EthType}]);
+action_cast(#ofp_action_push_pbb{ethertype =EthType}, Packet) ->
+	action_call(push_pbb, [Packet,{integer,0,EthType}]);
+action_cast(#ofp_action_pop_pbb{}, Packet) ->
+	action_call(pop_pbb, [Packet]);
+action_cast(#ofp_action_set_field{field = #ofp_field{name =Name,value =Value}}, Packet) ->
+	action_call(set_field, [Packet,{atom,0,Name}, fast_value(Value)]);
+action_cast(#ofp_action_set_mpls_ttl{mpls_ttl =TTL}, Packet) ->
+	action_call(set_mpls_ttl, [Packet,{integer,0,TTL}]);
+action_cast(#ofp_action_dec_mpls_ttl{}, Packet) ->
+	action_call(decrement_mpls_ttl, [Packet]);
+action_cast(#ofp_action_set_nw_ttl{nw_ttl =TTL}, Packet) ->
+	action_call(set_ip_ttl, [Packet, {integer,0,TTL}]);
+action_cast(#ofp_action_dec_nw_ttl{}, Packet) ->
+	action_call(decrement_ip_ttl, [Packet]);
+action_cast(#ofp_action_copy_ttl_out{}, Packet) ->
+	action_call(copy_ttl_outwards, [Packet]);
+action_cast(#ofp_action_copy_ttl_in{}, Packet) ->
+	action_call(copy_ttl_inwards, [Packet]).
 
-action_call(As, Function, Args) ->
-	action_list(As,{call,0,{remote,0,{atom,0,linc_max_fast_actions},{atom,0,Function}},Args}).
+action_call(Function, Args) ->
+	{call,0,{remote,0,{atom,0,linc_max_fast_actions},{atom,0,Function}},Args}.
 
 %% linc_max_splicer uses integers if the bit size of the field is 28 bits or
 %% less. The rest of LINC switch always uses binaries and bitstrings.
