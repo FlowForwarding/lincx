@@ -163,9 +163,42 @@ ofp_features_request(#state{datapath_mac = DatapathMac} = State,
                           {noreply, #state{}} |
                           {reply, ofp_message(), #state{}}.
 ofp_flow_mod(State,
-             #ofp_flow_mod{} = _FlowMod) ->
-	%%TODO
-	{reply,#ofp_error_msg{type =flow_mod_failed,code =eperm},State}.
+             #ofp_flow_mod{table_id =Tid,
+						   cookie =Cookie,
+						   cookie_mask = <<0:64>>,	%% not set
+						   idle_timeout = IdleTime,
+						   hard_timeout = HardTime,
+						   priority =Priority,
+						   command =Cmd,
+						   match =Match,
+						   instructions =Instr} =FlowMod) ->
+	?INFO("flow_mod: ~p\n", [FlowMod]),
+	case Cmd of
+	add ->
+		TableId = ofdpa:integer_to_enum(flow_table_id_t, Tid),
+		case flow_data(TableId, Match, Instr) of
+		{ok,FlowData} ->
+			Flow = #ofdpa_flow_entry{tableId =TableId,
+									 priority =Priority,
+									 flowData =FlowData,
+									 hard_time =HardTime,
+									 idle_time =IdleTime,
+									 cookie =Cookie},
+			case ofdpa:ofdpaFlowAdd(Flow) of
+			ok ->
+				{noreply,State};
+			{error,Error} ->
+				?ERROR("ofdpaFlowAdd failed: ~p\n", [Error]),
+				{reply,#ofp_error_msg{type =flow_mod_failed,code =unknown},State}
+			end;
+		{error,Error} ->
+			?ERROR("flow_data: ~p\n", [Error]),
+			{reply,#ofp_error_msg{type =flow_mod_failed,code =unknown},State}
+		end;
+	_ ->
+		?ERROR("~p: not implemented\n", [FlowMod]),
+		{reply,#ofp_error_msg{type =flow_mod_failed,code =eperm},State}
+	end.
 
 %% @doc Modify flow table configuration.
 -spec ofp_table_mod(state(), ofp_table_mod()) ->
@@ -377,14 +410,75 @@ ofp_table_features_request(State,
                                    {reply, ofp_port_desc_reply(), #state{}}.
 ofp_port_desc_request(State,
                       #ofp_port_desc_request{}) ->
-
-	%%TODO
-	%% Continue here
-	%%TODO
-
-	Reply = #ofp_port_desc_reply{body =[]},
+	Reply = case collect_port_info(State) of
+	{ok,PortInfo} ->
+		#ofp_port_desc_reply{body =PortInfo};
+	{error,Error} ->
+		?ERROR("ofp_port_desc: ~p", [Error]),
+		#ofp_port_desc_reply{body =[]}
+	end,
     {reply,Reply,State}.
 
+collect_port_info(_State) ->
+	case ofdpa:ofdpaPortNextGet(0) of
+	{ok,FirstPortNum} ->
+		collect_port_info(FirstPortNum, []);
+	{error,_} =Error ->
+		Error
+	end.
+
+collect_port_info(PortNum, Info) ->
+	Info1 = [port_info(PortNum)|Info],
+	case ofdpa:ofdpaPortNextGet(PortNum) of
+	{ok,NextPortNum} ->
+		collect_port_info(NextPortNum, Info1);
+	{error,e_none} ->
+		{ok,lists:reverse(Info1)};
+	{error,_} = Error ->
+		Error
+	end.
+
+port_info(PortNum) ->
+
+	%%
+	%% This runs very slow - batching?
+	%%
+
+	?INFO("Collecting info for port ~w", [PortNum]),
+	{ok,Name} = ofdpa:ofdpaPortNameGet(PortNum),
+	{ok,Mac} = ofdpa:ofdpaPortMacGet(PortNum),
+	{ok,Config} = ofdpa:ofdpaPortConfigGet(PortNum),
+	{ok,State} = ofdpa:ofdpaPortStateGet(PortNum),
+	{ok,Features} = ofdpa:ofdpaPortFeatureGet(PortNum),
+	{ok,CurrSpeed} = ofdpa:ofdpaPortCurrSpeedGet(PortNum),
+	{ok,MaxSpeed} = ofdpa:ofdpaPortMaxSpeedGet(PortNum),
+
+	%% Example:
+	%%
+	%% Name = <<"port54">>
+    %%    Mac = <<0,19,149,16,86,220>>
+    %% Config = port_config_normal
+    %% State = port_state_link_down
+    %% Features = {port_feature,[port_feat_fiber,port_feat_40gb_fd],
+    %%                             port_feat_other,
+    %%                             [port_feat_pause_asym,port_feat_pause,
+    %%                              port_feat_autoneg,port_feat_fiber,
+    %%                              port_feat_40gb_fd],
+    %%                             []}
+    %%    CurrSpeed = 40000000
+    %%    MaxSpeed = 40000000
+
+	#ofp_port{port_no =PortNum,
+			  hw_addr =Mac,
+			  name =Name,
+			  config =[], %Config TODO
+			  state =[], %State TODO
+			  curr =[], %Features.curr TODO
+			  advertised =[], %Features.advertised TODO
+			  supported =[], %Features.supported TODO
+			  peer =[], %Features.peer TODO
+			  curr_speed =CurrSpeed,
+			  max_speed =MaxSpeed}.
 %% @doc Get port statistics.
 -spec ofp_port_stats_request(state(), ofp_port_stats_request()) ->
                                     {reply, ofp_port_stats_reply(), #state{}}.
@@ -465,6 +559,70 @@ ofp_meter_features_request(State, #ofp_meter_features_request{}) ->
                               max_bands = ?MAX_BANDS,
                               max_color = 0},
 	{reply,Reply,State}.
+
+%%------------------------------------------------------------------------------
+
+flow_data(flow_table_id_ingress_port,
+		#ofp_match{fields =[#ofp_field{name = in_port,
+									   value = <<InPort:32>>}]}, Instr) ->
+	%% has_mask and mask ignored
+	FlowMatch = #ingress_port_flow_match{inPort =InPort,
+										 inPortMask =?OFDPA_INPORT_TYPE_MASK},
+	case goto(Instr) of
+	flow_table_id_termination_mac =TableId ->
+		{ok,#ingress_port_flow_entry{match_criteria =FlowMatch,
+									 gotoTableId =TableId}};
+	flow_table_id_ingress_port =TableId ->	%% drop
+		{ok,#ingress_port_flow_entry{match_criteria =FlowMatch,
+									 gotoTableId =TableId}};
+	_ ->
+		{error,bad_goto_table}
+	end;
+flow_data(flow_table_id_vlan, _Match, _Instr) ->
+	{error,not_implemented};
+flow_data(flow_table_id_termination_mac,
+		#ofp_match{fields =[#ofp_field{name = in_port,
+									   value = <<InPort:32>>}]}, Instr) ->
+	%% has_mask and mask ignored for in_port field
+	%%TODO: other allowed match fields
+	FlowMatch = #termination_mac_flow_match{inPort =InPort,
+											inPortMask =?OFDPA_INPORT_TYPE_MASK},
+	case output(Instr) of
+	OutPort when is_integer(OutPort) ->
+		{ok,#termination_mac_flow_entry{match_criteria =FlowMatch,
+										outputPort =OutPort}};
+	_ ->
+		{error,bad_output}
+	end;
+flow_data(flow_table_id_unicast_routing, _Match, _Instr) ->
+	{error,not_implemented};
+flow_data(flow_table_id_multicast_routing, _Match, _Instr) ->
+	{error,not_implemented};
+flow_data(flow_table_id_bridging, _Match, _Instr) ->
+	{error,not_implemented};
+flow_data(flow_table_id_acl_policy, _Match, _Instr) ->
+	{error,not_implemented}.
+
+goto(Instr) ->
+	case lists:keyfind(ofp_instruction_goto_table, 1, Instr) of
+	#ofp_instruction_goto_table{table_id =Tid} ->
+		ofdpa:integer_to_enum(flow_table_id_t, Tid);
+	false ->
+		not_found
+	end.
+
+output(Instr) ->
+	case lists:keyfind(ofp_instruction_write_actions, 1, Instr) of
+	#ofp_instruction_write_actions{actions =Actions} ->
+		case lists:keyfind(ofp_action_output, 1, Actions) of
+		#ofp_action_output{port =OutPort} ->
+			OutPort;
+		_ ->
+			not_found
+		end;
+	_ ->
+		not_found
+	end.
 
 %%%-----------------------------------------------------------------------------
 %%% Helpers

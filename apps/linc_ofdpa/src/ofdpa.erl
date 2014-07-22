@@ -170,6 +170,8 @@ enum_to_integer(error_t, e_not_found) ->
     -30;
 enum_to_integer(error_t, e_empty) ->
     -31;
+enum_to_integer(flow_table_id_t, flow_table_id_none) ->
+    0; %% table not set
 enum_to_integer(flow_table_id_t, flow_table_id_ingress_port) ->
     0;
 enum_to_integer(flow_table_id_t, flow_table_id_vlan) ->
@@ -212,8 +214,12 @@ enum_to_integer(l2_overlay_subtype_t, l2_overlay_multicast_unicast_tunnel) ->
     2;
 enum_to_integer(l2_overlay_subtype_t, l2_overlay_multicast_multicast_tunnel) ->
     3;
+enum_to_integer(port_config_t, port_config_normal) ->
+	0;
 enum_to_integer(port_config_t, port_config_down) ->
     1;
+enum_to_integer(port_state_t, port_state_link_up) ->
+    0;
 enum_to_integer(port_state_t, port_state_link_down) ->
     1.
 
@@ -285,8 +291,12 @@ integer_to_enum(l2_overlay_subtype_t, 2) ->
     l2_overlay_multicast_unicast_tunnel;
 integer_to_enum(l2_overlay_subtype_t, 3) ->
     l2_overlay_multicast_multicast_tunnel;
+integer_to_enum(port_config_t, 0) ->
+	port_config_normal;
 integer_to_enum(port_config_t, 1) ->
     port_config_down;
+integer_to_enum(port_state_t, 0) ->
+	port_state_link_up;
 integer_to_enum(port_state_t, 1) ->
     port_state_link_down;
 
@@ -549,7 +559,7 @@ struct_to_binary(#ofdpa_flow_entry{tableId = TableId,
       DataBin:200/binary,
       Hard_time:32/little,
       Idle_time:32/little,
-      Cookie:64/little>>;
+      Cookie:8/binary>>;
 struct_to_binary(#flow_entry_stats{durationSec = DurationSec,
                                    receivedPackets = ReceivedPackets,
                                    receivedBytes = ReceivedBytes}) ->

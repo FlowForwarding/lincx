@@ -200,21 +200,38 @@ scenario(simple_iperf_test) ->
                                                [{output,2, no_buffer}]}]),
      	 flow_add([], [{in_port, <<2:32>>}], [{write_actions,
                                                [{output,1, no_buffer}]}])];
+
+%%MK
+scenario(simple_ofdpa_test) ->
+
+	%% Table0 (ingress_port): match in_port = 1, goto table 20
+	%% Table20 (termination_mac): match in_port = 1, output 2
+
+	[flow_add([], [{in_port,<<1:32>>}], [{goto_table,20}]),
+     flow_add([{table_id,20}], [{in_port,<<1:32>>}], [{write_actions,[{output,2, no_buffer}]}])];
+
+%%MK
 scenario(simple_iperf_stats) ->
 	[flow_stats_request];
 scenario(simple_iperf_stop) ->
 	[flow_mod_delete_all_flows];
 
+%%MK
 scenario(apply_actions_max) ->
 	[flow_add([], [{in_port,<<1:32>>}],
 			[{apply_actions,[{output,2,no_buffer}]}]),
 	 flow_add([], [{in_port,<<2:32>>}],
 			[{apply_actions,[{output,1,no_buffer}]}])];
 
+%%MK
+scenario(ofdpa_ports) ->
+	[port_desc_request];
+
+%%MK
 scenario(ofdpa_packet_out) ->
 	[message(#ofp_packet_out{buffer_id = no_buffer,
-    	in_port = 13,
-		actions = [#ofp_action_output{port =17}],
+    	in_port = 2,
+		actions = [#ofp_action_output{port =1}],
 		data = <<"Hey there">>})];
 
 %%------------------------------------------------------------------------------
