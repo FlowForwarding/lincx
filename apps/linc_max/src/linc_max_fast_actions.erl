@@ -12,7 +12,7 @@
 %% these functions are used in linc_max_generator and always expected to return a binary
 -export([
 	output/3,
-	set_queue/2,
+	set_queue/3,
 	group/2,
 	push_vlan/2,
 	pop_vlan/1,
@@ -102,7 +102,7 @@ apply_list([{output,PortNo}|ActionList], Frame, Blaze) ->
 	apply_list(ActionList, Frame, Blaze);
 
 apply_list([{set_queue,Queue}|ActionList], Frame, Blaze) ->
-	Frame1 = set_queue(Frame, Queue),
+	Frame1 = set_queue(Frame, Queue, Blaze),
 	apply_list(ActionList, Frame1, Blaze);
 
 apply_list([{group,Group}|ActionList], Frame, Blaze) ->
@@ -200,8 +200,9 @@ output(Frame, PortNo, Blaze) ->
 	erlang:update_counter(TxDataRef, byte_size(Frame)),
 	Frame.
 
-set_queue(Frame, _Queue) ->
-	?ERROR("Queues not supported"),
+set_queue(Frame, Queue, Blaze) ->
+	{_,Pid} = lists:keyfind(Queue, 1, Blaze#blaze.queue_map),
+	Pid ! Frame,
 	Frame.
 
 group(Frame, _Group) ->

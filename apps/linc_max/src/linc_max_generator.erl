@@ -596,7 +596,7 @@ action_cast(#ofp_action_output{port =PortNo}, Packet) ->
 		end,
 	action_call(output, [Packet,Sink,{var,0,var_name(blaze)}]);
 action_cast(#ofp_action_set_queue{queue_id =Queue}, Packet) ->
-	action_call(set_queue, [Packet,{integer,0,Queue}]);
+	action_call(set_queue, [Packet,{integer,0,Queue},{var,0,var_name(blaze)}]);
 action_cast(#ofp_action_group{group_id =Group}, Packet) ->
 	action_call(group, [Packet,{integer,0,Group}]);
 action_cast(#ofp_action_push_vlan{ethertype =EthType}, Packet) ->
