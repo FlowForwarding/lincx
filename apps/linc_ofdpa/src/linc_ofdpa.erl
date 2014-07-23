@@ -432,7 +432,7 @@ collect_port_info(PortNum, Info) ->
 	case ofdpa:ofdpaPortNextGet(PortNum) of
 	{ok,NextPortNum} ->
 		collect_port_info(NextPortNum, Info1);
-	{error,e_none} ->
+	{error,e_fail} ->
 		{ok,lists:reverse(Info1)};
 	{error,_} = Error ->
 		Error
