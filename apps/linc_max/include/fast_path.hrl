@@ -16,10 +16,6 @@
 			queue_map	:: [{port(),pid()}]
 	}).
 
--record(fast_actions, {
-			queue,
-			output,
-			group
-		}).
+-include("fast_actions.hrl").
 
 %%EOF

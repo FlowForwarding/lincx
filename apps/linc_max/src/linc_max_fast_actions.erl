@@ -36,6 +36,19 @@
 -include("linc_max.hrl").
 -include("fast_path.hrl").
 
+%% include generated action set apply code
+-include("fast_actions_inl.hrl").
+%% apply subset actions.
+%% Called from fast_actions_inl.hrl
+apply_subset(Frame,[]) ->
+	Frame;
+apply_subset(Frame, [{set_field,Field,Value}|Rest]) ->
+	apply_subset(set_field(Frame,Field,Value),Rest);
+apply_subset(Frame, [{Action,Value}|Rest]) ->
+	apply_subset(?MODULE:Action(Frame,Value),Rest);
+apply_subset(Frame, [Action|Rest]) ->
+	apply_subset(?MODULE:Action(Frame),Rest).
+
 %% FAST PATH
 %%
 %% The function is needed because metadata are represented as binary in the
@@ -50,43 +63,6 @@ update_metadata(<<MetaInt:64>>, AndMe, OrMe) ->
 %% state and exchange messages with it to check that the packet fits the bands.
 %%
 meter(_MeterId, _St) -> ok.
-
-%% Action Set
-
-%% FAST PATH
-%%
-apply_set(#fast_actions{output =PortNo,queue =QueueNo}, Frame, Blaze)
-		when is_integer(PortNo), is_integer(QueueNo) ->
-	{_,Pid} = lists:keyfind(QueueNo, 1, Blaze#blaze.queue_map),
-	Pid ! Frame;
-
-apply_set(#fast_actions{output =PortNo}, Frame, Blaze) when is_integer(PortNo) ->
-	output(Frame, PortNo, Blaze);
-
-apply_set(#fast_actions{output =controller}, Frame, _Blaze) ->
-
-	%% 
-	%% This is a quick-n-dirty implementation for Packet-In messages. It follows
-	%% the code of linc_us4 without much thought. Require a good review.
-	%%
-
-	SwitchId = 0,	%%XXX
-	TableId = 0,	%%XXX
-	PacketIn = #ofp_packet_in{reason = action,
-							  table_id = TableId,
-							  data = Frame},
-	%%?INFO("Packet-In [1]: ~p\n", [pkt:decapsulate(Frame)]),
-    linc_logic:send_to_controllers(SwitchId, #ofp_message{body = PacketIn});
-
-%%
-%% TODO: output to all, flood, in_port
-%%
-
-apply_set(#fast_actions{}, _Frame, _Blaze) ->
-	drop;	%% empty action set
-
-apply_set(Actions, _Frame, _Blaze) ->
-	io:format("? ~p\n", [Actions]).
 
 %%------------------------------------------------------------------------------
 
@@ -174,7 +150,10 @@ apply_list([copy_ttl_inwards|ActionList], Frame, Blaze) ->
 %%------------------------------------------------------------------------------
 
 output(Frame, controller, _Blaze) ->
-	%% See comment above
+	%% 
+	%% This is a quick-n-dirty implementation for Packet-In messages. It follows
+	%% the code of linc_us4 without much thought. Require a good review.
+	%%
 	SwitchId = 0,	%%XXX
 	TableId = 0,	%%XXX
 	PacketIn = #ofp_packet_in{

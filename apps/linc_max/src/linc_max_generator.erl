@@ -526,108 +526,158 @@ updated_metadata({_,Value,Mask}) ->
 
 updated_actions(undefined) ->
 	{var,0,var_name(actions)};
-
-updated_actions(clear) ->	%% plugfest5
-	updated_actions(clear, [], #fast_actions{});
+updated_actions(clear) -> %% plugfest5
+	updated_actions(clear, []);
 updated_actions({clear,Specs}) ->
-	updated_actions(clear, Specs, #fast_actions{});
+	updated_actions(clear, action_cast(Specs,[]));
 updated_actions({write,Specs}) ->
-	updated_actions(write, Specs, #fast_actions{}).
+	updated_actions(write, action_cast(Specs,[])).
 
-updated_actions(clear, [], Actions) ->
-	ast(Actions);
-updated_actions(write, [], Actions) ->
-	Size = record_info(size, fast_actions),
-	Fields = record_info(fields, fast_actions), 
-	Rs = lists:zip(lists:seq(2, Size), Fields),
+updated_actions(clear, Actions) ->
+	NewElems = [{atom,0,fast_actions}] ++ [updated_set(S,Actions,clear) || S <- ?ACTIONS_SCHEME],
+	{tuple,0,NewElems};
+updated_actions(write, Actions) ->
+	OldElems = [{var,0,'_'}] ++
+		lists:map(
+			fun
+				({action,_,Var,Elem}) ->
+					case action_find(Elem, Actions) of
+						false ->
+							{var,0,Var};
+						_ ->
+							{var,0,'_'}
+					end;
+				({set,_,Var,_}) ->
+					{var,0,Var}
+			end,
+			?ACTIONS_SCHEME
+		),
 
-	OldElems = [{var,0,'_'}]	%% record tag (fast_actions)
-			++
-		lists:map(fun({N,F}) ->
-			case element(N, Actions) of
-			undefined ->
-				{var,0,var_name(F)};
-			_ ->
-				{var,0,'_'}
+	NewElems = [{atom,0,fast_actions}] ++ [updated_set(S,Actions,write) || S <- ?ACTIONS_SCHEME],
+
+	{block,0,[
+		{match,0,{tuple,0,OldElems},{var,0,var_name(actions)}},
+		{tuple,0,NewElems}
+	]}.
+
+updated_elem(write, Var) ->
+	{var,0,Var};
+updated_elem(clear, _) ->
+	undefined.
+
+updated_set({action, _Field, Var, Elem}, Actions, Instr) ->
+	case action_find(Elem, Actions) of
+		false ->
+			updated_elem(Instr, Var);
+		Action ->
+			action_val(Action)
+	end;
+updated_set({set, _Field, Var, Set}, Actions, Instr) ->
+	SortedList = 
+		lists:foldl(
+			fun(Scheme, Acc) ->
+				case action_find(Scheme, Actions) of
+					false ->
+						Acc;
+					Action ->
+						Acc ++ [Action]
+				end
+			end,
+			[],
+			Set
+		),
+	case SortedList of
+		[] ->
+			updated_elem(Instr, Var);
+		_ ->
+			case Instr of
+				write ->
+					Args = [ast(SortedList), {var,0,Var}],
+					{call,0,{remote,0,{atom,0,linc_max_action_set},{atom,0,insert}},Args};
+				clear ->
+					ast(SortedList)
 			end
-		end, Rs),
+	end.
 
-	NewElems = [{atom,0,fast_actions}]
-			++
-		lists:map(fun({N,F}) ->
-			case element(N, Actions) of
-			undefined ->
-				{var,0,var_name(F)};
-			X ->
-				ast(X)
-			end
-		end, Rs),
-	{block,0,[{match,0,{tuple,0,OldElems},{var,0,var_name(actions)}},
-			  {tuple,0,NewElems}]};
+action_find(_Elem, []) ->
+	false;
+action_find(Elem, [Action | Rest]) ->
+	case action_name(Action) =:= action_name(Elem) of
+		true ->
+			Action;
+		_ ->
+			action_find(Elem, Rest)
+	end.
 
-updated_actions(Tag, [#ofp_action_set_queue{queue_id =Id}|Specs], Actions) ->
-	updated_actions(Tag, Specs, Actions#fast_actions{queue =Id});
-updated_actions(Tag, [#ofp_action_output{port = Port}|Specs], Actions) ->
-	updated_actions(Tag, Specs, Actions#fast_actions{output =Port});
-updated_actions(Tag, [#ofp_action_group{group_id =Id}|Specs], Actions) ->
-	updated_actions(Tag, Specs, Actions#fast_actions{group =Id}).
+action_name({Name,_}) -> Name;
+action_name({_,Name,_}) -> Name;
+action_name(Name) -> Name.
+
+action_val({_,Val}) -> ast(Val);
+action_val({_,_,Val}) -> ast(Val);
+action_val(_) -> {atom,0,defined}.
 
 action_list(As) ->
+	Call = 
+		fun(Function,Args) ->
+			{call,0,{remote,0,{atom,0,linc_max_fast_actions},{atom,0,Function}},Args}
+		end,
+
 	lists:foldl(
 		fun
-			(#ofp_action_set_field{field = #ofp_field{name =tunnel_id,value =Value}}, {ActionList, _}) ->
-				{ActionList, fast_value(Value)};
-			(Action, {ActionList, TunnelId}) ->
-				{action_cast(Action, ActionList), TunnelId}
+			({output,PortNo}, {Frame, TunnelId}) when is_atom(PortNo) ->
+				{Call(output,[Frame,{atom,0,PortNo},{var,0,var_name(blaze)}]), TunnelId};
+			({output,PortNo}, {Frame, TunnelId}) ->
+				{Call(output,[Frame,{integer,0,PortNo},{var,0,var_name(blaze)}]), TunnelId};
+			({set_queue,Queue}, {Frame, TunnelId}) ->
+				{Call(set_queue,[Frame,{integer,0,Queue},{var,0,var_name(blaze)}]), TunnelId};
+			({set_field,tunnel_id,Value}, {Frame, _}) ->
+				{Frame,fast_value(Value)};
+			({set_field,Name,Value}, {Frame, TunnelId}) ->
+				{Call(set_field,[Frame,{atom,0,Name}, fast_value(Value)]), TunnelId};
+			({Action,Value}, {Frame, TunnelId}) ->
+				{Call(Action,[Frame, {integer,0,Value}]), TunnelId};
+			(Action, {Frame, TunnelId}) ->
+				{Call(Action,[Frame]), TunnelId}
 		end,
-		{undefined, undefined},
-		As
+		{{var,0,var_name(packet)}, undefined},
+		action_cast(As, [])
 	).
 
-action_cast(Action, undefined) ->
-	action_cast(Action, {var,0,var_name(packet)});
-action_cast(#ofp_action_output{port =PortNo}, Packet) ->
-	Sink =
-		if
-			is_atom(PortNo) ->
-				{atom,0,PortNo};
-			true ->
-				{integer,0,PortNo}
-		end,
-	action_call(output, [Packet,Sink,{var,0,var_name(blaze)}]);
-action_cast(#ofp_action_set_queue{queue_id =Queue}, Packet) ->
-	action_call(set_queue, [Packet,{integer,0,Queue},{var,0,var_name(blaze)}]);
-action_cast(#ofp_action_group{group_id =Group}, Packet) ->
-	action_call(group, [Packet,{integer,0,Group}]);
-action_cast(#ofp_action_push_vlan{ethertype =EthType}, Packet) ->
-	action_call(push_vlan, [Packet,{integer,0,EthType}]);
-action_cast(#ofp_action_pop_vlan{}, Packet) ->
-	action_call(pop_vlan, [Packet]);
-action_cast(#ofp_action_push_mpls{ethertype =EthType}, Packet) ->
-	action_call(push_mpls, [Packet,{integer,0,EthType}]);
-action_cast(#ofp_action_pop_mpls{ethertype =EthType}, Packet) ->
-	action_call(pop_mpls, [Packet,{integer,0,EthType}]);
-action_cast(#ofp_action_push_pbb{ethertype =EthType}, Packet) ->
-	action_call(push_pbb, [Packet,{integer,0,EthType}]);
-action_cast(#ofp_action_pop_pbb{}, Packet) ->
-	action_call(pop_pbb, [Packet]);
-action_cast(#ofp_action_set_field{field = #ofp_field{name =Name,value =Value}}, Packet) ->
-	action_call(set_field, [Packet,{atom,0,Name}, fast_value(Value)]);
-action_cast(#ofp_action_set_mpls_ttl{mpls_ttl =TTL}, Packet) ->
-	action_call(set_mpls_ttl, [Packet,{integer,0,TTL}]);
-action_cast(#ofp_action_dec_mpls_ttl{}, Packet) ->
-	action_call(decrement_mpls_ttl, [Packet]);
-action_cast(#ofp_action_set_nw_ttl{nw_ttl =TTL}, Packet) ->
-	action_call(set_ip_ttl, [Packet, {integer,0,TTL}]);
-action_cast(#ofp_action_dec_nw_ttl{}, Packet) ->
-	action_call(decrement_ip_ttl, [Packet]);
-action_cast(#ofp_action_copy_ttl_out{}, Packet) ->
-	action_call(copy_ttl_outwards, [Packet]);
-action_cast(#ofp_action_copy_ttl_in{}, Packet) ->
-	action_call(copy_ttl_inwards, [Packet]).
-
-action_call(Function, Args) ->
-	{call,0,{remote,0,{atom,0,linc_max_fast_actions},{atom,0,Function}},Args}.
+action_cast([], Actions) ->
+	lists:reverse(Actions);
+action_cast([#ofp_action_output{port =PortNo}|Rest], Actions) ->
+	action_cast(Rest, [{output,PortNo}|Actions]);
+action_cast([#ofp_action_set_queue{queue_id =Queue}|Rest], Actions) ->
+	action_cast(Rest, [{set_queue,Queue}|Actions]);
+action_cast([#ofp_action_group{group_id =Group}|Rest], Actions) ->
+	action_cast(Rest, [{group,Group}|Actions]);
+action_cast([#ofp_action_push_vlan{ethertype =EthType}|Rest], Actions) ->
+	action_cast(Rest, [{push_vlan,EthType}|Actions]);
+action_cast([#ofp_action_pop_vlan{}|Rest], Actions) ->
+	action_cast(Rest, [pop_vlan|Actions]);
+action_cast([#ofp_action_push_mpls{ethertype =EthType}|Rest], Actions) ->
+	action_cast(Rest, [{push_mpls,EthType}|Actions]);
+action_cast([#ofp_action_pop_mpls{ethertype =EthType}|Rest], Actions) ->
+	action_cast(Rest, [{pop_mpls,EthType}|Actions]);
+action_cast([#ofp_action_push_pbb{ethertype =EthType}|Rest], Actions) ->
+	action_cast(Rest, [{push_pbb,EthType}|Actions]);
+action_cast([#ofp_action_pop_pbb{}|Rest], Actions) ->
+	action_cast(Rest, [pop_pbb|Actions]);
+action_cast([#ofp_action_set_field{field = #ofp_field{name =Name,value =Value}}|Rest], Actions) ->
+	action_cast(Rest, [{set_field,Name,Value}|Actions]);
+action_cast([#ofp_action_set_mpls_ttl{mpls_ttl =TTL}|Rest], Actions) ->
+	action_cast(Rest, [{set_mpls_ttl,TTL}|Actions]);
+action_cast([#ofp_action_dec_mpls_ttl{}|Rest], Actions) ->
+	action_cast(Rest, [decrement_mpls_ttl|Actions]);
+action_cast([#ofp_action_set_nw_ttl{nw_ttl =TTL}|Rest], Actions) ->
+	action_cast(Rest, [{set_ip_ttl,TTL}|Actions]);
+action_cast([#ofp_action_dec_nw_ttl{}|Rest], Actions) ->
+	action_cast(Rest, [decrement_ip_ttl|Actions]);
+action_cast([#ofp_action_copy_ttl_out{}|Rest], Actions) ->
+	action_cast(Rest, [copy_ttl_outwards|Actions]);
+action_cast([#ofp_action_copy_ttl_in{}|Rest], Actions) ->
+	action_cast(Rest, [copy_ttl_inwards|Actions]).
 
 %% linc_max_splicer uses integers if the bit size of the field is 28 bits or
 %% less. The rest of LINC switch always uses binaries and bitstrings.
