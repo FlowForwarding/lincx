@@ -3,6 +3,7 @@
 %%
 -module(ofdpa).
 
+-export([binary_to_struct/2,struct_to_binary/1]).
 -export([enum_to_integer/2,integer_to_enum/2]).
 
 %% generated using 'genera exports'
@@ -673,7 +674,7 @@ binary_to_struct(flow_entry,<<TableId:32/little,
 							  DataBin:200/binary,
 							  HardTime:32/little,
 							  IdleTime:32/little,
-							  Cookie:64/little>>) ->
+							  Cookie:8/binary>>) ->
 	T = integer_to_enum(flow_table_id_t, TableId),
 	#ofdpa_flow_entry{tableId = T,
 				priority = Priority,
@@ -1074,7 +1075,7 @@ ofdpaFlowByCookieDelete(Cookie) ->
     call([{enum,error_t}], 107, [{uint64_t,Cookie}]).
 
 ofdpaGroupTypeGet(GroupId) ->
-    call([{enum,error_t},uint32_t],
+    call([{enum,error_t},{enum,group_entry_type_t}],
          108,
          [{uint32_t,GroupId}]).
 

@@ -2,6 +2,8 @@
 %%
 %%
 
+-define(OFDPA_INPORT_TYPE_MASK, 16#ffff0000).
+
 %% record definitions generated using 'genera records'
 
 -record(ingress_port_flow_match,{inPort,inPortMask}).
@@ -12,17 +14,17 @@
 
 -record(vlan_flow_entry,{match_criteria,gotoTableId,newVlanId}).
 
--record(termination_mac_flow_match,{inPort,
-                                    inPortMask,
-                                    etherType,
-                                    destMac,
-                                    destMacMask,
-                                    vlanId,
-                                    vlanIdMask}).
+-record(termination_mac_flow_match,{inPort =0,
+                                    inPortMask =0,
+                                    etherType =0,
+                                    destMac = <<0,0,0,0,0,0>>,
+                                    destMacMask = <<0,0,0,0,0,0>>,
+                                    vlanId =0,
+                                    vlanIdMask =0}).
 
 -record(termination_mac_flow_entry,{match_criteria,
-                                    gotoTableId,
-                                    outputPort}).
+                                    gotoTableId =flow_table_id_none,
+                                    outputPort =0}).
 
 -record(bridging_flow_match,{vlanId,tunnelId,destMac,destMacMask}).
 
@@ -106,7 +108,8 @@
                                outputPort,
                                clearActions}).
 
--record(flow_entry,{tableId,
+%% #flow_entry{} defined by ofp_v4.hrl
+-record(ofdpa_flow_entry,{tableId,
                     priority,
                     flowData,
                     hard_time,
