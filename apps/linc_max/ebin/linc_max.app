@@ -29,5 +29,4 @@
 						linc_max_packet,
 						linc_max_convert,
 						linc_max_demo,
-						linc_max_action_set,
 						linc_max]}]}.

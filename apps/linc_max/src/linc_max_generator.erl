@@ -1,6 +1,7 @@
 -module(linc_max_generator).
 -export([update_flow_table/2]).
 -export([flow_table_forms/2]).
+-export([action_list/1]).
 
 -include_lib("of_protocol/include/ofp_v4.hrl").
 -include_lib("linc/include/linc_logger.hrl").
@@ -527,95 +528,84 @@ updated_metadata({_,Value,Mask}) ->
 updated_actions(undefined) ->
 	{var,0,var_name(actions)};
 updated_actions(clear) -> %% plugfest5
-	updated_actions(clear, []);
+	updated_actions({clear, []});
 updated_actions({clear,Specs}) ->
-	updated_actions(clear, action_cast(Specs,[]));
+	Records = [
+		{slow_actions, record_info(fields, slow_actions)},
+		{fast_actions, record_info(fields, fast_actions)}
+	],
+
+	Actions = action_cast(Specs, []),
+
+	{_, Tuple} = action_tuple(
+		fast_actions, Records, Actions,
+		fun(Value) ->
+			{change, ast(Value)}
+		end,
+		fun(_) ->
+			{keep, {atom,0,undefined}}
+		end
+	),
+
+	Tuple;
 updated_actions({write,Specs}) ->
-	updated_actions(write, action_cast(Specs,[])).
+	Records = [
+		{slow_actions, record_info(fields, slow_actions)},
+		{fast_actions, record_info(fields, fast_actions)}
+	],
 
-updated_actions(clear, Actions) ->
-	NewElems = [{atom,0,fast_actions}] ++ [updated_set(S,Actions,clear) || S <- ?ACTIONS_SCHEME],
-	{tuple,0,NewElems};
-updated_actions(write, Actions) ->
-	OldElems = [{var,0,'_'}] ++
-		lists:map(
-			fun
-				({action,_,Var,Elem}) ->
-					case action_find(Elem, Actions) of
-						false ->
-							{var,0,Var};
-						_ ->
-							{var,0,'_'}
-					end;
-				({set,_,Var,_}) ->
-					{var,0,Var}
-			end,
-			?ACTIONS_SCHEME
-		),
+	Actions = action_cast(Specs, []),
 
-	NewElems = [{atom,0,fast_actions}] ++ [updated_set(S,Actions,write) || S <- ?ACTIONS_SCHEME],
+	{_, OldTuple} = action_tuple(
+		fast_actions, Records, Actions,
+		fun(_) ->
+			{change, {var,0,'_'}}
+		end,
+		fun(Name) ->
+			{keep, {var,0,var_name(Name)}}
+		end
+	),
+
+	{_, NewTuple} = action_tuple(
+		fast_actions, Records, Actions,
+		fun(Value) ->
+			{change, ast(Value)}
+		end,
+		fun(Name) ->
+			{keep, {var,0,var_name(Name)}}
+		end
+	),
 
 	{block,0,[
-		{match,0,{tuple,0,OldElems},{var,0,var_name(actions)}},
-		{tuple,0,NewElems}
+		{match,0,OldTuple,{var,0,var_name(actions)}},
+		NewTuple
 	]}.
 
-updated_elem(write, Var) ->
-	{var,0,Var};
-updated_elem(clear, _) ->
-	undefined.
-
-updated_set({action, _Field, Var, Elem}, Actions, Instr) ->
-	case action_find(Elem, Actions) of
+action_tuple(Field, Records, Actions, Change, Keep) ->
+	case lists:keyfind(Field, 1, Records) of
+		{_, Fields} ->
+			{Flags, Elems} =
+				lists:unzip([action_tuple(F, Records, Actions, Change, Keep) || F <- Fields]),
+			case lists:member(change, Flags) of
+				true ->
+					{change, {tuple,0,[{atom,0,Field}] ++ Elems}};
+				_ ->
+					{keep, {var,0,Field}}
+			end;
 		false ->
-			updated_elem(Instr, Var);
-		Action ->
-			action_val(Action)
-	end;
-updated_set({set, _Field, Var, Set}, Actions, Instr) ->
-	SortedList = 
-		lists:foldl(
-			fun(Scheme, Acc) ->
-				case action_find(Scheme, Actions) of
-					false ->
-						Acc;
-					Action ->
-						Acc ++ [Action]
-				end
-			end,
-			[],
-			Set
-		),
-	case SortedList of
-		[] ->
-			updated_elem(Instr, Var);
-		_ ->
-			case Instr of
-				write ->
-					Args = [ast(SortedList), {var,0,Var}],
-					{call,0,{remote,0,{atom,0,linc_max_action_set},{atom,0,insert}},Args};
-				clear ->
-					ast(SortedList)
-			end
+			action_value(Field, Actions, Change, Keep)
 	end.
 
-action_find(_Elem, []) ->
-	false;
-action_find(Elem, [Action | Rest]) ->
-	case action_name(Action) =:= action_name(Elem) of
-		true ->
-			Action;
-		_ ->
-			action_find(Elem, Rest)
-	end.
-
-action_name({Name,_}) -> Name;
-action_name({_,Name,_}) -> Name;
-action_name(Name) -> Name.
-
-action_val({_,Val}) -> ast(Val);
-action_val({_,_,Val}) -> ast(Val);
-action_val(_) -> {atom,0,defined}.
+action_value(Name, [], _Change, Keep) ->
+	Keep(Name);
+action_value(Name, [{set_field, Name, Value} | _], Change, _Keep) ->
+	Change(Value);
+action_value(Name, [{Name, Value} | _], Change, _Keep) ->
+	Change(Value);
+action_value(Name, [Name | _], Change, _Keep) ->
+	Change(Name);
+action_value(Name, [_ | Rest], Change, Keep) ->
+	action_value(Name, Rest, Change, Keep).
 
 action_list(As) ->
 	Call = 
@@ -629,6 +619,8 @@ action_list(As) ->
 				{Call(output,[Frame,{atom,0,PortNo},{var,0,var_name(blaze)}]), TunnelId};
 			({output,PortNo}, {Frame, TunnelId}) ->
 				{Call(output,[Frame,{integer,0,PortNo},{var,0,var_name(blaze)}]), TunnelId};
+			({group,Group}, {Frame, TunnelId}) ->
+				{Call(group,[Frame,{atom,0,Group},{var,0,var_name(blaze)}]), TunnelId};
 			({set_queue,Queue}, {Frame, TunnelId}) ->
 				{Call(set_queue,[Frame,{integer,0,Queue},{var,0,var_name(blaze)}]), TunnelId};
 			({set_field,tunnel_id,Value}, {Frame, _}) ->
@@ -651,7 +643,7 @@ action_cast([#ofp_action_output{port =PortNo}|Rest], Actions) ->
 action_cast([#ofp_action_set_queue{queue_id =Queue}|Rest], Actions) ->
 	action_cast(Rest, [{set_queue,Queue}|Actions]);
 action_cast([#ofp_action_group{group_id =Group}|Rest], Actions) ->
-	action_cast(Rest, [{group,Group}|Actions]);
+	action_cast(Rest, [{group,linc_max_groups:id_to_name(Group)}|Actions]);
 action_cast([#ofp_action_push_vlan{ethertype =EthType}|Rest], Actions) ->
 	action_cast(Rest, [{push_vlan,EthType}|Actions]);
 action_cast([#ofp_action_pop_vlan{}|Rest], Actions) ->
@@ -725,6 +717,54 @@ var_name(tunnel_id) -> 'TunnelId';
 var_name(actions) -> 'Actions';
 var_name(blaze) -> 'Blaze';
 %% fast_actions fields
+var_name(slow_actions) -> 'Slow';
+var_name(copy_ttl_inwards) -> 'CopyTtlInwards';
+var_name(pop_pbb) -> 'PopPbb';
+var_name(pop_mpls) -> 'PopMpls';
+var_name(pop_vlan) -> 'PopVlan';
+var_name(push_mpls) -> 'PushMpls';
+var_name(push_pbb) -> 'PushPbb';
+var_name(push_vlan) -> 'PushVlan';
+var_name(copy_ttl_outwards) -> 'CopyTtlOutwards';
+var_name(decrement_ip_ttl) -> 'DecrementIpTtl';
+var_name(decrement_mpls_ttl) -> 'DecrementMplsTtl';
+var_name(set_ip_ttl) -> 'SetIpTtl';
+var_name(set_mpls_ttl) -> 'SetMplsTtl';
+var_name(eth_dst) -> 'EthDst';
+var_name(eth_src) -> 'EthSrc';
+var_name(vlan_vid) -> 'VlanVid';
+var_name(vlan_pcp) -> 'VlanPcp';
+var_name(ip_dscp) -> 'IpDscp';
+var_name(ip_ecn) -> 'IpEcn';
+var_name(ipv4_src) -> 'Ipv4Src';
+var_name(ipv4_dst) -> 'Ipv4Dst';
+var_name(tcp_src) -> 'TcpSrc';
+var_name(tcp_dst) -> 'TcpDst';
+var_name(udp_src) -> 'UdpSrc';
+var_name(udp_dst) -> 'UdpDst';
+var_name(sctp_src) -> 'SctpSrc';
+var_name(sctp_dst) -> 'SctpDst';
+var_name(icmpv4_type) -> 'Icmpv4Type';
+var_name(icmpv4_code) -> 'Icmpv4Code';
+var_name(arp_op) -> 'ArpOp';
+var_name(arp_spa) -> 'ArpSpa';
+var_name(arp_tpa) -> 'ArpTpa';
+var_name(arp_sha) -> 'ArpSha';
+var_name(arp_tha) -> 'ArpTha';
+var_name(ipv6_src) -> 'Ipv6Src';
+var_name(ipv6_dst) -> 'Ipv6Dst';
+var_name(ipv6_label) -> 'Ipv6Label';
+var_name(icmpv6_type) -> 'Icmpv6Type';
+var_name(icmpv6_code) -> 'Icmpv6Code';
+var_name(ipv6_nd_target) -> 'Ipv6NdTarget';
+var_name(ipv6_nd_sll) -> 'Ipv6NdSll';
+var_name(ipv6_nd_tll) -> 'Ipv6NdTll';
+var_name(mpls_label) -> 'MplsLabel';
+var_name(mpls_tc) -> 'MplsTc';
+var_name(mpls_bos) -> 'MplsBos';
+var_name(pbb_isid) -> 'PbbIsid';
+var_name(ipv6_exthdr) -> 'Ipv6Exthdr';
+var_name(fast_actions) -> 'Fast';
 var_name(queue) -> 'Queue';
 var_name(output) -> 'Output';
 var_name(group) -> 'Group'.

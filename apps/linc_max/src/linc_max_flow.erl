@@ -1335,7 +1335,7 @@ decrement_group_ref_count(SwitchId, Instructions) ->
     update_group_ref_count(SwitchId, Instructions, -1).
 
 update_group_ref_count(SwitchId, Instructions, Incr) ->
-    [linc_max_groups:update_reference_count(SwitchId, Group,Incr)
+    [linc_max_groups:update_reference_count(SwitchId, Group, Incr)
      || Group <- get_groups(Instructions)].
 
 %% Find all groups reference from the Instructions

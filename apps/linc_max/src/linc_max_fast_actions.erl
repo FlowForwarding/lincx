@@ -13,7 +13,7 @@
 -export([
 	output/3,
 	set_queue/3,
-	group/2,
+	group/3,
 	push_vlan/2,
 	pop_vlan/1,
 	push_mpls/2,
@@ -36,18 +36,291 @@
 -include("linc_max.hrl").
 -include("fast_path.hrl").
 
-%% include generated action set apply code
--include("fast_actions_inl.hrl").
-%% apply subset actions.
-%% Called from fast_actions_inl.hrl
-apply_subset(Frame,[]) ->
+apply_set(#fast_actions{
+		slow_actions = undefined,
+		queue = undefined,
+		group = undefined,
+		output = PortNo
+	}, Frame, Blaze) ->
+	output(Frame, PortNo, Blaze);
+apply_set(#fast_actions{
+		slow_actions = undefined,
+		queue = undefined,
+		group = Group
+	}, Frame, Blaze) ->
+	group(Frame, Group, Blaze);
+apply_set(#fast_actions{
+		slow_actions = undefined,
+		queue = Queue
+	}, Frame, Blaze) ->
+	set_queue(Frame, Queue, Blaze);
+apply_set(#fast_actions{
+		slow_actions = Slow,
+		queue = undefined,
+		group = undefined,
+		output = PortNo
+	}, Frame, Blaze) ->
+	output(apply_slow(Frame, Slow), PortNo, Blaze);
+apply_set(#fast_actions{
+		slow_actions = Slow,
+		queue = undefined,
+		group = Group
+	}, Frame, Blaze) ->
+	group(apply_slow(Frame, Slow), Group, Blaze);
+apply_set(#fast_actions{
+		slow_actions = Slow,
+		queue = Queue
+	}, Frame, Blaze) ->
+	set_queue(apply_slow(Frame, Slow), Queue, Blaze).
+
+apply_slow(Frame, As) ->
+	apply_copy_ttl_inwards(Frame, As).
+
+apply_copy_ttl_inwards(Frame, #slow_actions{copy_ttl_inwards = undefined} = As) ->
+	apply_pop_pbb(Frame, As);
+apply_copy_ttl_inwards(Frame, #slow_actions{copy_ttl_inwards = _} = As) ->
+	apply_pop_pbb(copy_ttl_inwards(Frame), As).
+
+apply_pop_pbb(Frame, #slow_actions{pop_pbb = undefined} = As) ->
+	apply_pop_mpls(Frame, As);
+apply_pop_pbb(Frame, #slow_actions{pop_pbb = _} = As) ->
+	apply_pop_mpls(pop_pbb(Frame), As).
+
+apply_pop_mpls(Frame, #slow_actions{pop_mpls = undefined} = As) ->
+	apply_pop_vlan(Frame, As);
+apply_pop_mpls(Frame, #slow_actions{pop_mpls = EthType} = As) ->
+	apply_pop_vlan(pop_mpls(Frame, EthType), As).
+
+apply_pop_vlan(Frame, #slow_actions{pop_vlan = undefined} = As) ->
+	apply_push_mpls(Frame, As);
+apply_pop_vlan(Frame, #slow_actions{pop_vlan = _} = As) ->
+	apply_push_mpls(pop_vlan(Frame), As).
+
+apply_push_mpls(Frame, #slow_actions{push_mpls = undefined} = As) ->
+	apply_push_pbb(Frame, As);
+apply_push_mpls(Frame, #slow_actions{push_mpls = EthType} = As) ->
+	apply_push_pbb(push_mpls(Frame, EthType), As).
+
+apply_push_pbb(Frame, #slow_actions{push_pbb = undefined} = As) ->
+	apply_push_vlan(Frame, As);
+apply_push_pbb(Frame, #slow_actions{push_pbb = EthType} = As) ->
+	apply_push_vlan(push_pbb(Frame, EthType), As).
+
+apply_push_vlan(Frame, #slow_actions{push_vlan = undefined} = As) ->
+	apply_copy_ttl_outwards(Frame, As);
+apply_push_vlan(Frame, #slow_actions{push_vlan = EthType} = As) ->
+	apply_copy_ttl_outwards(push_vlan(Frame, EthType), As).
+
+apply_copy_ttl_outwards(Frame, #slow_actions{copy_ttl_outwards = undefined} = As) ->
+	apply_decrement_ip_ttl(Frame, As);
+apply_copy_ttl_outwards(Frame, #slow_actions{copy_ttl_outwards = _} = As) ->
+	apply_decrement_ip_ttl(copy_ttl_outwards(Frame), As).
+
+apply_decrement_ip_ttl(Frame, #slow_actions{decrement_ip_ttl = undefined} = As) ->
+	apply_decrement_mpls_ttl(Frame, As);
+apply_decrement_ip_ttl(Frame, #slow_actions{decrement_ip_ttl = _} = As) ->
+	apply_decrement_mpls_ttl(decrement_ip_ttl(Frame), As).
+
+apply_decrement_mpls_ttl(Frame, #slow_actions{decrement_mpls_ttl = undefined} = As) ->
+	apply_set_ip_ttl(Frame, As);
+apply_decrement_mpls_ttl(Frame, #slow_actions{decrement_mpls_ttl = _} = As) ->
+	apply_set_ip_ttl(decrement_mpls_ttl(Frame), As).
+
+apply_set_ip_ttl(Frame, #slow_actions{set_ip_ttl = undefined} = As) ->
+	apply_set_mpls_ttl(Frame, As);
+apply_set_ip_ttl(Frame, #slow_actions{set_ip_ttl = TTL} = As) ->
+	apply_set_mpls_ttl(set_ip_ttl(Frame, TTL), As).
+
+apply_set_mpls_ttl(Frame, #slow_actions{set_mpls_ttl = undefined} = As) ->
+	apply_eth_dst(Frame, As);
+apply_set_mpls_ttl(Frame, #slow_actions{set_mpls_ttl = TTL} = As) ->
+	apply_eth_dst(set_mpls_ttl(Frame, TTL), As).
+
+apply_eth_dst(Frame, #slow_actions{eth_dst = undefined} = As) ->
+	apply_eth_src(Frame, As);
+apply_eth_dst(Frame, #slow_actions{eth_dst = Value} = As) ->
+	apply_eth_src(set_field(Frame, eth_dst, Value), As).
+
+apply_eth_src(Frame, #slow_actions{eth_src = undefined} = As) ->
+	apply_eth_type(Frame, As);
+apply_eth_src(Frame, #slow_actions{eth_src = Value} = As) ->
+	apply_eth_type(set_field(Frame, eth_src, Value), As).
+
+apply_eth_type(Frame, #slow_actions{eth_type = undefined} = As) ->
+	apply_vlan_vid(Frame, As);
+apply_eth_type(Frame, #slow_actions{eth_type = Value} = As) ->
+	apply_vlan_vid(set_field(Frame, eth_type, Value), As).
+
+apply_vlan_vid(Frame, #slow_actions{vlan_vid = undefined} = As) ->
+	apply_vlan_pcp(Frame, As);
+apply_vlan_vid(Frame, #slow_actions{vlan_vid = Value} = As) ->
+	apply_vlan_pcp(set_field(Frame, vlan_vid, Value), As).
+
+apply_vlan_pcp(Frame, #slow_actions{vlan_pcp = undefined} = As) ->
+	apply_ip_dscp(Frame, As);
+apply_vlan_pcp(Frame, #slow_actions{vlan_pcp = Value} = As) ->
+	apply_ip_dscp(set_field(Frame, vlan_pcp, Value), As).
+
+apply_ip_dscp(Frame, #slow_actions{ip_dscp = undefined} = As) ->
+	apply_ip_ecn(Frame, As);
+apply_ip_dscp(Frame, #slow_actions{ip_dscp = Value} = As) ->
+	apply_ip_ecn(set_field(Frame, ip_dscp, Value), As).
+
+apply_ip_ecn(Frame, #slow_actions{ip_ecn = undefined} = As) ->
+	apply_ip_proto(Frame, As);
+apply_ip_ecn(Frame, #slow_actions{ip_ecn = Value} = As) ->
+	apply_ip_proto(set_field(Frame, ip_ecn, Value), As).
+
+apply_ip_proto(Frame, #slow_actions{ip_proto = undefined} = As) ->
+	apply_ipv4_src(Frame, As);
+apply_ip_proto(Frame, #slow_actions{ip_proto = Value} = As) ->
+	apply_ipv4_src(set_field(Frame, ip_proto, Value), As).
+
+apply_ipv4_src(Frame, #slow_actions{ipv4_src = undefined} = As) ->
+	apply_ipv4_dst(Frame, As);
+apply_ipv4_src(Frame, #slow_actions{ipv4_src = Value} = As) ->
+	apply_ipv4_dst(set_field(Frame, ipv4_src, Value), As).
+
+apply_ipv4_dst(Frame, #slow_actions{ipv4_dst = undefined} = As) ->
+	apply_tcp_src(Frame, As);
+apply_ipv4_dst(Frame, #slow_actions{ipv4_dst = Value} = As) ->
+	apply_tcp_src(set_field(Frame, ipv4_dst, Value), As).
+
+apply_tcp_src(Frame, #slow_actions{tcp_src = undefined} = As) ->
+	apply_tcp_dst(Frame, As);
+apply_tcp_src(Frame, #slow_actions{tcp_src = Value} = As) ->
+	apply_tcp_dst(set_field(Frame, tcp_src, Value), As).
+
+apply_tcp_dst(Frame, #slow_actions{tcp_dst = undefined} = As) ->
+	apply_udp_src(Frame, As);
+apply_tcp_dst(Frame, #slow_actions{tcp_dst = Value} = As) ->
+	apply_udp_src(set_field(Frame, tcp_dst, Value), As).
+
+apply_udp_src(Frame, #slow_actions{udp_src = undefined} = As) ->
+	apply_udp_dst(Frame, As);
+apply_udp_src(Frame, #slow_actions{udp_src = Value} = As) ->
+	apply_udp_dst(set_field(Frame, udp_src, Value), As).
+
+apply_udp_dst(Frame, #slow_actions{udp_dst = undefined} = As) ->
+	apply_sctp_src(Frame, As);
+apply_udp_dst(Frame, #slow_actions{udp_dst = Value} = As) ->
+	apply_sctp_src(set_field(Frame, udp_dst, Value), As).
+
+apply_sctp_src(Frame, #slow_actions{sctp_src = undefined} = As) ->
+	apply_sctp_dst(Frame, As);
+apply_sctp_src(Frame, #slow_actions{sctp_src = Value} = As) ->
+	apply_sctp_dst(set_field(Frame, sctp_src, Value), As).
+
+apply_sctp_dst(Frame, #slow_actions{sctp_dst = undefined} = As) ->
+	apply_icmpv4_type(Frame, As);
+apply_sctp_dst(Frame, #slow_actions{sctp_dst = Value} = As) ->
+	apply_icmpv4_type(set_field(Frame, sctp_dst, Value), As).
+
+apply_icmpv4_type(Frame, #slow_actions{icmpv4_type = undefined} = As) ->
+	apply_icmpv4_code(Frame, As);
+apply_icmpv4_type(Frame, #slow_actions{icmpv4_type = Value} = As) ->
+	apply_icmpv4_code(set_field(Frame, icmpv4_type, Value), As).
+
+apply_icmpv4_code(Frame, #slow_actions{icmpv4_code = undefined} = As) ->
+	apply_arp_op(Frame, As);
+apply_icmpv4_code(Frame, #slow_actions{icmpv4_code = Value} = As) ->
+	apply_arp_op(set_field(Frame, icmpv4_code, Value), As).
+
+apply_arp_op(Frame, #slow_actions{arp_op = undefined} = As) ->
+	apply_arp_spa(Frame, As);
+apply_arp_op(Frame, #slow_actions{arp_op = Value} = As) ->
+	apply_arp_spa(set_field(Frame, arp_op, Value), As).
+
+apply_arp_spa(Frame, #slow_actions{arp_spa = undefined} = As) ->
+	apply_arp_tpa(Frame, As);
+apply_arp_spa(Frame, #slow_actions{arp_spa = Value} = As) ->
+	apply_arp_tpa(set_field(Frame, arp_spa, Value), As).
+
+apply_arp_tpa(Frame, #slow_actions{arp_tpa = undefined} = As) ->
+	apply_arp_sha(Frame, As);
+apply_arp_tpa(Frame, #slow_actions{arp_tpa = Value} = As) ->
+	apply_arp_sha(set_field(Frame, arp_tpa, Value), As).
+
+apply_arp_sha(Frame, #slow_actions{arp_sha = undefined} = As) ->
+	apply_arp_tha(Frame, As);
+apply_arp_sha(Frame, #slow_actions{arp_sha = Value} = As) ->
+	apply_arp_tha(set_field(Frame, arp_sha, Value), As).
+
+apply_arp_tha(Frame, #slow_actions{arp_tha = undefined} = As) ->
+	apply_ipv6_src(Frame, As);
+apply_arp_tha(Frame, #slow_actions{arp_tha = Value} = As) ->
+	apply_ipv6_src(set_field(Frame, arp_tha, Value), As).
+
+apply_ipv6_src(Frame, #slow_actions{ipv6_src = undefined} = As) ->
+	apply_ipv6_dst(Frame, As);
+apply_ipv6_src(Frame, #slow_actions{ipv6_src = Value} = As) ->
+	apply_ipv6_dst(set_field(Frame, ipv6_src, Value), As).
+
+apply_ipv6_dst(Frame, #slow_actions{ipv6_dst = undefined} = As) ->
+	apply_ipv6_label(Frame, As);
+apply_ipv6_dst(Frame, #slow_actions{ipv6_dst = Value} = As) ->
+	apply_ipv6_label(set_field(Frame, ipv6_dst, Value), As).
+
+apply_ipv6_label(Frame, #slow_actions{ipv6_label = undefined} = As) ->
+	apply_icmpv6_type(Frame, As);
+apply_ipv6_label(Frame, #slow_actions{ipv6_label = Value} = As) ->
+	apply_icmpv6_type(set_field(Frame, ipv6_label, Value), As).
+
+apply_icmpv6_type(Frame, #slow_actions{icmpv6_type = undefined} = As) ->
+	apply_icmpv6_code(Frame, As);
+apply_icmpv6_type(Frame, #slow_actions{icmpv6_type = Value} = As) ->
+	apply_icmpv6_code(set_field(Frame, icmpv6_type, Value), As).
+
+apply_icmpv6_code(Frame, #slow_actions{icmpv6_code = undefined} = As) ->
+	apply_ipv6_nd_target(Frame, As);
+apply_icmpv6_code(Frame, #slow_actions{icmpv6_code = Value} = As) ->
+	apply_ipv6_nd_target(set_field(Frame, icmpv6_code, Value), As).
+
+apply_ipv6_nd_target(Frame, #slow_actions{ipv6_nd_target = undefined} = As) ->
+	apply_ipv6_nd_sll(Frame, As);
+apply_ipv6_nd_target(Frame, #slow_actions{ipv6_nd_target = Value} = As) ->
+	apply_ipv6_nd_sll(set_field(Frame, ipv6_nd_target, Value), As).
+
+apply_ipv6_nd_sll(Frame, #slow_actions{ipv6_nd_sll = undefined} = As) ->
+	apply_ipv6_nd_tll(Frame, As);
+apply_ipv6_nd_sll(Frame, #slow_actions{ipv6_nd_sll = Value} = As) ->
+	apply_ipv6_nd_tll(set_field(Frame, ipv6_nd_sll, Value), As).
+
+apply_ipv6_nd_tll(Frame, #slow_actions{ipv6_nd_tll = undefined} = As) ->
+	apply_mpls_label(Frame, As);
+apply_ipv6_nd_tll(Frame, #slow_actions{ipv6_nd_tll = Value} = As) ->
+	apply_mpls_label(set_field(Frame, ipv6_nd_tll, Value), As).
+
+apply_mpls_label(Frame, #slow_actions{mpls_label = undefined} = As) ->
+	apply_mpls_tc(Frame, As);
+apply_mpls_label(Frame, #slow_actions{mpls_label = Value} = As) ->
+	apply_mpls_tc(set_field(Frame, mpls_label, Value), As).
+
+apply_mpls_tc(Frame, #slow_actions{mpls_tc = undefined} = As) ->
+	apply_mpls_bos(Frame, As);
+apply_mpls_tc(Frame, #slow_actions{mpls_tc = Value} = As) ->
+	apply_mpls_bos(set_field(Frame, mpls_tc, Value), As).
+
+apply_mpls_bos(Frame, #slow_actions{mpls_bos = undefined} = As) ->
+	apply_pbb_isid(Frame, As);
+apply_mpls_bos(Frame, #slow_actions{mpls_bos = Value} = As) ->
+	apply_pbb_isid(set_field(Frame, mpls_bos, Value), As).
+
+apply_pbb_isid(Frame, #slow_actions{pbb_isid = undefined} = As) ->
+	apply_tunnel_id(Frame, As);
+apply_pbb_isid(Frame, #slow_actions{pbb_isid = Value} = As) ->
+	apply_tunnel_id(set_field(Frame, pbb_isid, Value), As).
+
+apply_tunnel_id(Frame, #slow_actions{tunnel_id = undefined} = As) ->
+	apply_ipv6_exthdr(Frame, As);
+apply_tunnel_id(Frame, #slow_actions{tunnel_id = _Value} = As) ->
+	?ERROR("Tunnel ID in action set not implemented"),
+	apply_ipv6_exthdr(Frame, As).
+
+apply_ipv6_exthdr(Frame, #slow_actions{ipv6_exthdr = undefined}) ->
 	Frame;
-apply_subset(Frame, [{set_field,Field,Value}|Rest]) ->
-	apply_subset(set_field(Frame,Field,Value),Rest);
-apply_subset(Frame, [{Action,Value}|Rest]) ->
-	apply_subset(?MODULE:Action(Frame,Value),Rest);
-apply_subset(Frame, [Action|Rest]) ->
-	apply_subset(?MODULE:Action(Frame),Rest).
+apply_ipv6_exthdr(Frame, #slow_actions{ipv6_exthdr = Value}) ->
+	set_field(Frame, ipv6_exthdr, Value).
 
 %% FAST PATH
 %%
@@ -82,7 +355,7 @@ apply_list([{set_queue,Queue}|ActionList], Frame, Blaze) ->
 	apply_list(ActionList, Frame1, Blaze);
 
 apply_list([{group,Group}|ActionList], Frame, Blaze) ->
-	Frame1 = group(Frame, Group),
+	Frame1 = group(Frame, Group, Blaze),
 	apply_list(ActionList, Frame1, Blaze);
 
 apply_list([{push_vlan,EthType}|ActionList], Frame, Blaze) ->
@@ -184,9 +457,8 @@ set_queue(Frame, Queue, Blaze) ->
 	Pid ! Frame,
 	Frame.
 
-group(Frame, _Group) ->
-	?ERROR("Groups not supported"),
-	Frame.
+group(Frame, Group, Blaze) ->
+	erlang:apply(Group, apply, [Frame, Blaze]).
 
 set_field(Frame, Field, FastValue) ->
 	linc_max_splicer:edit(Frame, Field, FastValue).
