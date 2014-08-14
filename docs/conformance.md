@@ -9,6 +9,7 @@
 04.06.2014 | 497 | 494
 08.06.2014 | 651 | 340
 11.06.2014 | 905 | 86
+14.08.2014 | 932 | 59
 
 #### Current state 
 
@@ -47,7 +48,7 @@ ACTION: SET_FIELD:
 | ETH_DST                        | ✓     | ✓     | ✓     |
 | ETH_SRC                        | ✓     | ✓     | ✓     |
 | ETH_TYPE                       | ✓     | ✓     | ✓     |
-| TUNNEL_ID                      | -     | -     | -     |
+| TUNNEL_ID                      | ✓     | ✓     | ✓     |
 | VLAN_VID                       | ✓     | ✓     | ✓     |
 | VLAN_PCP                       | ✓     | ✓     | ✓     |
 | MPLS_LABEL                     | -     | ✓     | ✓     |
@@ -107,8 +108,8 @@ MATCH:
 | **ETH_SRC**                    |  ✓✓✓  |  ✓✓✓  |  ✓✓✓  |
 | **ETH_SRC (Mask)**             |  ✓✓✓  |  ✓✓✓  |  ✓✓✓  |
 | **ETH_TYPE**                   |  ✓✓✓  |  ✓✓✓  |  ✓✓✓  |
-| TUNNEL_ID                      |  --✓  |  --✓  |  --✓  |
-| TUNNEL_ID (Mask)               |  --✓  |  --✓  |  --✓  |
+| TUNNEL_ID                      |  ✓✓✓  |  ✓✓✓  |  ✓✓✓  |
+| TUNNEL_ID (Mask)               |  ✓✓✓  |  ✓✓✓  |  ✓✓✓  |
 | VLAN_VID                       |  ✓✓✓  |  ✓✓✓  |  ✓✓✓  |
 | VLAN_VID (Mask)                |  ✓✓✓  |  ✓✓✓  |  ✓✓✓  |
 | VLAN_PCP                       |  ✓✓✓  |  ✓✓✓  |  ✓✓✓  |
@@ -190,8 +191,8 @@ GROUP:
 
 | Test                           |IPv4   |IPv6   |ARP    |
 |--------------------------------|-------|-------|-------|
-| ALL                            | -     | -     | -     |
-| SELECT_Ether                   | -     | -     | -     |
-| SELECT_IP                      | -     | -     | -     |
-| SELECT_Weight_Ether            | -     | -     | -     |
-| SELECT_Weight_IP               | -     | -     | -     |
+| ALL                            | ✓     | ✓     | -     |
+| SELECT_Ether                   | ✓     | ✓     | -     |
+| SELECT_IP                      | ✓     | ✓     | ✓     |
+| SELECT_Weight_Ether            | ✓     | ✓     | -     |
+| SELECT_Weight_IP               | ✓     | ✓     | ✓     |
