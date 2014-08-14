@@ -185,8 +185,8 @@ blaze(#blaze{queue_map =QueueMap,ports =Ports} =Blaze, FlowTab0, ReigniteCounter
 		%% Inject the frame into the pipeline
 		case linc_max_preparser:inject(Frame,
 				Metadata, PortInfo, #fast_actions{}, FlowTab0, Blaze) of
-		%{do,Frame1,Actions} ->
-		%	linc_max_fast_actions:apply_set(Actions, Frame1, Blaze);
+		{do,Frame1,Actions} ->
+			linc_max_fast_actions:apply_set(Actions, Frame1, Blaze);
 		malformed ->
 			%% preparser detected a malformed packet
 			%%io:format("MALFORMED: ~p\n", [pkt:decapsulate(Frame)]);
