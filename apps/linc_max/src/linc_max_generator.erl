@@ -530,49 +530,36 @@ updated_actions(undefined) ->
 updated_actions(clear) -> %% plugfest5
 	updated_actions({clear, []});
 updated_actions({clear,Specs}) ->
-	Records = [
-		{slow_actions, record_info(fields, slow_actions)},
-		{fast_actions, record_info(fields, fast_actions)}
-	],
-
 	Actions = action_cast(Specs, []),
-
 	{_, Tuple} = action_tuple(
-		fast_actions, Records, Actions,
+		fast_actions, Actions,
 		fun(Value) ->
-			{change, ast(Value)}
+			ast(Value)
 		end,
 		fun(_) ->
-			{keep, {atom,0,undefined}}
+			{atom,0,undefined}
 		end
 	),
 
 	Tuple;
 updated_actions({write,Specs}) ->
-	Records = [
-		{slow_actions, record_info(fields, slow_actions)},
-		{fast_actions, record_info(fields, fast_actions)}
-	],
-
 	Actions = action_cast(Specs, []),
-
 	{_, OldTuple} = action_tuple(
-		fast_actions, Records, Actions,
+		fast_actions, Actions,
 		fun(_) ->
-			{change, {var,0,'_'}}
+			{var,0,'_'}
 		end,
 		fun(Name) ->
-			{keep, {var,0,var_name(Name)}}
+			{var,0,var_name(Name)}
 		end
 	),
-
 	{_, NewTuple} = action_tuple(
-		fast_actions, Records, Actions,
+		fast_actions, Actions,
 		fun(Value) ->
-			{change, ast(Value)}
+			ast(Value)
 		end,
 		fun(Name) ->
-			{keep, {var,0,var_name(Name)}}
+			{var,0,var_name(Name)}
 		end
 	),
 
@@ -581,29 +568,33 @@ updated_actions({write,Specs}) ->
 		NewTuple
 	]}.
 
-action_tuple(Field, Records, Actions, Change, Keep) ->
+action_tuple(Field, Actions, Change, Keep) ->
+	Records = [
+		{slow_actions, record_info(fields, slow_actions)},
+		{fast_actions, record_info(fields, fast_actions)}
+	],
 	case lists:keyfind(Field, 1, Records) of
 		{_, Fields} ->
 			{Flags, Elems} =
-				lists:unzip([action_tuple(F, Records, Actions, Change, Keep) || F <- Fields]),
+				lists:unzip([action_tuple(F, Actions, Change, Keep) || F <- Fields]),
 			case lists:member(change, Flags) of
 				true ->
 					{change, {tuple,0,[{atom,0,Field}] ++ Elems}};
 				_ ->
-					{keep, {var,0,Field}}
+					{keep, {var,0,var_name(Field)}}
 			end;
 		false ->
 			action_value(Field, Actions, Change, Keep)
 	end.
 
 action_value(Name, [], _Change, Keep) ->
-	Keep(Name);
+	{keep, Keep(Name)};
 action_value(Name, [{set_field, Name, Value} | _], Change, _Keep) ->
-	Change(Value);
+	{change, Change(Value)};
 action_value(Name, [{Name, Value} | _], Change, _Keep) ->
-	Change(Value);
+	{change, Change(Value)};
 action_value(Name, [Name | _], Change, _Keep) ->
-	Change(Name);
+	{change, Change(Name)};
 action_value(Name, [_ | Rest], Change, Keep) ->
 	action_value(Name, Rest, Change, Keep).
 
