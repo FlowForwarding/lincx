@@ -107,8 +107,8 @@ in a separate shell.
 
 Install OVS from sources:
 
-    $ git clone git://git.openvswitch.org/openvswitch
-    $ cd openvswitch
+    $ git clone https://github.com/openvswitch/ovs.git
+    $ cd ovs
     $ ./boot
     $ PYTHON=python2 CC=clang ./configure --prefix=/usr --localstatedir=/var --sysconfdir=/etc --with-rundir=/run/openvswitch
     $ make
