@@ -5,10 +5,14 @@
 #include <stdlib.h>
 #include <assert.h>
 
-#include <apr-1/apr_general.h>
-#include <apr-1/apr_network_io.h>
-#include <apr-1/apr_poll.h>
-#include <apr-1/apr_portable.h>
+//#include <apr-1/apr_general.h>
+//#include <apr-1/apr_network_io.h>
+//#include <apr-1/apr_poll.h>
+//#include <apr-1/apr_portable.h>
+#include <apr-1.0/apr_general.h>
+#include <apr-1.0/apr_network_io.h>
+#include <apr-1.0/apr_poll.h>
+#include <apr-1.0/apr_portable.h>
 
 #include "ofdpa_datatypes.h"
 #include "ofdpa_api.h"
@@ -18,6 +22,7 @@
 
 #include <string.h>
 
+#define CLIENT_NAME		"LINCX"
 #define AGENTX_PORT		5005
 
 #define TAG_CALL	0xca11
@@ -48,6 +53,15 @@ int main(int argc, char *argv[])
 
 	//printf("sizeof(ofdpaFlowEntry_t) = %d\n", sizeof(ofdpaFlowEntry_t));
 	//printf("sizeof(ofdpaGroupBucketEntry_t) = %d\n", sizeof(ofdpaGroupBucketEntry_t));
+
+	OFDPA_ERROR_t err = ofdpaClientInitialize(CLIENT_NAME);
+	if (err != OFDPA_E_NONE)
+	{
+		printf("Error: unable to initialize OF-DPA layer: %d\n", err);
+		exit(1);
+	}
+
+	printf("OF-DPA initialized successfully\n");
 
 	apr_initialize();
 	rs = apr_pool_create(&p, 0);
@@ -1544,7 +1558,7 @@ apr_status_t invoke(uint16_t what, uint32_t cookie,
 
 		assert(off +4 <= arg_len);	
 		uint32_t pkt_len = GET32(arg_buf +off);
-		off +4;
+		off += 4;
 		assert(off +pkt_len <= arg_len);
 		uint8_t *pkt_data = (uint8_t *)(arg_buf +off);
 		off += pkt_len;
@@ -1564,6 +1578,9 @@ apr_status_t invoke(uint16_t what, uint32_t cookie,
 			.size = pkt_len
 		};
 
+		//DBG
+		printf("ofdpaPktSend(size = %d, flags =%d, outPortNum = %d, inPortNum = %d)\n",
+				pkt.size, flags, outPortNum, inPortNum);
 		OFDPA_ERROR_t err = ofdpaPktSend(&pkt, flags, outPortNum, inPortNum);
 		PUT32(ret_buf, err);
 
