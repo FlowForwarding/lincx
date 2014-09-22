@@ -1,6 +1,5 @@
 -module(linc_max_generator).
--export([update_flow_table/2]).
--export([flow_table_forms/2]).
+-export([flow_table_forms/3]).
 -export([action_list/1]).
 
 -include_lib("of_protocol/include/ofp_v4.hrl").
@@ -8,19 +7,7 @@
 -include("linc_max.hrl").
 -include("fast_path.hrl").
 
-update_flow_table(TabName, FlowEnts) ->
-	{ok,Forms} = flow_table_forms(TabName, FlowEnts),
-	{ok,TabName,Bin} = compile:forms(Forms, [report_errors]),
-	case erlang:check_old_code(TabName) of
-	true ->
-		erlang:purge_module(TabName);
-	_ ->
-		ok
-	end,
-	{module,_} = erlang:load_module(TabName, Bin),
-	ok.
-
-flow_table_forms(TabName, FlowEnts) ->
+flow_table_forms(TabName, FlowEnts, Counts) ->
 
 	%%
 	%% module(flow_table_0).
@@ -31,17 +18,18 @@ flow_table_forms(TabName, FlowEnts) ->
 
 	MatchArity = length(match_arguments()),
 
-	F1 = {attribute,0,module,TabName},
-	F2 = {attribute,0,export,[{match,MatchArity}]},
-	F3 = {function,0,match,MatchArity,clauses(TabName, FlowEnts)},
+	[
+		{attribute,0,module,TabName},
+		{attribute,0,export,[{match,MatchArity},{entries,0},{counts,0}]},
+		{function,0,match,MatchArity,clauses(FlowEnts, Counts)},
+		{function,0,entries,0,[{clause,0,[],[],[ast(FlowEnts)]}]},
+		{function,0,counts,0,[{clause,0,[],[],[ast(Counts)]}]}
+	].
 
-	Forms = [F1,F2,F3],
-	{ok,Forms}.
+clauses(FlowEnts, Counts) ->
+	clauses(FlowEnts, [], Counts).
 
-clauses(TabName, FlowEnts) ->
-	clauses(TabName, FlowEnts, []).
-
-clauses(TabName, [], Acc) ->
+clauses([], Acc, Counts) ->
 
 	%%
 	%% OFv1.4: Every flow table must support a table-miss flow entry to process
@@ -50,8 +38,7 @@ clauses(TabName, [], Acc) ->
 	%% match(_, _, _, ...) -> erlang:update_counter(integer()), miss.
 	%%
 
-	#flow_table_counter{packet_lookups = Lookups} =
-		linc_max_flow:flow_table_counter(TabName),
+	#flow_table_counts{packet_lookups = Lookups} = Counts,
 
 	Call = {call,0,{remote,0,{atom,0,erlang},{atom,0,update_counter}},[
 		{integer,0,Lookups}
@@ -62,23 +49,25 @@ clauses(TabName, [], Acc) ->
 	lists:reverse([Miss|Acc]);
 
 
-clauses(TabName, [#flow_entry{match =#ofp_match{fields =Matches},
-					 instructions =InstrList}|FlowEnts], Acc) ->
+clauses(
+	[#flow_entry{fields =Matches, instructions =InstrList}|FlowEnts],
+	Acc, Counts
+) ->
 	case catch build_patterns(Matches, InstrList) of
 	nomatch ->
 		%% no chance of a match, suppress the clause
-		clauses(TabName, FlowEnts, Acc);
+		clauses(FlowEnts, Acc, Counts);
 
 	{'EXIT',Reason} ->
 		erlang:error(Reason);
 
 	Patterns when is_list(Patterns) ->
 		Clause = {clause,0,Patterns,[],body(InstrList)},
-		clauses(TabName, FlowEnts, [Clause|Acc]);
+		clauses(FlowEnts, [Clause|Acc], Counts);
 
 	{Patterns,Guard} ->
 		Clause = {clause,0,Patterns,Guard,body(InstrList)},
-		clauses(TabName, FlowEnts, [Clause|Acc])
+		clauses(FlowEnts, [Clause|Acc], Counts)
 	end.
 
 build_patterns(Matches, InstrList) ->
@@ -440,8 +429,7 @@ compile_body(MeterInstr, undefined, ClearWriteInstr, MetadataInstr, TunnelId, {g
 	%%		flow_table_1:match(...).
 	%%
 
-	%%TODO: use linc function here
-	TabName = list_to_atom("flow_table_" ++ integer_to_list(Id)),
+	TabName = linc_max_flow:name(Id),
 
 	%% update the metadata and actions before calling the next flow table
 	As =
@@ -479,8 +467,7 @@ compile_body(MeterInstr, ActionList, ClearWriteInstr, MetadataInstr, TunnelId, {
 	%%		).
 	%%
 
-	%%TODO: use linc function here
-	TabName = list_to_atom("flow_table_" ++ integer_to_list(Id)),
+	TabName = linc_max_flow:name(Id),
 
 	Goto =
 		{call,0,{remote,0,{atom,0,linc_max_preparser},{atom,0,inject}},[
@@ -787,6 +774,6 @@ match_arguments() ->
 	 blaze].
 
 ast(Term) ->
-	erl_syntax:revert(erl_syntax:abstract(Term)).
+	erl_parse:abstract(Term).
 
 %%EOF

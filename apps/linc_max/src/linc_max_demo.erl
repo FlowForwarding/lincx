@@ -52,8 +52,7 @@ all_actions() ->
 				 #ofp_action_copy_ttl_in{}],
 
 	Instr = #ofp_instruction_apply_actions{actions =ActionList},
-	[#flow_entry{match =#ofp_match{},
-				 instructions =[Instr]}].
+	[#flow_entry{instructions =[Instr]}].
 
 generate(FlowConf) ->
 	generate(1, 2, FlowConf) ++ generate(2, 1, FlowConf).
@@ -63,23 +62,33 @@ generate(InPort, OutPort, FlowConf) ->
 	Matches = proplists:get_all_values(match, FlowConf),
 	AllowArp = proplists:get_bool(allow_arp, FlowConf),
 
-	[#flow_entry{match =#ofp_match{fields =
-							[#ofp_field{name =in_port,value = <<InPort:32>>}]
-					++ more_matches(Matches)},instructions =[]}
-		|| _ <- lists:seq(1, NumFlows)]
+	[#flow_entry{
+		fields =
+			[#ofp_field{name =in_port,value = <<InPort:32>>}] ++
+			more_matches(Matches),
+		instructions =[]
+	} || _ <- lists:seq(1, NumFlows)]
 	
 		++ if AllowArp ->
-			[#flow_entry{match =#ofp_match{fields =
-							[#ofp_field{name =in_port,value = <<InPort:32>>},
-							 #ofp_field{name =eth_type,value = <<8,6>>}]},
-						 instructions =[#ofp_instruction_write_actions{actions =
-								[#ofp_action_output{port = OutPort}]}]}];
+			[#flow_entry{
+				fields = [
+					#ofp_field{name =in_port,value = <<InPort:32>>},
+					#ofp_field{name =eth_type,value = <<8,6>>}
+				],
+				instructions = [
+					#ofp_instruction_write_actions{
+						actions = [#ofp_action_output{port = OutPort}]
+					}
+				]
+			}];
 			true -> [] end
 
-		++ [#flow_entry{match =#ofp_match{fields =
-							[#ofp_field{name =in_port,value = <<InPort:32>>}]},
-						instructions =[#ofp_instruction_write_actions{actions =
-								[#ofp_action_output{port = OutPort}]}]}].
+		++ [#flow_entry{
+				fields = [#ofp_field{name =in_port,value = <<InPort:32>>}],
+				instructions =[#ofp_instruction_write_actions{
+					actions =[#ofp_action_output{port = OutPort}]
+				}]
+			}].
 
 more_matches(Matches) ->
 	more_matches(Matches, []).

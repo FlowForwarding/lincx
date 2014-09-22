@@ -40,6 +40,13 @@ apply_set(#fast_actions{
 		slow_actions = undefined,
 		queue = undefined,
 		group = undefined,
+		output = undefined
+	}, Frame, _Blaze) ->
+	Frame;
+apply_set(#fast_actions{
+		slow_actions = undefined,
+		queue = undefined,
+		group = undefined,
 		output = PortNo
 	}, Frame, Blaze) ->
 	output(Frame, PortNo, Blaze);

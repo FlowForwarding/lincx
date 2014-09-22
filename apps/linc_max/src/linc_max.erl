@@ -67,13 +67,11 @@
 -include("linc_max.hrl").
 
 -record(state, {
-          flow_state,
-          buffer_state,
-          switch_id :: integer(),
-          datapath_mac :: binary(),
-          switch_config = [{flags, []}, {miss_send_len, no_buffer}] ::
-            [switch_config_opt()]
-         }).
+  buffer_state,
+  switch_id :: integer(),
+  datapath_mac :: binary(),
+  switch_config = [{flags, []}, {miss_send_len, no_buffer}] :: [switch_config_opt()]
+}).
 -type state() :: #state{}.
 
 -type switch_config_opt() :: {flags, list(ofp_config_flags())} |
@@ -87,40 +85,40 @@
 -spec start(any()) -> {ok, Version :: 4, state()}.
 start(BackendOpts) ->
     try
-        {switch_id, SwitchId} = lists:keyfind(switch_id, 1, BackendOpts),
-        {config, Config} = lists:keyfind(config, 1, BackendOpts),
-		{switch,_,SwitchConfig} = lists:keyfind(SwitchId, 2, Config),
+      {switch_id, SwitchId} = lists:keyfind(switch_id, 1, BackendOpts),
+      {config, Config} = lists:keyfind(config, 1, BackendOpts),
+      {switch,_,SwitchConfig} = lists:keyfind(SwitchId, 2, Config),
 
-		%%
-		%% This is a band-aid solution for passing the OF controller endpoint to
-		%% the switch. There is a new command-line option '-of_controller
-		%% <ip:port> that adds the controller information to the list taken from
-		%% the configuration file.
-		%%
-		SwitchConfig1 = add_of_controllers(SwitchConfig),
-		%io:format("SwitchConfig = ~p~n", [SwitchConfig1]),
+      %%
+      %% This is a band-aid solution for passing the OF controller endpoint to
+      %% the switch. There is a new command-line option '-of_controller
+      %% <ip:port> that adds the controller information to the list taken from
+      %% the configuration file.
+      %%
+      SwitchConfig1 = add_of_controllers(SwitchConfig),
+      %io:format("SwitchConfig = ~p~n", [SwitchConfig1]),
 
-		FlowTab0 = flow_table_0,	%%TODO
-		linc_max_fast_path:start(SwitchConfig1, FlowTab0),
+      FlowTab0 = linc_max_flow:name(0), %% flow_0
+      linc_max_fast_path:start(SwitchConfig1, FlowTab0),
 
-		%% the fast path must be the first to start as it is needed to desribe ports
+      %% the fast path must be the first to start as it is needed to desribe ports
 
-        {datapath_mac, DatapathMac} = lists:keyfind(datapath_mac, 1, BackendOpts),
-        BufferState = linc_buffer:initialize(SwitchId),
+      {datapath_mac, DatapathMac} = lists:keyfind(datapath_mac, 1, BackendOpts),
+      BufferState = linc_buffer:initialize(SwitchId),
 
-        FlowState = linc_max_flow:initialize(SwitchId),
-        linc_max_port:initialize(SwitchId, Config),
+      linc_max_port:initialize(SwitchId, Config),
+      linc_max_flow:init(),
+      %linc_max_groups:initialize(SwitchId),
 
-		%TODO
-        %linc_max_groups:initialize(SwitchId),
-
-		{ok, 4, #state{flow_state = FlowState,
-        		buffer_state = BufferState,
-                switch_id = SwitchId,
-                datapath_mac = DatapathMac}}
+      {ok, 4, #state{
+          buffer_state = BufferState,
+          switch_id = SwitchId,
+          datapath_mac = DatapathMac
+        }
+      }
     catch
         _:Error ->
-			?ERROR("linc_max:start(): ~p\n\t~p\n", [Error,erlang:get_stacktrace()]),
+            ?ERROR("linc_max:start(): ~p\n\t~p\n", [Error,erlang:get_stacktrace()]),
             {error, Error}
     end.
 
@@ -151,19 +149,14 @@ parse_endpoint(S) ->
 
 %% @doc Stop the switch.
 -spec stop(state()) -> any().
-stop(#state{flow_state = FlowState,
-            buffer_state = BufferState}) ->
+stop(#state{buffer_state = BufferState}) ->
 	linc_max_fast_path:stop(),
-
-    linc_max_flow:terminate(FlowState),
-
 	%TODO
     %linc_max_groups:terminate(SwitchId),
-
-    linc_buffer:terminate(BufferState),
-    ok;
+  linc_buffer:terminate(BufferState),
+  ok;
 stop([]) ->
-    ok.
+  ok.
 
 -spec handle_message(ofp_message_body(), state()) ->
                             {noreply, state()} |
@@ -214,14 +207,12 @@ ofp_features_request(#state{switch_id = SwitchId,
 -spec ofp_flow_mod(state(), ofp_flow_mod()) ->
                           {noreply, #state{}} |
                           {reply, ofp_message(), #state{}}.
-ofp_flow_mod(#state{switch_id = SwitchId} = State,
-             #ofp_flow_mod{} = FlowMod) ->
-    case linc_max_flow:modify(SwitchId, FlowMod) of
+ofp_flow_mod(State, #ofp_flow_mod{} = FlowMod) ->
+    case linc_max_flow:mod(FlowMod) of
         ok ->
             {noreply, State};
         {error, {Type, Code}} ->
-            ErrorMsg = #ofp_error_msg{type = Type,
-                                      code = Code},
+            ErrorMsg = #ofp_error_msg{type = Type, code = Code},
             {reply, ErrorMsg, State}
     end.
 
@@ -345,26 +336,23 @@ ofp_desc_request(State, #ofp_desc_request{}) ->
 %% @doc Get flow entry statistics.
 -spec ofp_flow_stats_request(state(), ofp_flow_stats_request()) ->
                                     {reply, ofp_flow_stats_reply(), #state{}}.
-ofp_flow_stats_request(#state{switch_id = SwitchId} = State,
-                       #ofp_flow_stats_request{} = Request) ->
-    Reply = linc_max_flow:get_stats(SwitchId, Request),
+ofp_flow_stats_request(State, #ofp_flow_stats_request{} = Request) ->
+    Reply = linc_max_flow:stats_reply(Request),
     {reply, Reply, State}.
 
 %% @doc Get aggregated flow statistics.
 -spec ofp_aggregate_stats_request(state(), ofp_aggregate_stats_request()) ->
                                          {reply, ofp_aggregate_stats_reply(),
                                           #state{}}.
-ofp_aggregate_stats_request(#state{switch_id = SwitchId} = State,
-                            #ofp_aggregate_stats_request{} = Request) ->
-    Reply = linc_max_flow:get_aggregate_stats(SwitchId, Request),
+ofp_aggregate_stats_request(State, #ofp_aggregate_stats_request{} = Request) ->
+    Reply = linc_max_flow:aggregate_stats_reply(Request),
     {reply, Reply, State}.
 
 %% @doc Get flow table statistics.
 -spec ofp_table_stats_request(state(), ofp_table_stats_request()) ->
                                      {reply, ofp_table_stats_reply(), #state{}}.
-ofp_table_stats_request(#state{switch_id = SwitchId} = State,
-                        #ofp_table_stats_request{} = Request) ->
-    Reply = linc_max_flow:get_table_stats(SwitchId, Request),
+ofp_table_stats_request(State, #ofp_table_stats_request{} = Request) ->
+    Reply = linc_max_flow:table_stats_reply(Request),
     {reply, Reply, State}.
 
 -spec ofp_table_features_request(state(), #ofp_table_features_request{}) ->

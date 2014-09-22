@@ -302,17 +302,21 @@ packet(Pkt, Matches, Expected) ->
 	expected(Expected, R).
 
 flow_entry(Matches) ->
-	#flow_entry{match =
-			#ofp_match{fields =
-					lists:map(fun({Fld,Val}) ->
-							#ofp_field{name =Fld,value =Val,has_mask =false};
-						({Fld,Val,nomask}) ->
-							#ofp_field{name =Fld,value =Val,has_mask =false};
-						({Fld,Val,Mask}) ->
-							#ofp_field{name =Fld,value =Val,
-									has_mask =true,mask =Mask}
-						end, Matches)},
-				instructions = []}.
+	#flow_entry{
+		fields =
+			lists:map(
+				fun
+					({Fld,Val}) ->
+						#ofp_field{name =Fld,value =Val,has_mask =false};
+					({Fld,Val,nomask}) ->
+						#ofp_field{name =Fld,value =Val,has_mask =false};
+					({Fld,Val,Mask}) ->
+						#ofp_field{name =Fld,value =Val,has_mask =true,mask =Mask}
+				end,
+				Matches
+			),
+		instructions = []
+	}.
 
 %% generated a set of values for masked matches
 masked(Bits) ->

@@ -70,7 +70,7 @@
 }).
 
 -record(fast_actions, {
-	slow_actions = #slow_actions{},
+	slow_actions,
 	queue,
 	group,
 	output

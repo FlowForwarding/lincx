@@ -147,39 +147,27 @@
 	config = drop :: linc_table_config()
 }).
 
--record(flow_entry, {
-	id                       :: flow_id(),
-	priority                 :: priority(),
-	match = #ofp_match{}     :: ofp_match(),
-	cookie = <<0:64>>        :: binary(),
-	flags = []               :: [ofp_flow_mod_flag()],
-	install_time             :: erlang:timestamp(),
-	expires = {infinity,0,0} :: erlang:timestamp(),
-	idle = {infinity,0,0}    :: erlang:timestamp(),
-	instructions = []        :: ordsets:ordset(ofp_instruction())
+
+-record(flow_entry_counts, {
+	rx_packets,
+	rx_bytes
 }).
 
--record(flow_timer, {
-	id                       :: flow_id(),
-	table                    :: non_neg_integer(),
-	idle_timeout = infinity  :: infinity | non_neg_integer(),
-	hard_timeout = infinity  :: infinity | non_neg_integer(),
-	expire = infinity        :: infinity | non_neg_integer(),
-	remove = infinity        :: infinity | non_neg_integer()
-}).
-
--record(flow_entry_counter, {
-	id                   :: flow_id(),
-	received_packets = 0 :: integer(),
-	received_bytes   = 0 :: integer()
-}).
-
--record(flow_table_counter, {
-	id :: integer(),
-	%% Reference count is dynamically generated for the sake of simplicity
-	%% reference_count = 0 :: integer(),
+-record(flow_table_counts, {
 	packet_lookups = 0 :: integer(),
 	packet_matches = 0 :: integer()
+}).
+
+-record(flow_entry, {
+	priority,
+	cookie = <<0:64>>,
+	install_time,
+	hard_timeout,
+	idle_timeout,
+	flags = [],
+	fields = [],
+	instructions = [],
+	counts = #flow_entry_counts{}
 }).
 
 -record(linc_pkt, {
