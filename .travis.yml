@@ -1,6 +1,9 @@
 language: C
 notifications:
   email:
+    recipients:
+      aleksey.vasilenko@gmail.com
+      maxim.kharchenko@gmail.com
     on_success: always
     on_failure: always
 before_install:
