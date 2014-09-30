@@ -141,7 +141,7 @@ fields_test_() ->
 	 {[#ether{},#ipv4{},#udp{}],
 			[],[pbb_tag]} ]].
 
-exthdr_test_() ->
+exthdr_test_todo() ->
 	AnyMeta = <<0:64>>,
 	Ipv6 = #ipv6{saddr = <<0:128>>,daddr = <<0:128>>},
 	AnyPortInfo = {1,1,undefined},

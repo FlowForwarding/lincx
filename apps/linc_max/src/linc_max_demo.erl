@@ -4,7 +4,7 @@
 -module(linc_max_demo).
 -export([help/0,generate_flows/1,up/1]).
 
--export([ixia_test/0]).
+-export([ixia/0]).
 
 -export([collect_blaze_statistics/0,get_stats/0,reset_stats/0]).
 
@@ -188,7 +188,7 @@ up(NumFlows) ->
 		])
 	).
 
-ixia_test() ->
+ixia() ->
 	io:format(">>>> IXIA marker\n", []),
 	collect_blaze_statistics(),
 	{GcRuns0,GcReclaimed0,_} = statistics(garbage_collection),

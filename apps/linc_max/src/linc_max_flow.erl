@@ -1,7 +1,8 @@
 -module(linc_max_flow).
 -export([
 	init/0, mod/1, table_mod/1, name/1, tick/0,
-	stats_reply/1, aggregate_stats_reply/1,table_stats_reply/1
+	stats_reply/1, aggregate_stats_reply/1,table_stats_reply/1,
+	generate/2
 ]).
 
 -include_lib("of_protocol/include/of_protocol.hrl").

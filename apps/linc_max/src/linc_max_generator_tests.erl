@@ -277,18 +277,18 @@ port_info(Matches, PortInfo, Expected) ->
 	AnyFrame = pkt:encapsulate([#ether{},#ipv4{},#udp{}]),
 	AnyMeta = <<0:64>>,
 	Ents = [flow_entry(Matches)],
-	linc_max_generator:update_flow_table(flow42, Ents),
+	linc_max_flow:generate(42, Ents),
 	R = linc_max_preparser:inject(AnyFrame, AnyMeta, PortInfo,
-								  #fast_actions{}, flow42, #blaze{}),
+								  #fast_actions{}, flow_42, #blaze{}),
 	expected(Expected, R).
 
 metadata(Matches, Meta, Expected) ->
 	AnyFrame = pkt:encapsulate([#ether{},#ipv4{},#udp{}]),
 	AnyPortInfo = {1,2,undefined},
 	Ents = [flow_entry(Matches)],
-	linc_max_generator:update_flow_table(flow42, Ents),
+	linc_max_flow:generate(42, Ents),
 	R = linc_max_preparser:inject(AnyFrame, Meta, AnyPortInfo,
-								  #fast_actions{}, flow42, #blaze{}),
+								  #fast_actions{}, flow_42, #blaze{}),
 	expected(Expected, R).
 
 packet(Pkt, Matches, Expected) ->
@@ -296,9 +296,9 @@ packet(Pkt, Matches, Expected) ->
 	AnyPortInfo = {1,2,undefined},
 	Frame = pkt:encapsulate(Pkt),
 	Ents = [flow_entry(Matches)],
-	linc_max_generator:update_flow_table(flow42, Ents),
+	linc_max_flow:generate(42, Ents),
 	R = linc_max_preparser:inject(Frame, AnyMeta, AnyPortInfo,
-								  #fast_actions{}, flow42, #blaze{}),
+								  #fast_actions{}, flow_42, #blaze{}),
 	expected(Expected, R).
 
 flow_entry(Matches) ->
