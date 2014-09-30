@@ -3,26 +3,31 @@
 LINCX Github repo attached to [Travis CI](https://travis-ci.org) to 
 trigger CI sequence on every commit. Full 
 [Ryu](https://github.com/osrg/ryu) OpenFlow test suite and LINCX EUnit 
-suite are executed. 
+suite are executed on dedicated box erlangonxen.org. Travis used only for commit hooks and test results viewing.
 
 ### Results
 
-CI results can be viewed here - 
-https://travis-ci.org/cloudozer/lincx/builds.
-Summary of each CI run printed at end of log and for Ryu test looks 
-like:
+For every build Travis send email notification to commit author and to all
+recipients listed in .travis.yml.
 
-```
-OK(934) / ERROR(57)
-```
+<img src="http://i.imgur.com/EfYWupE.png" width="75%"/>
 
-for EUnit tests:
+More detailed results can be viewed by clicking link in above email.
+Summary of each CI run printed at end of log:
 
-```
- All 766 tests passed.
-```
+<img src="http://i.imgur.com/gKEkt6C.png" width="75%"/>
 
-### TODO
+scroll to the end..
+
+<img src="http://i.imgur.com/lx91H3m.png" width="75%"/>
+
+Ryu summary designated in first red rectangle, EUnit summary in the second one.
+
+### Possible imporovements
+
+Generate pretty markdown table with build statistics.
+
+### More improvements
 
 Throw away travis-ci.org and implement CI through ling_builder 
 extension, something like
