@@ -12,7 +12,7 @@ recipients listed in .travis.yml.
 
 <img src="http://i.imgur.com/EfYWupE.png" width="75%"/>
 
-More detailed results can be viewed by clicking link in above email.
+More detailed results can be viewed by clicking link in above email (e.g. https://travis-ci.org/cloudozer/lincx/builds/36663202).
 Summary of each CI run printed at end of log:
 
 <img src="http://i.imgur.com/gKEkt6C.png" width="75%"/>
