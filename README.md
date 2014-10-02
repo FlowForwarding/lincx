@@ -1,5 +1,9 @@
 # LINCX - OpenFlow software switch
 
+#### Build Status
+
+[![Build Status](https://api.travis-ci.org/cloudozer/lincx.png)](https://travis-ci.org/cloudozer/lincx)
+
 ## What is LINCX?
 
 LINCX is a pure OpenFlow software switch written in Erlang. It runs within a
