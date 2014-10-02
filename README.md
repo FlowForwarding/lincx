@@ -9,7 +9,7 @@
 LINCX is a pure OpenFlow software switch written in Erlang. It runs within a
 separate domain under Xen hypervisor using LING (erlangonxen.org).
 
-LINCX is a new faster version of [LINC-SWitch][oldlinc].
+LINCX is a new faster version of [LINC-Switch][oldlinc].
 
 ### Features
 
