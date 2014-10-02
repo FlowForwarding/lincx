@@ -2,7 +2,7 @@
 
 #### Build Status
 
-[![Build Status](https://api.travis-ci.org/cloudozer/lincx.png)](https://travis-ci.org/cloudozer/lincx)
+[![Build Status](https://api.travis-ci.org/cloudozer/lincx.svg)](https://travis-ci.org/cloudozer/lincx)
 
 ## What is LINCX?
 
