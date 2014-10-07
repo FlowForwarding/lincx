@@ -149,8 +149,10 @@
 
 
 -record(flow_entry_counts, {
-	rx_packets,
-	rx_bytes
+	packets,      % Received packets
+	bytes,        % Received bytes
+	prev_packets, % Received packets on previous tick (one second ago)
+	idle_secs     % How many seconds there was no packets at all
 }).
 
 -record(flow_table_counts, {

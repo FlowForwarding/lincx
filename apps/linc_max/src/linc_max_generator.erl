@@ -7,7 +7,7 @@
 -include("linc_max.hrl").
 -include("fast_path.hrl").
 
-flow_table_forms(TabName, FlowEnts, Counts) ->
+flow_table_forms(TabName, FlowEnts, TableCounts) ->
 
 	%%
 	%% module(flow_table_0).
@@ -21,15 +21,15 @@ flow_table_forms(TabName, FlowEnts, Counts) ->
 	[
 		{attribute,0,module,TabName},
 		{attribute,0,export,[{match,MatchArity},{entries,0},{counts,0}]},
-		{function,0,match,MatchArity,clauses(FlowEnts, Counts)},
+		{function,0,match,MatchArity,clauses(FlowEnts, TableCounts)},
 		{function,0,entries,0,[{clause,0,[],[],[ast(FlowEnts)]}]},
-		{function,0,counts,0,[{clause,0,[],[],[ast(Counts)]}]}
+		{function,0,counts,0,[{clause,0,[],[],[ast(TableCounts)]}]}
 	].
 
-clauses(FlowEnts, Counts) ->
-	clauses(FlowEnts, [], Counts).
+clauses(FlowEnts, TableCounts) ->
+	clauses(FlowEnts, [], TableCounts).
 
-clauses([], Acc, Counts) ->
+clauses([], Acc, TableCounts) ->
 
 	%%
 	%% OFv1.4: Every flow table must support a table-miss flow entry to process
@@ -38,43 +38,63 @@ clauses([], Acc, Counts) ->
 	%% match(_, _, _, ...) -> erlang:update_counter(integer()), miss.
 	%%
 
-	#flow_table_counts{packet_lookups = Lookups} = Counts,
-
-	Call = {call,0,{remote,0,{atom,0,erlang},{atom,0,update_counter}},[
-		{integer,0,Lookups}
-	]},
-
 	Wildcards = [{var,0,'_'} || _ <- match_arguments()],
-	Miss = {clause,0,Wildcards,[],[Call, {atom,0,miss}]},
+	Miss = {clause,0,Wildcards,[],[updated_lookup_count(TableCounts), {atom,0,miss}]},
 	lists:reverse([Miss|Acc]);
 
 
 clauses(
-	[#flow_entry{fields =Matches, instructions =InstrList}|FlowEnts],
-	Acc, Counts
+	[#flow_entry{fields =Matches, instructions =Ins, counts =EntryCounts}|FlowEnts],
+	Acc, TableCounts
 ) ->
-	case catch build_patterns(Matches, InstrList) of
+	case catch build_patterns(Matches, Ins) of
 	nomatch ->
 		%% no chance of a match, suppress the clause
-		clauses(FlowEnts, Acc, Counts);
+		clauses(FlowEnts, Acc, TableCounts);
 
 	{'EXIT',Reason} ->
 		erlang:error(Reason);
 
 	Patterns when is_list(Patterns) ->
-		Clause = {clause,0,Patterns,[],body(InstrList)},
-		clauses(FlowEnts, [Clause|Acc], Counts);
+		Clause = {clause,0,Patterns,[],
+			updated_counts(TableCounts, EntryCounts) ++ body(Ins)
+		},
+		clauses(FlowEnts, [Clause|Acc], TableCounts);
 
 	{Patterns,Guard} ->
-		Clause = {clause,0,Patterns,Guard,body(InstrList)},
-		clauses(FlowEnts, [Clause|Acc], Counts)
+		Clause = {clause,0,Patterns,Guard,
+			updated_counts(TableCounts, EntryCounts) ++ body(Ins)
+		},
+		clauses(FlowEnts, [Clause|Acc], TableCounts)
 	end.
 
-build_patterns(Matches, InstrList) ->
+updated_counts(
+	#flow_table_counts{packet_lookups = Lookups, packet_matches = Matches},
+	#flow_entry_counts{packets = Packets, bytes = Bytes}
+) ->
+	%% erlang:update_counter(packet_lookups),
+	%% erlang:update_counter(packet_matches),
+	%% erlang:update_counter(packets),
+	%% erlang:update_counter(bytes, erlang:byte_size(Packet))
+	[
+		{call,0,{remote,0,{atom,0,erlang},{atom,0,update_counter}},[{integer,0,Lookups}]},
+		{call,0,{remote,0,{atom,0,erlang},{atom,0,update_counter}},[{integer,0,Matches}]},
+		{call,0,{remote,0,{atom,0,erlang},{atom,0,update_counter}},[{integer,0,Packets}]},
+		{call,0,{remote,0,{atom,0,erlang},{atom,0,update_counter}},[
+			{integer,0,Bytes},
+			{call,0,{remote,0,{atom,0,erlang},{atom,0,byte_size}},[{var,0,var_name(packet)}]}
+		]}
+	].
+
+updated_lookup_count(#flow_table_counts{packet_lookups = Lookups}) ->
+	%% erlang:update_counter(packet_lookups)
+	{call,0,{remote,0,{atom,0,erlang},{atom,0,update_counter}},[{integer,0,Lookups}]}.
+
+build_patterns(Matches, Ins) ->
 	%% openflow_basic class only, enforced elsewhere
 
 	HasGoto = lists:any(fun(#ofp_instruction_goto_table{}) -> true;
-					(_) -> false end, InstrList),
+					(_) -> false end, Ins),
 
 	Ps = [pat(M) || M <- Matches],
 	%% Ps :: [{Arg,[{Start,Len,Value}]} | {Arg,[Value]}
@@ -352,53 +372,36 @@ bin_elems(S, [{S,L,V}|Zs], Acc) ->
 
 %% Instruction compilation -----------------------------------------------------
 
-%-record(ofp_instruction_apply_actions,{seq = 2,actions}).
-%-record(ofp_instruction_clear_actions,{seq = 3}).
-%-record(ofp_instruction_experimenter,{seq = 7,experimenter,data = <<>>}).
-%-record(ofp_instruction_goto_table,{seq = 6,table_id}).
-%-record(ofp_instruction_meter,{seq = 1,meter_id}).
-%-record(ofp_instruction_write_actions,{seq = 4,actions}).
-%-record(ofp_instruction_write_metadata,{seq = 5,
-%                                        metadata,
-%                                        metadata_mask = <<1:64>>}).
-
-body(InstrList) ->
-	body(InstrList,
-		undefined,	%% MeterInstr
-		undefined,	%% ApplyInstr
-		undefined,	%% ClearWriteInstr
-		undefined,	%% MetadataInstr
+body(Ins) ->
+	body(Ins,
+		undefined,	%% Meter
+		undefined,	%% Apply
+		undefined,	%% Clear
+		undefined,	%% Write
+		undefined,	%% Metadata
 		undefined,	%% TunnelId
-		undefined).	%% GotoInstr
+		undefined).	%% Goto
 
-body([], MeterInstr, ApplyInstr, ClearWriteInstr, MetadataInstr, TunnelId, GotoInstr) ->
-	compile_body(MeterInstr, ApplyInstr, ClearWriteInstr, MetadataInstr, TunnelId, GotoInstr);
-body([#ofp_instruction_meter{meter_id =Id}|InstrList],
-		_MeterInstr, ApplyInstr, ClearWriteInstr, MetadataInstr, TunnelId, GotoInstr) ->
-	body(InstrList, {meter,Id}, ApplyInstr, ClearWriteInstr, MetadataInstr, TunnelId, GotoInstr);
-body([#ofp_instruction_apply_actions{actions =As}|InstrList],
-		MeterInstr, _ApplyInstr, ClearWriteInstr, MetadataInstr, _TunnelId, GotoInstr) ->
-	{ActionList, TunnelId} = action_list(As),
-	body(InstrList, MeterInstr, ActionList, ClearWriteInstr, MetadataInstr, TunnelId, GotoInstr);
-body([#ofp_instruction_clear_actions{}|InstrList],
-		MeterInstr, ApplyInstr, undefined, MetadataInstr, TunnelId, GotoInstr) ->
-	body(InstrList, MeterInstr, ApplyInstr, clear, MetadataInstr, TunnelId, GotoInstr);
-body([#ofp_instruction_write_actions{actions =Actions}|InstrList],
-		MeterInstr, ApplyInstr, clear, MetadataInstr, TunnelId, GotoInstr) ->
-	body(InstrList, MeterInstr, ApplyInstr, {clear,Actions}, MetadataInstr, TunnelId, GotoInstr);
-body([#ofp_instruction_write_actions{actions =Actions}|InstrList],
-		MeterInstr, ApplyInstr, _ClearWriteInstr, MetadataInstr, TunnelId, GotoInstr) ->
-	body(InstrList, MeterInstr, ApplyInstr, {write,Actions}, MetadataInstr, TunnelId, GotoInstr);
-body([#ofp_instruction_write_metadata{metadata = <<Value:64>>,
-									  metadata_mask = <<Mask:64>>}|InstrList],
-		MeterInstr, ApplyInstr, ClearWriteInstr, _MetadataInstr, TunnelId, GotoInstr) ->
-	body(InstrList, MeterInstr, ApplyInstr, ClearWriteInstr, {metadata,Value,Mask}, TunnelId, GotoInstr);
-body([#ofp_instruction_goto_table{table_id =Id}|InstrList],
-		MeterInstr, ApplyInstr, ClearWriteInstr, MetadataInstr, TunnelId, _GotoInstr) ->
-	body(InstrList, MeterInstr, ApplyInstr, ClearWriteInstr, MetadataInstr, TunnelId, {goto,Id}).
+body(Ins, Meter, Apply, Clear, Write, Metadata, TunnelId, Goto) ->
+	case Ins of
+		[] ->
+			compile_body(Meter, Apply, Clear, Write, Metadata, TunnelId, Goto);
+		[#ofp_instruction_meter{meter_id=Id} | Rest] ->
+			body(Rest, {meter, Id}, Apply, Clear, Write, Metadata, TunnelId, Goto);
+		[#ofp_instruction_apply_actions{actions =As}|Rest] ->
+			{ActionList, Id} = action_list(As),
+			body(Rest, Meter, ActionList, Clear, Write, Metadata, Id, Goto);
+		[#ofp_instruction_clear_actions{}|Rest] ->
+			body(Rest, Meter, Apply, clear, Write, Metadata, TunnelId, Goto);
+		[#ofp_instruction_write_actions{actions =Actions}|Rest] ->
+			body(Rest, Meter, Apply, Clear, Actions, Metadata, TunnelId, Goto);
+		[#ofp_instruction_write_metadata{metadata = <<Value:64>>, metadata_mask = <<Mask:64>>}|Rest] ->
+			body(Rest, Meter, Apply, Clear, Write, {metadata,Value,Mask}, TunnelId, Goto);
+		[#ofp_instruction_goto_table{table_id =Id}|Rest] ->
+			body(Rest, Meter, Apply, Clear, Write, Metadata, TunnelId, {goto,Id})
+	end.
 
-
-compile_body(MeterInstr, undefined, ClearWriteInstr, _MetadataInstr, _TunnelId, undefined) ->
+compile_body(Meter, undefined, Clear, Write, _Metadata, _TunnelId, undefined) ->
 	%%
 	%% No goto table - return (updated) action set
 	%%
@@ -406,11 +409,11 @@ compile_body(MeterInstr, undefined, ClearWriteInstr, _MetadataInstr, _TunnelId, 
 	%%		{do,Packet,Actions}.
 	%%
 	Goto = [{tuple,0,[
-		{atom,0,do}, {var,0,var_name(packet)},updated_actions(ClearWriteInstr)]
+		{atom,0,do}, {var,0,var_name(packet)},updated_actions(Clear, Write)]
 	}],
-	compile_meter(MeterInstr, Goto);
+	compile_meter(Meter, Goto);
 
-compile_body(MeterInstr, ActionList, ClearWriteInstr, _MetadataInstr, _TunnelId, undefined) ->
+compile_body(Meter, ActionList, Clear, Write, _Metadata, _TunnelId, undefined) ->
 	%%
 	%% No goto table - apply action list and return (updated) action set
 	%%
@@ -419,11 +422,11 @@ compile_body(MeterInstr, ActionList, ClearWriteInstr, _MetadataInstr, _TunnelId,
 	%%
 
 	Return = [{tuple,0,[
-		{atom,0,do}, ActionList, updated_actions(ClearWriteInstr)]
+		{atom,0,do}, ActionList, updated_actions(Clear, Write)]
 	}],
-	compile_meter(MeterInstr, Return);
+	compile_meter(Meter, Return);
 
-compile_body(MeterInstr, undefined, ClearWriteInstr, MetadataInstr, TunnelId, {goto,Id}) ->
+compile_body(Meter, undefined, Clear, Write, Metadata, TunnelId, {goto,Id}) ->
 	%%
 	%% match(...) ->
 	%%		flow_table_1:match(...).
@@ -436,9 +439,9 @@ compile_body(MeterInstr, undefined, ClearWriteInstr, MetadataInstr, TunnelId, {g
 		lists:map(
 			fun
 				(actions) ->
-					updated_actions(ClearWriteInstr);
+					updated_actions(Clear, Write);
 				(metadata) ->
-					updated_metadata(MetadataInstr);
+					updated_metadata(Metadata);
 				(tunnel_id) ->
 					updated_tunnel_id(TunnelId);
 				(A) ->
@@ -447,11 +450,10 @@ compile_body(MeterInstr, undefined, ClearWriteInstr, MetadataInstr, TunnelId, {g
 			match_arguments()
 	),
 
-	Call = {call,0,{remote,0,{atom,0,TabName},{atom,0,match}},As},
-	Goto = [Call],
-	compile_meter(MeterInstr, Goto);
+	Call = [{call,0,{remote,0,{atom,0,TabName},{atom,0,match}},As}],
+	compile_meter(Meter, Call);
 
-compile_body(MeterInstr, ActionList, ClearWriteInstr, MetadataInstr, TunnelId, {goto,Id}) ->
+compile_body(Meter, ActionList, Clear, Write, Metadata, TunnelId, {goto,Id}) ->
 	%%
 	%% Apply action list to packet, update action set and metadata
 	%% and reinject them to preparser from next table
@@ -470,16 +472,16 @@ compile_body(MeterInstr, ActionList, ClearWriteInstr, MetadataInstr, TunnelId, {
 	TabName = linc_max_flow:name(Id),
 
 	Goto =
-		{call,0,{remote,0,{atom,0,linc_max_preparser},{atom,0,inject}},[
+		[{call,0,{remote,0,{atom,0,linc_max_preparser},{atom,0,inject}},[
 			ActionList,
-			updated_metadata(MetadataInstr),
+			updated_metadata(Metadata),
 			{tuple,0,[{var,0,'InPort'},{var,0,'InPhyPort'},updated_tunnel_id(TunnelId)]},
-			updated_actions(ClearWriteInstr),
+			updated_actions(Clear, Write),
 			{atom,0,TabName},
 			{var,0,var_name(blaze)}
-		]},
+		]}],
 
-	compile_meter(MeterInstr, [Goto]).
+	compile_meter(Meter, Goto).
 
 compile_meter(undefined, Goto) ->
 	Goto;
@@ -512,11 +514,9 @@ updated_metadata({_,Value,Mask}) ->
 		{var,0,var_name(metadata)},{integer,0,(bnot Mask)},{integer,0,Value}
 	]}.
 
-updated_actions(undefined) ->
+updated_actions(undefined, undefined) ->
 	{var,0,var_name(actions)};
-updated_actions(clear) -> %% plugfest5
-	updated_actions({clear, []});
-updated_actions({clear,Specs}) ->
+updated_actions(clear, Specs) ->
 	Actions = action_cast(Specs, []),
 	{_, Tuple} = action_tuple(
 		fast_actions, Actions,
@@ -529,7 +529,7 @@ updated_actions({clear,Specs}) ->
 	),
 
 	Tuple;
-updated_actions({write,Specs}) ->
+updated_actions(undefined, Specs) ->
 	Actions = action_cast(Specs, []),
 	{_, OldTuple} = action_tuple(
 		fast_actions, Actions,

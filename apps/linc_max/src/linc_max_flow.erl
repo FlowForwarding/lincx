@@ -2,7 +2,7 @@
 -export([
 	init/0, mod/1, table_mod/1, name/1, tick/0,
 	stats_reply/1, aggregate_stats_reply/1,table_stats_reply/1,
-	generate/2
+	generate/2, new_entry_counts/0
 ]).
 
 -include_lib("of_protocol/include/of_protocol.hrl").
@@ -18,6 +18,9 @@ init() ->
 %% In version 1.3 This doesn't do anything anymore.
 table_mod(#ofp_table_mod{}) ->
 	ok.
+
+tick() ->
+	delete(all, [match_expired()]).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%                          Flow modifications                       %%
@@ -68,13 +71,13 @@ mod(#ofp_flow_mod{
 				]
 			);
 		delete_strict ->
-			delete(TableId, Flags, [
+			delete(TableId, [
 				match_cookie(Cookie, CookieMask),
 				match_out(OutPort, OutGroup),
 				match_strict(Priority, Fields)
 			]);
 		delete ->
-			delete(TableId, Flags, [
+			delete(TableId, [
 				match_cookie(Cookie, CookieMask),
 				match_out(OutPort, OutGroup),
 				match_generic(Fields)
@@ -123,27 +126,34 @@ add(Cookie, Priority, Fields, Instructions, Flags, IdleTimeout, HardTimeout) ->
 	end.
 
 modify(Instructions, Flags) ->
-	fun(MatchedEntries) ->
+	fun(Entries) ->
 		[
 			E#flow_entry{
 				instructions = Instructions,
 				counts = reset_counts(C, Flags)
-			} || #flow_entry{counts = C} = E <- MatchedEntries
+			} || #flow_entry{counts = C} = E <- Entries
 		]
 	end.
 
-delete(Table, Flags, Filters) ->
+delete(Table, Filters) ->
 	lists:foreach(
 		fun(Id) ->
 			{Delete, Keep} = match(partition, Id, Filters),
-			[release_counts(C) || #flow_entry{counts = C} <- Delete],
-			case lists:member(send_flow_rem, Flags) of
-				true ->
-					[send_flow_removed(Id, D, delete) || D <- Delete];
-				_ ->
-					ok
-			end,
-			generate(Id, Keep)
+
+			generate(Id, Keep),
+
+			lists:foreach(
+				fun(#flow_entry{counts = C, flags = F} = E) ->
+					release_counts(C),
+					case lists:member(send_flow_rem, F) of
+						true ->
+							send_flow_removed(Id, E, delete);
+						_ ->
+							ok
+					end
+				end,
+				Delete
+			)
 		end,
 		enum(Table)
 	).
@@ -163,8 +173,8 @@ send_flow_removed(
 ) ->
 	{Sec, NSec} = duration(InstallTime),
 	#flow_entry_counts{
-		rx_packets = RxPackets,
-		rx_bytes = RxBytes
+		packets = Packets,
+		bytes = Bytes
 	} = count(Counts),
 
 	linc_logic:send_to_controllers(
@@ -180,8 +190,8 @@ send_flow_removed(
 				duration_nsec = NSec,
 				idle_timeout = HardTimeout,
 				hard_timeout = IdleTimeout,
-				packet_count = RxPackets,
-				byte_count = RxBytes,
+				packet_count = Packets,
+				byte_count = Bytes,
 				match = #ofp_match{fields = Fields}
 			}
 		}
@@ -195,6 +205,8 @@ stats(Id, #flow_entry{
 	priority = Priority,
 	cookie = Cookie,
 	install_time = InstallTime,
+	hard_timeout = HardTimeout,
+	idle_timeout = IdleTimeout,
 	flags = Flags,
 	fields = Fields,
 	instructions = Instructions,
@@ -202,18 +214,18 @@ stats(Id, #flow_entry{
 }) ->
 	{Sec, NSec} = duration(InstallTime),
 	#flow_entry_counts{
-		rx_packets = RxPackets,
-		rx_bytes = RxBytes
+		packets = Packets,
+		bytes = Bytes
 	} = count(Counts),
 
 	#ofp_flow_stats{
 		table_id = Id,
 		duration_sec = Sec,
 		duration_nsec = NSec,
-		idle_timeout = 0,
-		hard_timeout = 0,
-		packet_count = RxPackets,
-		byte_count = RxBytes,
+		idle_timeout = IdleTimeout,
+		hard_timeout = HardTimeout,
+		packet_count = Packets,
+		byte_count = Bytes,
 		priority = Priority,
 		cookie = Cookie,
 		flags = Flags,
@@ -264,25 +276,28 @@ aggregate_stats_reply(
 			match_generic(Fields)
 		]),
 
-	{Packets, Bytes, Flows} =
-		lists:foldl(
-			fun(#flow_entry{counts = Counts}, {Packets, Bytes, Flows}) ->
-				#flow_entry_counts{
-					rx_packets = RxPackets,
-					rx_bytes = RxBytes
-				} = count(Counts),
+	lists:foldl(
+		fun(#flow_entry{counts = Counts},
+			#ofp_aggregate_stats_reply{
+				packet_count = PacketCount,
+				byte_count = ByteCount,
+				flow_count = FlowCount
+			}
+		) ->
+			#flow_entry_counts{
+				packets = Packets,
+				bytes = Bytes
+			} = count(Counts),
 
-				{Packets + RxPackets, Bytes + RxBytes, Flows + 1}
-			end,
-			{0, 0, 0},
-			Entries
-		),
-
-	#ofp_aggregate_stats_reply{
-		packet_count = Packets,
-		byte_count = Bytes,
-		flow_count = Flows
-	}.
+			#ofp_aggregate_stats_reply{
+				packet_count = PacketCount + Packets,
+				byte_count = ByteCount + Bytes,
+				flow_count = FlowCount + 1
+			}
+		end,
+		#ofp_aggregate_stats_reply{},
+		Entries
+	).
 
 table_stats_reply(#ofp_table_stats_request{}) ->
 	TableStats =
@@ -586,6 +601,34 @@ match(ListsFunction, Table, Filters) ->
 		entries(Table)
 	).
 
+match_expired() ->
+	Now = os:timestamp(),
+	fun(#flow_entry{
+			install_time = InstallTime,
+			hard_timeout = HardTimeout,
+			idle_timeout = IdleTimeout,
+			counts = #flow_entry_counts{
+				packets      = Packets,
+				prev_packets = PrevPackets,
+				idle_secs    = IdleSecs
+			}
+		}
+	) ->
+		case erlang:read_counter(Packets) - erlang:read_counter(PrevPackets) of
+			0 ->
+				% increment idle seconds count
+				erlang:update_counter(IdleSecs);
+			Diff ->
+				% cheat counters API to reset idle seconds (evil grin)
+				erlang:update_counter(IdleSecs, 2 bsl 64 - erlang:read_counter(IdleSecs)),
+				% update prev_packets for the next tick
+				erlang:update_counter(PrevPackets, Diff)
+		end,
+
+		timer:now_diff(Now, InstallTime) > HardTimeout orelse
+			erlang:read_counter(IdleSecs) > IdleTimeout
+	end.
+
 match_out(Port, Group) ->
 	fun(#flow_entry{instructions = Instructions}) ->
 		match_out(Port, Group, Instructions)
@@ -666,8 +709,10 @@ is_more_specific(_, _) ->
 
 new_entry_counts() ->
 	#flow_entry_counts{
-		rx_packets = erlang:new_counter(),
-		rx_bytes = erlang:new_counter()
+		packets      = erlang:new_counter(),
+		bytes        = erlang:new_counter(),
+		prev_packets = erlang:new_counter(),
+		idle_secs    = erlang:new_counter()
 	}.
 
 new_table_counts() ->
@@ -676,23 +721,37 @@ new_table_counts() ->
 		packet_matches = erlang:new_counter()
 	}.
 
-release_counts(#flow_entry_counts{rx_packets = RxPackets, rx_bytes = RxBytes}) ->
-	erlang:release_counter(RxPackets),
-	erlang:release_counter(RxBytes).
+release_counts(
+	#flow_entry_counts{
+		packets      = Packets,
+		bytes        = Bytes,
+		prev_packets = PrevPackets,
+		idle_secs    = IdleSecs
+	}
+) ->
+	erlang:release_counter(Packets),
+	erlang:release_counter(Bytes),
+	erlang:release_counter(PrevPackets),
+	erlang:release_counter(IdleSecs).
 
-reset_counts(#flow_entry_counts{} = Counts, Flags) ->
+reset_counts(#flow_entry_counts{prev_packets = PrevPackets, idle_secs = IdleSecs} = Counts, Flags) ->
 	case lists:member(reset_counts, Flags) of
 		true ->
 			release_counts(Counts),
 			new_entry_counts();
 		false ->
-			Counts
+			erlang:release_counter(PrevPackets),
+			erlang:release_counter(IdleSecs),
+			Counts#flow_entry_counts{
+				prev_packets = erlang:new_counter(),
+				idle_secs = erlang:new_counter()
+			}
 	end.
 
-count(#flow_entry_counts{rx_packets = RxPackets, rx_bytes = RxBytes}) ->
+count(#flow_entry_counts{packets = Packets, bytes = Bytes}) ->
 	#flow_entry_counts{
-		rx_packets = erlang:read_counter(RxPackets),
-		rx_bytes = erlang:read_counter(RxBytes)
+		packets = erlang:read_counter(Packets),
+		bytes = erlang:read_counter(Bytes)
 	};
 count(#flow_table_counts{packet_lookups = Lookups, packet_matches = Matches}) ->
 	#flow_table_counts{
@@ -774,7 +833,6 @@ generate(TableId, Entries) ->
 
 	%[io:format(erl_pp:form(F)) || F <- Forms],
 	{ok,Name,Bin} = compile:forms(Forms, [report_errors]),
-	%io:format("Compiled\n"),
 
 	case erlang:check_old_code(Name) of
 		true ->
@@ -785,21 +843,5 @@ generate(TableId, Entries) ->
 
 	{module,_} = code:load_binary(Name, "generated", Bin),
 	ok.
-
-tick() ->
-	Now = os:timestamp(),
-	lists:foreach(
-		fun(TableId) ->
-			{_Expired, Keep} =
-				lists:partition(
-					fun(#flow_entry{install_time = InstallTime, hard_timeout = HardTimeout}) ->
-						timer:now_diff(Now, InstallTime) > HardTimeout
-					end,
-					entries(TableId)
-				),
-			generate(TableId, Keep)
-		end,
-		enum(all)
-	).
 
 %%EOF

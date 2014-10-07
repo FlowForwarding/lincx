@@ -315,7 +315,8 @@ flow_entry(Matches) ->
 				end,
 				Matches
 			),
-		instructions = []
+		instructions = [],
+		counts = linc_max_flow:new_entry_counts()
 	}.
 
 %% generated a set of values for masked matches
