@@ -88,14 +88,26 @@ update(Method, TableId, Priority, Fields, Instructions, Filters) ->
 	try
 		Entries = entries(TableId),
 
-		[check_support(F) || F <- Fields],
-		[check_mask(F) || F <- Fields],
-		[check_value(F) || F <- Fields],
 		check_dup(Fields),
 		check_prereq(Fields),
 		check_overlap(Fields, Entries, Priority),
 		check_occurrences(Instructions),
-		[check_instruction(I, TableId, Fields) || I <- Instructions],
+
+		lists:foreach(
+			fun(F) ->
+				check_support(F),
+				check_mask(F),
+				check_value(F)
+			end,
+			Fields
+		),
+
+		lists:foreach(
+			fun(I) ->
+				check_instruction(I, TableId, Fields)
+			end,
+			Instructions
+		),
 
 		{Matched, Keep} = match(partition, TableId, Filters),
 
