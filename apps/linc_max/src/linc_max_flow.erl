@@ -362,22 +362,30 @@ check_instruction(Instruction, TableId, Fields) ->
 	end.
 
 check_action(Action, Fields) ->
+	IfThrow =
+		fun
+			(true, Error) ->
+				throw(Error);
+			(false, _) ->
+				ok
+		end,
+
 	case Action of
 		#ofp_action_output{port=controller,max_len=MaxLen} ->
 			%% no_buffer represents OFPCML_NO_BUFFER (0xFFFF)
-			if_throw(
+			IfThrow(
 				MaxLen /= no_buffer andalso MaxLen > ?OFPCML_MAX,
 				{bad_action,bad_argument}
 			);
 		#ofp_action_output{port=Port} ->
 			SwitchId = 0,
-			if_throw(
+			IfThrow(
 				not linc_max_port:is_valid(SwitchId, Port),
 				{bad_action,bad_out_port}
 			);
 		#ofp_action_group{group_id=GroupId} ->
 			SwitchId = 0,
-			if_throw(
+			IfThrow(
 				not linc_max_groups:is_valid(SwitchId, GroupId),
 				{bad_action,bad_out_group}
 			);
@@ -396,21 +404,21 @@ check_action(Action, Fields) ->
 		#ofp_action_copy_ttl_in{} ->
 			ok;
 		#ofp_action_push_vlan{ethertype=Ether} ->
-			if_throw(
+			IfThrow(
 				Ether /= 16#8100 andalso Ether /= 16#88A8,
 				{bad_action,bad_argument}
 			);
 		#ofp_action_pop_vlan{} ->
 			ok;
 		#ofp_action_push_mpls{ethertype=Ether} ->
-			if_throw(
+			IfThrow(
 				Ether /= 16#8847 andalso Ether /= 16#8848,
 				{bad_action,bad_argument}
 			);
 		#ofp_action_pop_mpls{} ->
 			ok;
 		#ofp_action_push_pbb{ethertype=Ether} ->
-			if_throw(
+			IfThrow(
 				Ether /= 16#88E7,
 				{bad_action,bad_argument}
 			);
@@ -768,11 +776,6 @@ duration(InstallTime) ->
 	Sec = Duration div 1000000,
 	NSec = Duration rem 1000000 * 1000,
 	{Sec, NSec}.
-
-if_throw(true, Error) ->
-	throw(Error);
-if_throw(false, _) ->
-	ok.
 
 match_mask(Bin1, Bin2, MaskBin) ->
 	Bits = bit_size(Bin1),
