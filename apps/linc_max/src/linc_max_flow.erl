@@ -842,7 +842,7 @@ generate(TableId, Entries) ->
 
 	Forms = linc_max_generator:flow_table_forms(
 		Name,
-		lists:keysort(#flow_entry.priority, Entries),
+		lists:reverse(lists:keysort(#flow_entry.priority, Entries)),
 		Counts
 	),
 
