@@ -30,7 +30,8 @@ include LINGConfig.mk
 
 lincx:
 	@./rebar co skip_deps=true
-	@./rebar ling-build-image
+#	@./rebar ling-build-image
+	@./railing
 
 DOMCONF := domain_config
 
