@@ -1,17 +1,3 @@
-### OpenFlow 1.3 conformance tests with Ryu
-#### History
-
-  Date     | OK  | ERROR
----------- | --- | ------
-16.06.2014 | 301 | 678
-20.06.2014 | 317 | 674
-27.06.2014 | 365 | 626
-04.06.2014 | 497 | 494
-08.06.2014 | 651 | 340
-11.06.2014 | 905 | 86
-14.08.2014 | 932 | 59
-
-#### Current state 
 
 ACTION: 
 
@@ -51,8 +37,8 @@ ACTION: SET_FIELD:
 | TUNNEL_ID                      | ✓     | ✓     | ✓     |
 | VLAN_VID                       | ✓     | ✓     | ✓     |
 | VLAN_PCP                       | ✓     | ✓     | ✓     |
-| MPLS_LABEL                     | -     | ✓     | ✓     |
-| MPLS_TC                        | ✓     | -     | ✓     |
+| MPLS_LABEL                     | ✓     | ✓     | ✓     |
+| MPLS_TC                        | ✓     | ✓     | ✓     |
 | MPLS_BOS                       | ✓     | ✓     | ✓     |
 | PBB_ISID                       | ✓     | ✓     | ✓     |
 
@@ -191,8 +177,5 @@ GROUP:
 
 | Test                           |IPv4   |IPv6   |ARP    |
 |--------------------------------|-------|-------|-------|
-| ALL                            | ✓     | ✓     | -     |
-| SELECT_Ether                   | ✓     | ✓     | -     |
-| SELECT_IP                      | ✓     | ✓     | ✓     |
-| SELECT_Weight_Ether            | ✓     | ✓     | -     |
-| SELECT_Weight_IP               | ✓     | ✓     | ✓     |
+escript: exception error: no function clause matching 
+                 erl_eval:'-inside-an-interpreted-fun-'("..........\r",[]) 
