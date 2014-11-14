@@ -11,6 +11,7 @@
 -export([apply_list/3]).
 %% these functions are used in linc_max_generator and always expected to return a binary
 -export([
+	packet_in/2,
 	output/3,
 	set_queue/3,
 	group/3,
@@ -428,12 +429,26 @@ apply_list([copy_ttl_inwards|ActionList], Frame, Blaze) ->
 	apply_list(ActionList, Frame1, Blaze).
 
 %%------------------------------------------------------------------------------
+packet_in(Frame, InPort) ->
+	%% TODO: fill all fields
+	PacketIn = #ofp_packet_in{
+		reason = action,
+		table_id = 0,
+		match = #ofp_match{fields = [
+			#ofp_field{name = in_port, value = <<InPort>>}
+		]},
+		data = Frame
+	},
+	SwitchId = 0,
+    linc_logic:send_to_controllers(SwitchId, #ofp_message{body = PacketIn}),
+    Frame.
 
 output(Frame, controller, _Blaze) ->
 	%% 
 	%% This is a quick-n-dirty implementation for Packet-In messages. It follows
 	%% the code of linc_us4 without much thought. Require a good review.
 	%%
+
 	SwitchId = 0,	%%XXX
 	TableId = 0,	%%XXX
 	PacketIn = #ofp_packet_in{

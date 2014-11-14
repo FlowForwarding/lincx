@@ -163,6 +163,8 @@ wrap_pattern(Pat, icmp6_sll =Arg, _) ->
 	wrap_pattern_1(Pat, Arg);
 wrap_pattern(Pat, icmp6_tll =Arg, _) ->
 	wrap_pattern_1(Pat, Arg);
+wrap_pattern(Pat, in_port =Arg, _) ->
+	wrap_pattern_1(Pat, Arg);
 wrap_pattern(Pat, _Arg, _HasGoto) ->
 	Pat.
 
@@ -594,7 +596,7 @@ action_list(As) ->
 	lists:foldl(
 		fun
 			({output,PortNo}, {Frame, TunnelId}) when is_atom(PortNo) ->
-				{Call(output,[Frame,{atom,0,PortNo},{var,0,var_name(blaze)}]), TunnelId};
+				{Call(packet_in,[Frame,{var,0,var_name(in_port)}]), TunnelId};
 			({output,PortNo}, {Frame, TunnelId}) ->
 				{Call(output,[Frame,{integer,0,PortNo},{var,0,var_name(blaze)}]), TunnelId};
 			({group,Group}, {Frame, TunnelId}) ->
