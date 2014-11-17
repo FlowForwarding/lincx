@@ -1,14 +1,20 @@
-# OpenFlow 1.3 conformance
+## LINCX conformance report
 
-LINCX runs [Ryu suite](https://github.com/osrg/ryu/tree/master/ryu/tests/switch/of13) 
-on every commit. 
-You can compare it results with [other swithes](http://osrg.github.io/ryu/certification.html).
+### Summary
 
-## Total
-OK(934) / ERROR(57)
-## Details
+Item | Description
+-----|------------
+Standard | [OpenFlow 1.3](https://www.opennetworking.org/images/stories/downloads/sdn-resources/onf-specifications/openflow/openflow-spec-v1.3.0.pdf)
+Test suite | [Ryu kit](https://github.com/osrg/ryu/tree/master/ryu/tests/switch/of13)
+Last run on | 17 Nov 2014
+Results | OK (934) / ERROR(**57**)
 
-### ACTION: 
+See how LINCX [compares](http://osrg.github.io/ryu/certification.html).
+
+### Details
+
+
+#### ACTION
 
 | Test                           |IPv4   |IPv6   |ARP    |
 |--------------------------------|-------|-------|-------|
@@ -27,7 +33,7 @@ OK(934) / ERROR(57)
 | PUSH_PBB (multiple)            | ✓     | ✓     | ✓     |
 | POP_PBB                        | ✓     | ✓     | ✓     |
 
-### ACTION: 
+#### ACTION
 
 | Test                           |ether  |vlan   |mpls   |pbb    |
 |--------------------------------|-------|-------|-------|-------|
@@ -36,7 +42,7 @@ OK(934) / ERROR(57)
 | SET_NW_TTL (IPv6)              | -     | -     | -     | -     |
 | DEC_NW_TTL (IPv6)              | -     | -     | -     | -     |
 
-### ACTION: SET_FIELD: 
+#### ACTION: SET_FIELD
 
 | Test                           |IPv4   |IPv6   |ARP    |
 |--------------------------------|-------|-------|-------|
@@ -51,7 +57,7 @@ OK(934) / ERROR(57)
 | MPLS_BOS                       | ✓     | ✓     | ✓     |
 | PBB_ISID                       | ✓     | ✓     | ✓     |
 
-### ACTION: SET_FIELD: 
+#### ACTION: SET_FIELD
 
 | Test                           |ether  |vlan   |mpls   |pbb    |
 |--------------------------------|-------|-------|-------|-------|
@@ -91,7 +97,7 @@ OK(934) / ERROR(57)
 | ARP_SHA                        | ✓     | ✓     | ✓     | ✓     |
 | ARP_THA                        | ✓     | ✓     | ✓     | ✓     |
 
-### MATCH: 
+#### MATCH
 
 | Test                           |IPv4   |IPv6   |ARP    |
 |--------------------------------|-------|-------|-------|
@@ -114,7 +120,7 @@ OK(934) / ERROR(57)
 | PBB_ISID                       |  ✓✓✓  |  ✓✓✓  |  ✓✓✓  |
 | PBB_ISID (Mask)                |  ✓✓✓  |  ✓✓✓  |  ✓✓✓  |
 
-### MATCH: 
+#### MATCH
 
 | Test                           |ether  |vlan   |mpls   |pbb    |
 |--------------------------------|-------|-------|-------|-------|
@@ -165,7 +171,7 @@ OK(934) / ERROR(57)
 | ARP_THA                        |  ✓✓✓  |  ✓✓✓  |  ✓✓✓  |  ✓✓✓  |
 | ARP_THA (Mask)                 |  ✓✓✓  |  ✓✓✓  |  ✓✓✓  |  ✓✓✓  |
 
-### METER: 
+#### METER
 
 | Test                           |IPv4   |IPv6   |ARP    |
 |--------------------------------|-------|-------|-------|
@@ -182,7 +188,7 @@ OK(934) / ERROR(57)
 | DSCP_REMARK_01_PKTPS_01_1000   | -     | -     | -     |
 | DSCP_REMARK_01_PKTPS_02_10000  | -     | -     | -     |
 
-### GROUP: 
+#### GROUP
 
 | Test                           |IPv4   |IPv6   |ARP    |
 |--------------------------------|-------|-------|-------|
