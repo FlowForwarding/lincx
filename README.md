@@ -33,25 +33,19 @@ Compile everything:
     % ./rebar get-deps
 	% ./rebar compile
 
-Create a LING configuration file:
+Create configuration file:
 
-	% cp LINGConfig.mk.sample LINGConfig.mk
+	% cp lincx.config.sample lincx.config
 
-Edit LINGConfig.mk as needed.
-
-Create the switch configuration file:
-
-	% cp priv/sys.config.sample priv/sys.config
-
-Edit you priv/sys.config file.
+Edit lincx.config as needed.
 
 Build the Xen image for the switch:
 
-	% make
+	% ./railing
 
 Boot the lincx Xen domain:
 
-	% sudo make boot
+	% sudo xl create -c lincx.dom
 
 ## Support
 

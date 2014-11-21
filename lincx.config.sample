@@ -1,0 +1,15 @@
+{ipconf,
+	{address, "192.168.3.2"},
+	{netmask, "255.255.255.0"},
+	{gateway, "192.168.3.1"}
+}.
+
+{port, br1}.
+{port, br2}.
+{port, br3}.
+
+{controller, "192.168.3.1", 6633}.
+{controller, "192.168.4.1", 6634}.
+
+{listener, 6653}.
+{memory,1024}.

@@ -9,12 +9,6 @@ deps
 
 erl_crash.dump
 
-domain_config
-vmling
-
-LINGConfig.mk
-priv/sys.config
-
-domain1.cfg
-domain2.cfg
-domain3.cfg
+lincx.dom
+lincx.img
+lincx.config
