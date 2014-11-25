@@ -1,7 +1,6 @@
+## LINCX - OpenFlow software switch
 
-## LINCX - a fast OpenFlow software switch
- 
-[![Build Status](https://api.travis-ci.org/cloudozer/lincx.svg)](https://travis-ci.org/cloudozer/lincx)
+[![Build Status](https://api.travis-ci.org/FlowForwarding/lincx.svg)](https://travis-ci.org/FlowForwarding/lincx)
 
 ### What is LINCX?
 
