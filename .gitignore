@@ -1,5 +1,6 @@
 .eunit
 .railing
+.rebar
 
 deps
 
