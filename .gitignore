@@ -10,6 +10,7 @@ deps
 
 erl_crash.dump
 
-lincx.dom
-lincx.img
 lincx.config
+
+domain_config
+lincx.img

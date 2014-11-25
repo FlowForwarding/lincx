@@ -1,9 +1,8 @@
-%% See README.md for options description
+%% See README.md for description of all supported options
 
-{ipconf,"192.168.3.2", "255.255.255.0", "192.168.3.1"}.
+{ipconf, "192.168.3.2", "255.255.255.0", "192.168.3.1"}.
 
 {ports, 3}.
 
 {controller, "10.0.0.100", 6633}.
 
-{memory,1024}.
