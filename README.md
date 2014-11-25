@@ -59,20 +59,46 @@ To use dhcp change the option to
 
 To add an OpenFlow port use the following option:
 
-	{port, 1}. %% connects the port to br1
+	{port, PortNo}.
+	{port, PortNo, AuxProps}.
+
+By default, an OpenFlow port 1 connects to the bridge named br1 in Dom0. The
+name of the brdige can be set in auxilliary properties:
 
 	{port, 1, [{bridge,br7}]}. %% connects the port to br7
 
 To add multiple ports use:
 
-	{ports, 3}.
+	{ports, NumOfPorts}.
+	{ports, NumOfPorts, AuxProps}.
 
-[TODO]
+By default, the ports are numbered from 1 to NumOfPorts and are connected to
+brdiges br1, br2, etc. The starting port number and the prefix for bridge names
+can be changed using auxilliary properties:
+
+	%% adds ports 5,6,7 connected to xenbr5,xenbr6,xenbr7
+	{ports, 3, [{start,5},{prefix,xenbr}]}.
+
+To add an active connection to a controller use the following option:
 
 	{controller,IpAddr,Port}.
+
+To listen for connections from controllers:
+
 	{listener,IpAddr,Port}.
 
-	{memory,256}.
+To add a queue use:
+
+	{queue, QueueNo, MinRate, MaxRate}.
+
+A port can be connected to a queue using a property, e.g.
+
+	{queue, 1, 0, 100}.
+	{port, 1, [{queue,1}]}.
+
+Other options:
+
+	{memory, Memory}.
 
 ### Support
 
