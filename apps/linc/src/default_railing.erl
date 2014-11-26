@@ -165,7 +165,7 @@ read_erl(Conf) ->
 								[Q]
 						end,
 
-					[{PortNo, Bridge, Queue} | Ports];
+					Ports ++ [{PortNo, Bridge, Queue}];
 				(_, Ports) ->
 					Ports
 			end,
@@ -193,9 +193,9 @@ read_erl(Conf) ->
 		lists:foldl(
 			fun
 				({ipconf, dhcp}, _) ->
-					" -dhcp";
+					"-dhcp";
 				({ipconf,IPAddr,NetMask,Gateway}, _) ->
-					" -ipaddr " ++ addr(IPAddr) ++ " -netmask " ++ NetMask ++ " -gateway " ++ Gateway;
+					"-ipaddr " ++ addr(IPAddr) ++ " -netmask " ++ NetMask ++ " -gateway " ++ Gateway;
 				(_, Res) ->
 					Res
 			end,
@@ -221,7 +221,7 @@ read_erl(Conf) ->
 	conf(Name, Domain, Ports, Queues, Controllers, Ipconf, ListenerIp, ListenerPort, Memory).
 
 argumentize(App, Key, Val) ->
-	io_lib:format(" -~p ~p '~s'", [App, Key, io_lib:write(Val)]).
+	io_lib:format("-~p ~p '~s'", [App, Key, io_lib:write(Val)]).
 
 bridge(B) when is_atom(B) ->
 	atom_to_list(B);
@@ -241,13 +241,13 @@ conf(Name, Domain, Ports, Queues, Controllers, Ipconf, ListenerIp, ListenerPort,
 	[
 		{name, Name},
 		{domain, Domain},
-		{extra, " -config " ++ "/lincx/priv/sys.config"},
 		{extra,
-			" -eval \\\"lists:map(fun application:start/1, ["
+			"-eval \\\"lists:map(fun application:start/1, ["
 				"crypto,asn1,public_key,ssh,compiler,syntax_tools,xmerl,mnesia,lager,linc"
 			"])\\\""
 		},
 		{extra, Ipconf},
+		{extra, "-config " ++ "/lincx/priv/sys.config"},
 		{extra, argumentize(
 			linc, capable_switch_ports,
 			[{port,Id,[{interface,"eth" ++ integer_to_list(Id)},{type,vif}]} || {Id,_,_} <- Ports]
@@ -281,5 +281,5 @@ conf(Name, Domain, Ports, Queues, Controllers, Ipconf, ListenerIp, ListenerPort,
 		{lib, compiler},
 		{include, "priv"},
 		{exclude, "deps/yamerl/ebin"},
-		{exclude, "apps/linc/ebin/lincx_railing.beam"}
+		{exclude, "apps/linc/ebin/default_railing.beam"}
 	].
