@@ -173,7 +173,7 @@ read_erl(Conf) ->
 			Conf ++ PortsConf
 		),
 
-	Controllers = [{addr(Addr), Port} || {controler, Addr, Port} <- Conf],
+	Controllers = [{addr(Addr), Port} || {controller, Addr, Port} <- Conf],
 
 	{ListenerIp, ListenerPort} =
 		lists:foldl(
