@@ -7,9 +7,7 @@ railing() ->
 	try
 		case filelib:is_file(YmlCfg) of
 			true ->
-				io:format("Parse: ~s\n", [YmlCfg]),
-				application:start(yamerl),
-				read_yml(yamerl_constr:file(YmlCfg));
+				yml(YmlCfg);
 			_ ->
 				case filelib:is_file(ErlCfg) of
 					true ->
@@ -39,80 +37,191 @@ railing() ->
 			halt(1)
 	end.
 
-read_yml([Opts]) ->
-	Ports = ports(proplists:get_value("ports", Opts),[]),
-	Controllers = controllers(proplists:get_value("controllers", Opts),[]),
-	Listen = listen(proplists:get_value("listen", Opts)),
-	Memory = memory(proplists:get_value("memory", Opts)),
-	%PortIds = lists:seq(1, length(Ports)),
-	Ipconf = ipconf(proplists:get_value("ipconf", Opts)),
-
-	Name = proplists:get_value("name", Opts),
-	Domain = proplists:get_value("domain", Opts),
-
-	conf(Name, Domain, Ports, [], Controllers, Ipconf, "0.0.0.0", Listen, Memory);
-read_yml(_) ->
-	throw("Invalid number of documents").
-
-memory(undefined) ->
-	1024;
-memory(Memory) when is_integer(Memory) andalso Memory > 0 ->
-	Memory;
-memory(Memory) ->
-	throw(io_lib:format("memory: invalid value ~p", [Memory])).
-
-listen(undefined) ->
-	6653;
-listen(Port) when is_integer(Port) andalso Port > 0 andalso Port < 65536 ->
-	Port;
-listen(Port) ->
-	throw(io_lib:format("listen: invalid value ~p", [Port])).
-
-controllers([], Controlers) ->
-	lists:reverse(Controlers);
-controllers([C | Rest], Controllers) when is_list(C) ->
-	try
-		[Addr, PortString] = string:tokens(C, ":"),
-		{ok, _} = inet_parse:address(Addr),
-		PortInteger = list_to_integer(PortString),
-		true = PortInteger > 0 andalso PortInteger < 65536,
-		controllers(Rest, [{Addr, PortInteger} | Controllers])
-	catch _:_ ->
-		throw(io_lib:format("controllers: invalid value ~p", [C]))
-	end;
-controllers(_, _) ->
-	throw("controllers: malformed").
-
-ports([], Ports) ->
-	lists:reverse(Ports);
-ports([P | Rest], Ports) when is_list(P) ->
-	ports(Rest, [P | Ports]);
-ports(_, _) ->
-	throw("ports: malformed").
-
-ipconf("dhcp") ->
-	" -dhcp";
-ipconf(undefined) ->
-	"";
-ipconf(Opts) when is_list(Opts) ->
-	Arg =
-		fun(Opt) ->
-			case proplists:get_value(Opt, Opts) of
-				undefined ->
-					throw("ipconf:" ++ Opt ++ ": not found");
-				Val ->
-					case inet_parse:address(Val) of
-						{ok, _} ->
-							" -" ++ Opt ++ " " ++ Val;
-						_ ->
-							throw("ipconf:" ++ Opt ++ io_lib:format(": invalid value: ~p", [Val]))
-					end
-			end
+yml(Cfg) ->
+	io:format("Parse: ~s\n", [Cfg]),
+	application:start(yamerl),
+	Opts =
+		case yamerl_constr:file(Cfg) of
+			[Doc] ->
+				Doc;
+			_ ->
+				throw("invalid number of docs")
 		end,
 
-	Arg("ipaddr") ++ Arg("netmask") ++ Arg("gateway");
-ipconf(_) ->
-	throw("ipconf: malformed").
+	%io:format("~p\n", [Opts]),
+	%%[check_opt(O) || O <- Opts],
+
+	Queues =
+		lists:map(
+			fun(Fields) ->
+				{
+					proplists:get_value("id", Fields),
+					proplists:get_value("min", Fields),
+					proplists:get_value("max", Fields)
+				}
+			end,
+			proplists:get_value("queues", Opts, [])
+		),
+
+	Ports =
+		lists:map(
+			fun(Fields) ->
+				{
+					proplists:get_value("id", Fields),
+					proplists:get_value("bridge", Fields),
+					proplists:get_value("queue", Fields, [])
+				}
+			end,
+			proplists:get_value("ports", Opts, [])
+		),
+
+	Controllers =
+		lists:map(
+			fun(C) ->
+				case string:tokens(C, ":") of
+					[Ip, Port] ->
+						{Ip, list_to_integer(Port)};
+					[Ip] ->
+						{Ip, 6653}
+				end
+			end,
+			proplists:get_value("controllers", Opts, [])
+		),
+
+	Ipconf =
+		case proplists:get_value("ipconf", Opts) of
+			undefined ->
+				"";
+			"dhcp" ->
+				"-dhcp";
+			Fields ->
+				"-ipaddr " ++ proplists:get_value("ipaddr", Fields) ++
+				" -netmask " ++ proplists:get_value("netmask", Fields) ++
+				" -ipaddr " ++ proplists:get_value("gateway", Fields)
+		end,
+
+	{ListenIp, ListenPort} =
+		case proplists:get_value("listen", Opts) of
+			undefined ->
+				{"0.0.0.0", 6653};
+			IpPort ->
+				case string:tokens(IpPort, ":") of
+					[Ip, Port] ->
+						{Ip, list_to_integer(Port)};
+					[Ip] ->
+						{Ip, 6653}
+				end
+		end,
+
+	Memory =
+		case proplists:get_value("memory", Opts) of
+			undefined ->
+				1024;
+			M ->
+				M
+		end,
+
+	NineP =
+		lists:foldl(
+			fun(Mount, Acc) ->
+				Acc ++ " -9p " ++ Mount
+			end,
+			"",
+			proplists:get_value("9p", Opts, [])
+		),
+
+	Secret = "-secret " ++ proplists:get_value("secret", Opts),
+
+	conf(Ports, Queues, Controllers, Ipconf, ListenIp, ListenPort, Memory, NineP ++ " " ++ Secret).
+
+check_opt({"ipconf", Ipconf}) when is_list(Ipconf) ->
+	lists:foreach(
+		fun
+			({"ipaddr", Ipaddr}) ->
+				check_ip(Ipaddr);
+			({"netmask", Netmask}) ->
+				check_ip(Netmask);
+			({"gateway", Gateway}) ->
+				check_ip(Gateway);
+			(Unknown) ->
+				throw(io_lib:format("unknown ipconf field: ~p", [Unknown]))
+		end,
+		Ipconf
+	);
+check_opt({"queues", Queues}) when is_list(Queues) ->
+	[check_queue(Q) || Q <- Queues];
+check_opt({"ports", Ports}) when is_list(Ports) ->
+	[check_port(P) || P <- Ports];
+check_opt({"controllers", Controllers}) when is_list(Controllers) ->
+	[check_controller(C) || C <- Controllers];
+check_opt({"listen", Listen}) when is_integer(Listen) ->
+	ok;
+check_opt({"memory", Memory}) when is_integer(Memory) ->
+	ok;
+check_opt(Unknown) ->
+	throw(io_lib:format("unknown option: ~p", [Unknown])).
+
+check_controller(Controller) when is_list(Controller) ->
+	lists:foreach(
+		fun
+			({"ip", Ip}) ->
+				check_ip(Ip);
+			({"port", Port}) when is_integer(Port) ->
+				ok;
+			(Unknown) ->
+				throw(io_lib:format("unknown controller field: ~p", [Unknown]))
+		end,
+		Controller
+	);
+check_controller(Unknown) ->
+	throw(io_lib:format("invalid controller: ~p", [Unknown])).
+
+check_port(Port) when is_list(Port) ->
+	lists:foreach(
+		fun
+			({"id", Id}) when is_integer(Id) ->
+				ok;
+			({"bridge", Bridge}) when is_list(Bridge) ->
+				ok;
+			({"queue", Queue}) when is_integer(Queue) ->
+				ok;
+			(Unknown) ->
+				throw(io_lib:format("unknown port field: ~p", [Unknown]))
+		end,
+		Port
+	);
+check_port(Unknown) ->
+	throw(io_lib:format("invalid port: ~p", [Unknown])).
+
+check_queue(Queue) when is_list(Queue) ->
+	lists:foreach(
+		fun
+			({"id", Id}) when is_integer(Id) ->
+				ok;
+			({"min", Min}) when is_integer(Min) ->
+				ok;
+			({"max", Max}) when is_integer(Max) ->
+				ok;
+			(Unknown) ->
+				throw(io_lib:format("unknown queue field: ~p", [Unknown]))
+		end,
+		Queue
+	);
+check_queue(Unknown) ->
+	throw(io_lib:format("invalid queue: ~p", [Unknown])).
+
+check_ip(Ip) ->
+	try
+		[A,B,C,D] = string:tokens(Ip, "."),
+		Octet =
+			fun(O) ->
+				I = list_to_integer(O),
+				true = I >= 0 andalso I =< 255
+			end,
+		Octet(A),Octet(B),Octet(C),Octet(D)
+	catch _:_ ->
+		throw(io_lib:format("invalid IP: ~p", [Ip]))
+	end.
 
 read_erl(Conf) ->
 	Queues =
@@ -215,13 +324,28 @@ read_erl(Conf) ->
 			Conf
 		),
 
-	Name = undefined,
-	Domain = undefined,
+	Mount =
+		lists:foldl(
+			fun
+				({mount, IP, Linux, Ling, Secret}, _) ->
+					"-9p " ++ addr(IP) ++ " " ++ Linux ++ " " ++ Ling ++ " -secret " ++ Secret;
+				(_, Res) ->
+					Res
+			end,
+			"",
+			Conf
+		),
 
-	conf(Name, Domain, Ports, Queues, Controllers, Ipconf, ListenerIp, ListenerPort, Memory).
+	conf(Ports, Queues, Controllers, Ipconf, ListenerIp, ListenerPort, Memory, Mount).
 
 argumentize(App, Key, Val) ->
-	io_lib:format("-~p ~p '~s'", [App, Key, io_lib:write(Val)]).
+	%% this weird transform required to properly escape string values
+	EscapedVal =
+		string:strip(
+			lists:flatten(io_lib:format("~p", [lists:flatten(io_lib:print(Val,1,1024,-1))])),
+			both, $"
+		),
+	io_lib:format("-~p ~p '~s'", [App, Key, EscapedVal]).
 
 bridge(B) when is_atom(B) ->
 	atom_to_list(B);
@@ -235,19 +359,12 @@ addr({A,B,C,D}) ->
 addr(Addr) ->
 	Addr.
 
-conf(Name, Domain, Ports, Queues, Controllers, Ipconf, ListenerIp, ListenerPort, Memory) ->
+conf(Ports, Queues, Controllers, Ipconf, ListenerIp, ListenerPort, Memory, Mount) ->
 	[{vif, 'bridge=xenbr0'}] ++
 	[{vif, list_to_atom("bridge=" ++ B)} || {_,B,_} <- Ports] ++
 	[
-		{name, Name},
-		{domain, Domain},
-		{extra,
-			"-eval \\\"lists:map(fun application:start/1, ["
-				"crypto,asn1,public_key,ssh,compiler,syntax_tools,xmerl,mnesia,lager,linc"
-			"])\\\""
-		},
 		{extra, Ipconf},
-		{extra, "-config " ++ "/lincx/priv/sys.config"},
+		{extra, Mount},
 		{extra, argumentize(
 			linc, capable_switch_ports,
 			[{port,Id,[{interface,"eth" ++ integer_to_list(Id)},{type,vif}]} || {Id,_,_} <- Ports]
@@ -268,6 +385,12 @@ conf(Name, Domain, Ports, Queues, Controllers, Ipconf, ListenerIp, ListenerPort,
 				{ports, [{port,Id,{queues,Queue}} || {Id,_,Queue} <- Ports]}
 			]}]
 		)},
+		{extra,
+			"-eval \\\"lists:map(fun application:start/1, ["
+				"crypto,asn1,public_key,ssh,compiler,syntax_tools,xmerl,mnesia,lager,linc"
+			"])\\\""
+		},
+		{extra, "-config " ++ "/lincx/priv/sys.config"},
 		{memory, Memory},
 		{lib, eunit},
 		{lib, tools},

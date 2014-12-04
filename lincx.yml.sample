@@ -1,0 +1,28 @@
+# ipconf: dhcp
+ipconf: 
+  ipaddr: 192.168.3.2
+  netmask: 255.255.255.0
+  gateway: 192.168.3.1
+
+queues:
+  - {id: 1, min: 0, max: 100}
+  - {id: 2, min: 0, max: 200}
+
+ports:
+  - {id: 1, bridge: br1, queue: 1}
+  - {id: 2, bridge: br2, queue: 2}
+  - {id: 3, bridge: br3}
+
+controllers:
+  - 192.168.3.30:6653
+  - 10.10.1.1:6633
+
+listen: 0.0.0.0:6653
+
+secret: e1b4721e253ef14456c4ace06e2857ab69537cdf c3324a51069edee7c42e4e9d7dd1dd4e521a83f3
+
+9p:
+  - 192.168.3.1 /var/log /log
+  - 192.168.4.1 /var/log /log
+
+memory: 1024

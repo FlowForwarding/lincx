@@ -4,5 +4,6 @@
 
 {ports, 3}.
 
-{controller, "10.0.0.100", 6633}.
+{mount, "10.0.0.100", "log", "/log", "e1b4721e253ef14456c4ace06e2857ab69537cdf c3324a51069edee7c42e4e9d7dd1dd4e521a83f3"}.
 
+{controller, "10.0.0.100", 6633}.
