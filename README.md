@@ -21,9 +21,9 @@ LINCX is a new faster version of [LINC-Switch][oldlinc].
 work. You may need to build Erlang/OTP R16B01 from [sources](http://www.erlang.org/download_release/19).
 
 1. Clone the LINCX repository:
-
+```
     % git clone https://github.com/FlowForwarding/lincx.git
-
+```
 1. Compile the code:
 ```
     % ./rebar get-deps
@@ -100,6 +100,11 @@ To set the memory size of the lincx domain (in MB, default = 1024):
 ```
 	{memory, Memory}.
 ```
+
+LINCX supports alternative format -- YAML -- of the configuration file. Rename
+the configuration file to lincx.yml to use YAML. See lincx.yml.sample as a
+starting point.
+
 ### Support
 
 If you have any technical questions, problems or suggestions regarding LINCX
