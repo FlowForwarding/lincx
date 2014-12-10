@@ -6,7 +6,7 @@ Item | Description
 -----|------------
 Standard | [OpenFlow 1.3](https://www.opennetworking.org/images/stories/downloads/sdn-resources/onf-specifications/openflow/openflow-spec-v1.3.0.pdf)
 Test suite | [Ryu kit](https://github.com/osrg/ryu/tree/master/ryu/tests/switch/of13)
-Last run on | 4 Dec 2014
+Last run on | 10 Dec 2014
 Results | OK (934) / ERROR (57)
 
 See how LINCX [compares](http://osrg.github.io/ryu/certification.html).
