@@ -97,7 +97,7 @@ yml(Cfg) ->
 			Fields ->
 				"-ipaddr " ++ proplists:get_value("ipaddr", Fields) ++
 				" -netmask " ++ proplists:get_value("netmask", Fields) ++
-				" -ipaddr " ++ proplists:get_value("gateway", Fields)
+				" -gateway " ++ proplists:get_value("gateway", Fields)
 		end,
 
 	{ListenIp, ListenPort} =
