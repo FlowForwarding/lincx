@@ -130,7 +130,7 @@ yml(Cfg) ->
 			proplists:get_value("9p", Opts, [])
 		),
 
-	Secret = "-secret " ++ proplists:get_value("secret", Opts),
+	Secret = "-secret " ++ proplists:get_value("secret", Opts, ""),
 
 	conf(Ports, Queues, Controllers, Ipconf, ListenIp, ListenPort, Memory, NineP ++ " " ++ Secret).
 
