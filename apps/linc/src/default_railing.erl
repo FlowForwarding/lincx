@@ -130,7 +130,13 @@ yml(Cfg) ->
 			proplists:get_value("9p", Opts, [])
 		),
 
-	Secret = "-secret " ++ proplists:get_value("secret", Opts),
+	Secret =
+		case proplists:get_value("secret", Opts) of
+			undefined ->
+				"";
+			S ->
+				"-secret " ++ S
+		end,
 
 	conf(Ports, Queues, Controllers, Ipconf, ListenIp, ListenPort, Memory, NineP ++ " " ++ Secret).
 
@@ -256,7 +262,7 @@ read_erl(Conf) ->
 		lists:foldl(
 			fun
 				({port, PortNo}, Ports) ->
-					[{PortNo, bridge(PortNo), []} | Ports];
+					Ports ++ [{PortNo, bridge(PortNo), []}];
 				({port, PortNo, PortOps}, Ports) ->
 					Bridge =
 						case proplists:get_value(bridge, PortOps) of
