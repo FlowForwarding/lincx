@@ -25,6 +25,6 @@ git config --global user.email "ci@bot.me"
 git config --global user.name "CI Bot"
 git config --global push.default simple
 git commit -am 'Update conformance [ci skip]'
-git remote set-url origin https://${GITAUTH}@github.com/krant/lincx.git > /dev/null 2>&1 
+git remote set-url origin https://${GITAUTH}@github.com/FlowForwarding/lincx.git > /dev/null 2>&1 
 git push
 $SSH "sudo xl destroy lincx" || true
