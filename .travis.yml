@@ -2,5 +2,5 @@ language: erlang
 otp_release: 17.3
 env:
   global:
-    - secure: "NZpw/FFvuIl5f2uvkZjTWeThJiMFR6W1HXg3tmsP4qvZkfJuG7FTyMImVIkILZUyCfz4WdM7DuJty57Yh/NWJLp3NRkU7hgc9z9RCjSY27lh4AFxPsAE/N2e0IQNAMKLaNUJmUYUCVPsMITxwsjitfkW2WLw5LLZrBeANoshfds="
+    - secure: "XX9751hm216lBjGFoHXBABAePU3cj9kkSsxcWRg8AKJHfqrd9LwjOMee+enRtp59o05BDxmHQUGrmYrY8HrsVG+HqL3FuO+XH8oUMJF1Bh1KpAT9/2VWk427+tXfpdnyLhLOoqMA9eR7Maxpp/lalv4T5K8BZ5ydj1WAhsJAm1k="
 script: ./scripts/ci/run
