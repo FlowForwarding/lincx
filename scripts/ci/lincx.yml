@@ -1,0 +1,17 @@
+ipconf:
+  ipaddr: 10.0.0.200
+  netmask: 255.255.255.0
+  gateway: 10.0.0.1
+
+ports:
+  - {id: 1, bridge: ryu1}
+  - {id: 2, bridge: ryu2}
+  - {id: 3, bridge: ryu3}
+
+controllers:
+  - 10.0.0.100:6633
+
+secret: a9fe261db6606efe439f6138e007d499d52c97ee 4ab1c03c8b5175907d3583f39df946a038f292a4
+
+9p:
+  - 10.0.0.1 /home/lci/log /log

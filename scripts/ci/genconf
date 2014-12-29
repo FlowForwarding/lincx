@@ -1,0 +1,316 @@
+#!/usr/bin/env escript
+-mode(compile).
+
+types() -> [
+	{"action: ", [
+		{["IPv4", "IPv6", "ARP"],[
+			{req, "OUTPUT"},
+			{opt, "PUSH_VLAN"},
+			{opt, "PUSH_MPLS"},
+			{opt, "PUSH_PBB"},
+			{opt, "PUSH_VLAN (multiple)"},
+			{opt, "POP_VLAN"},
+			{opt, "COPY_TTL_OUT"},
+			{opt, "COPY_TTL_IN"},
+			{opt, "SET_MPLS_TTL"},
+			{opt, "DEC_MPLS_TTL"},
+			{opt, "PUSH_MPLS (multiple)"},
+			{opt, "POP_MPLS"},
+			{opt, "PUSH_PBB (multiple)"},
+			{opt, "POP_PBB"}
+		]},
+		{["ether", "vlan", "mpls", "pbb"],[
+			{opt, "SET_NW_TTL (IPv4)"},
+			{opt, "DEC_NW_TTL (IPv4)"},
+			{opt, "SET_NW_TTL (IPv6)"},
+			{opt, "DEC_NW_TTL (IPv6)"}
+		]}
+	]},
+	{"action: set_field: ", [
+		{["IPv4", "IPv6", "ARP"],[
+			{opt, "ETH_DST"},
+			{opt, "ETH_SRC"},
+			{opt, "ETH_TYPE"},
+			{opt, "TUNNEL_ID"},
+			{opt, "VLAN_VID"},
+			{opt, "VLAN_PCP"},
+			{opt, "MPLS_LABEL"},
+			{opt, "MPLS_TC"},
+			{opt, "MPLS_BOS"},
+			{opt, "PBB_ISID"}
+		]},
+		{["ether", "vlan", "mpls", "pbb"],[
+			{opt, "IP_DSCP (IPv4)"},
+			{opt, "IP_ECN (IPv4)"},
+			{opt, "IP_PROTO (IPv4)"},
+			{opt, "IPV4_SRC"},
+			{opt, "IPV4_DST"},
+			{opt, "TCP_SRC (IPv4)"},
+			{opt, "TCP_DST (IPv4)"},
+			{opt, "UDP_SRC (IPv4)"},
+			{opt, "UDP_DST (IPv4)"},
+			{opt, "SCTP_SRC (IPv4)"},
+			{opt, "SCTP_DST (IPv4)"},
+			{opt, "ICMPV4_TYPE"},
+			{opt, "ICMPV4_CODE"},
+			{opt, "IP_DSCP (IPv6)"},
+			{opt, "IP_ECN (IPv6)"},
+			{opt, "IP_PROTO (IPv6)"},
+			{opt, "TCP_SRC (IPv6)"},
+			{opt, "TCP_DST (IPv6)"},
+			{opt, "UDP_SRC (IPv6)"},
+			{opt, "UDP_DST (IPv6)"},
+			{opt, "SCTP_SRC (IPv6)"},
+			{opt, "SCTP_DST (IPv6)"},
+			{opt, "IPV6_SRC"},
+			{opt, "IPV6_DST"},
+			{opt, "IPV6_FLABEL"},
+			{opt, "ICMPV6_TYPE"},
+			{opt, "ICMPV6_CODE"},
+			{opt, "IPV6_ND_TARGET"},
+			{opt, "IPV6_ND_SLL"},
+			{opt, "IPV6_ND_TLL"},
+			{opt, "ARP_OP"},
+			{opt, "ARP_SPA"},
+			{opt, "ARP_TPA"},
+			{opt, "ARP_SHA"},
+			{opt, "ARP_THA"}
+		]}
+	]},
+	{"match: ", [
+		{["IPv4", "IPv6", "ARP"],[
+			{req, "IN_PORT"},
+			{opt, "METADATA"},
+			{opt, "METADATA (Mask)"},
+			{req, "ETH_DST"},
+			{req, "ETH_DST (Mask)"},
+			{req, "ETH_SRC"},
+			{req, "ETH_SRC (Mask)"},
+			{req, "ETH_TYPE"},
+			{opt, "TUNNEL_ID"},
+			{opt, "TUNNEL_ID (Mask)"},
+			{opt, "VLAN_VID"},
+			{opt, "VLAN_VID (Mask)"},
+			{opt, "VLAN_PCP"},
+			{opt, "MPLS_LABEL"},
+			{opt, "MPLS_TC"},
+			{opt, "MPLS_BOS"},
+			{opt, "PBB_ISID"},
+			{opt, "PBB_ISID (Mask)"}
+		]},
+		{["ether", "vlan", "mpls", "pbb"],[
+			{opt, "IP_DSCP (IPv4)"},
+			{opt, "IP_ECN (IPv4)"},
+			{req, "IP_PROTO (IPv4)"},
+			{req, "IPV4_SRC"},
+			{req, "IPV4_SRC (Mask)"},
+			{req, "IPV4_DST"},
+			{req, "IPV4_DST (Mask)"},
+			{req, "TCP_SRC (IPv4)"},
+			{req, "TCP_DST (IPv4)"},
+			{req, "UDP_SRC (IPv4)"},
+			{req, "UDP_DST (IPv4)"},
+			{opt, "SCTP_SRC (IPv4)"},
+			{opt, "SCTP_DST (IPv4)"},
+			{opt, "ICMPV4_TYPE"},
+			{opt, "ICMPV4_CODE"},
+			{opt, "IP_DSCP (IPv6)"},
+			{opt, "IP_ECN (IPv6)"},
+			{req, "IP_PROTO (IPv6)"},
+			{req, "TCP_SRC (IPv6)"},
+			{req, "TCP_DST (IPv6)"},
+			{req, "UDP_SRC (IPv6)"},
+			{req, "UDP_DST (IPv6)"},
+			{opt, "SCTP_SRC (IPv6)"},
+			{opt, "SCTP_DST (IPv6)"},
+			{req, "IPV6_SRC"},
+			{req, "IPV6_SRC (Mask)"},
+			{req, "IPV6_DST"},
+			{req, "IPV6_DST (Mask)"},
+			{opt, "IPV6_FLABEL"},
+			{opt, "IPV6_FLABEL (Mask)"},
+			{opt, "ICMPV6_TYPE"},
+			{opt, "ICMPV6_CODE"},
+			{opt, "IPV6_ND_TARGET"},
+			{opt, "IPV6_ND_SLL"},
+			{opt, "IPV6_ND_TLL"},
+			{opt, "IPV6_EXTHDR"},
+			{opt, "IPV6_EXTHDR (Mask)"},
+			{opt, "ARP_OP"},
+			{opt, "ARP_SPA"},
+			{opt, "ARP_SPA (Mask)"},
+			{opt, "ARP_TPA"},
+			{opt, "ARP_TPA (Mask)"},
+			{opt, "ARP_SHA"},
+			{opt, "ARP_SHA (Mask)"},
+			{opt, "ARP_THA"},
+			{opt, "ARP_THA (Mask)"}
+		]}
+	]},
+	{"meter: ", [
+		{["IPv4", "IPv6", "ARP"],[
+			{opt, "DROP_00_KBPS_00_1M"},
+			{opt, "DROP_00_KBPS_01_10M"},
+			{opt, "DROP_00_KBPS_02_100M"},
+			{opt, "DROP_01_PKTPS_00_100"},
+			{opt, "DROP_01_PKTPS_01_1000"},
+			{opt, "DROP_01_PKTPS_02_10000"},
+			{opt, "DSCP_REMARK_00_KBPS_00_1M"},
+			{opt, "DSCP_REMARK_00_KBPS_01_10M"},
+			{opt, "DSCP_REMARK_00_KBPS_02_100M"},
+			{opt, "DSCP_REMARK_01_PKTPS_00_100"},
+			{opt, "DSCP_REMARK_01_PKTPS_01_1000"},
+			{opt, "DSCP_REMARK_01_PKTPS_02_10000"}
+		]}
+	]},
+	{"group: ", [
+		{["IPv4", "IPv6", "ARP"],[
+			{req, "ALL"},
+			{opt, "SELECT_Ether"},
+			{opt, "SELECT_IP"},
+			{opt, "SELECT_Weight_Ether"},
+			{opt, "SELECT_Weight_IP"}
+		]}
+	]}
+].
+
+main([Log]) ->
+	{ok, F} = file:open(Log, [read]),
+	{Tests, Ok, Err} = tests(F, [], []),
+
+	{Year, Month, Day} = erlang:date(),
+
+	io:format("## LINCX conformance report\n\n"),
+	io:format("### Summary\n\n"),
+	io:format("Item | Description\n"),
+	io:format("-----|------------\n"),
+	io:format("Standard | [OpenFlow 1.3](https://www.opennetworking.org/images/stories/downloads/sdn-resources/onf-specifications/openflow/openflow-spec-v1.3.0.pdf)\n"),
+	io:format("Test suite | [Ryu kit](https://github.com/osrg/ryu/tree/master/ryu/tests/switch/of13)\n"),
+	io:format("Last run on | ~p ~s ~p\n", [Day, month(Month), Year]),
+	io:format("Results | OK (~p) / ERROR (~p)\n\n", [Ok, Err]),
+	io:format("See how LINCX [compares](http://osrg.github.io/ryu/certification.html).\n\n"),
+	io:format("### Details\n\n"),
+
+	lists:foreach(
+		fun({Type, Tables}) ->
+			lists:foreach(
+				fun({Cols, Rows}) ->
+					io:format("\n#### ~s\n", [string:to_upper(string:strip(string:strip(Type),right,$:))]),
+					io:format("\n| Test ~-26s|", ["   "]),
+					[ io:format("~-7s|", [C]) || C <- Cols],
+					io:format("\n|--------------------------------|", []),
+					[ io:format("-------|", []) || _C <- Cols],
+					io:format("\n", []),
+					lists:foreach(
+						fun({Req, Id}) ->
+							print(Type, Cols, Id, Req, res(Type, Id, Tests))
+						end,
+						Rows
+					)
+				end,
+				Tables
+			)
+		end,
+		types()
+	);
+main(_) ->
+	io:format("./genconf <ryu-log>\n"). 
+
+print(Type, Cols, Id, Req, Res) ->
+	case Req of
+		opt ->
+			io:format("| ~-30s |",[Id]);
+		req ->
+			io:format("| ~-30s |",["**" ++ Id ++ "**"])
+	end,
+
+	case {Type, length(Cols)} of
+		{"match: ", 3} ->
+			io:format("  ~s~s~s  |  ~s~s~s  |  ~s~s~s  |",Res);
+		{"match: ", 4} ->
+			io:format("  ~s~s~s  |  ~s~s~s  |  ~s~s~s  |  ~s~s~s  |",Res);
+		_ ->
+			[ io:format(" ~s     |", [R]) || R <- Res]
+	end,
+	io:format("\n").
+
+res(Type, Id, Tests) ->
+	[[_H|B]] = lists:filter(
+		fun([Head | _Body]) ->
+			case string:str(Head, Type) of
+				0 ->
+					false;
+				_Idx ->
+					case string:substr(Head, string:len(Type) + 4, string:len(Head) - string:len(Type) - 3) of
+						Id ->
+							true;
+						_ ->
+							false
+					end
+			end
+		end,
+		Tests
+	),
+	lists:foldl(
+		fun
+			("        " ++ _Error, Acc) ->
+				Acc;
+			("    " ++ Case, Acc) ->
+				case string:tokens(Case, " ") of
+					[_, "OK"] ->
+						Acc ++ ["+"];
+					[_, "ERROR"] ->
+						Acc ++ ["-"]
+				end;
+			(_, Acc) ->
+				Acc
+		end,
+		[],
+		B
+	).
+
+tests(F, Tests, Test) ->
+	case file:read_line(F) of
+		{ok, "---  Test end  ---\n"} ->
+			totals(F, Tests ++ [Test]);
+		{ok, Line} ->
+			[L] = string:tokens(Line, "\n"),
+			case lists:any(fun({T,_}) -> lists:prefix(T, L) end, types()) of
+				true ->
+					case Test of
+						[] ->
+							tests(F, Tests, [L]);
+						_ ->
+							tests(F, Tests ++ [Test], [L])
+					end;
+				_ ->
+					case Test of
+						[] ->
+							tests(F, Test, Test);
+						_ ->
+							tests(F, Tests, Test ++ [L])
+					end
+			end
+	end.
+
+totals(F, Tests) ->
+	case file:read_line(F) of
+		{ok, [$O, $K | _] = Totals} ->
+			{match, [Ok, Err]} = re:run(Totals, "OK\\((.*)\\) \\/ ERROR\\((.*)\\)", [{capture,[1,2],list}]),
+			{Tests, list_to_integer(Ok), list_to_integer(Err)};
+		_ ->
+			totals(F, Tests)
+	end.
+
+month(1) -> "Jan";
+month(2) -> "Feb";
+month(3) -> "Mar";
+month(4) -> "Apr";
+month(5) -> "May";
+month(6) -> "Jun";
+month(7) -> "Jul";
+month(8) -> "Aug";
+month(9) -> "Sep";
+month(10) -> "Oct";
+month(11) -> "Nov";
+month(12) -> "Dec".

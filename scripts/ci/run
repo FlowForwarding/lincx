@@ -1,0 +1,30 @@
+#!/usr/bin/env sh
+set -o errexit
+
+./rebar compile
+cp scripts/ci/lincx.yml .
+./railing image
+
+openssl aes-256-cbc -K $encrypted_ec91782b9f02_key \
+	-iv $encrypted_ec91782b9f02_iv \
+	-in scripts/ci/id_rsa.enc -out id_rsa -d
+chmod 600 id_rsa
+
+SOPT='-i id_rsa -o StrictHostKeychecking=no -o CheckHostIP=no'
+SSH='ssh '$SOPT' -tA lci@erlangonxen.org'
+
+scp $SOPT lincx.img domain_config lci@erlangonxen.org:
+$SSH "pidof munged || sudo munged --force"
+$SSH "sudo rm -rf log; mkdir log"
+$SSH "sudo xl destroy lincx" || true
+$SSH "sudo xl create domain_config || sudo xl create domain_config"
+$SSH "ssh -A 10.0.0.100" | tee ryu.log
+git checkout master
+./scripts/ci/genconf ryu.log > CONFORMANCE.md
+git config --global user.email "ci@bot.me"
+git config --global user.name "CI Bot"
+git config --global push.default simple
+git commit -am 'Update conformance [ci skip]'
+git remote set-url origin https://${GITAUTH}@github.com/FlowForwarding/lincx.git > /dev/null 2>&1 
+git push
+$SSH "sudo xl destroy lincx" || true

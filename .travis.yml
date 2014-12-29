@@ -1,15 +1,6 @@
-language: C
-notifications:
-  email:
-    recipients:
-      - aleksey.vasilenko@gmail.com
-      - maxim.kharchenko@gmail.com
-    on_success: always
-    on_failure: always
-before_install:
-- openssl aes-256-cbc -K $encrypted_ec91782b9f02_key -iv $encrypted_ec91782b9f02_iv
-  -in priv/id_rsa.enc -out id_rsa -d
-- chmod 600 id_rsa
-install: 
-script:
-- ssh -tA -i id_rsa -o StrictHostKeychecking=no -o CheckHostIP=no lci@erlangonxen.org ./lci $TRAVIS_COMMIT
+language: erlang
+otp_release: 17.3
+env:
+  global:
+    - secure: "NZpw/FFvuIl5f2uvkZjTWeThJiMFR6W1HXg3tmsP4qvZkfJuG7FTyMImVIkILZUyCfz4WdM7DuJty57Yh/NWJLp3NRkU7hgc9z9RCjSY27lh4AFxPsAE/N2e0IQNAMKLaNUJmUYUCVPsMITxwsjitfkW2WLw5LLZrBeANoshfds="
+script: ./scripts/ci/run
