@@ -19,12 +19,12 @@ $SSH "sudo rm -rf log; mkdir log"
 $SSH "sudo xl destroy lincx" || true
 $SSH "sudo xl create domain_config || sudo xl create domain_config"
 $SSH "ssh -A 10.0.0.100" | tee ryu.log
-git checkout master
-./scripts/ci/genconf ryu.log > CONFORMANCE.md
-git config --global user.email "ci@bot.me"
-git config --global user.name "CI Bot"
-git config --global push.default simple
-git commit -am 'Update conformance [ci skip]'
-git remote set-url origin https://${GITAUTH}@github.com/FlowForwarding/lincx.git > /dev/null 2>&1 
-git push > /dev/null 2>&1
+#git checkout master
+#./scripts/ci/genconf ryu.log > CONFORMANCE.md
+#git config --global user.email "ci@bot.me"
+#git config --global user.name "CI Bot"
+#git config --global push.default simple
+#git commit -am 'Update conformance [ci skip]'
+#git remote set-url origin https://${GITAUTH}@github.com/FlowForwarding/lincx.git > /dev/null 2>&1 
+#git push > /dev/null 2>&1
 $SSH "sudo xl destroy lincx" || true
