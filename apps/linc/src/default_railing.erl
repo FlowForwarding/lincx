@@ -66,10 +66,17 @@ yml(Cfg) ->
 	Ports =
 		lists:map(
 			fun(Fields) ->
+				Qs =
+					case proplists:get_value("queue", Fields) of
+						undefined ->
+							[];
+						Q ->
+							[Q]
+					end,
 				{
 					proplists:get_value("id", Fields),
 					proplists:get_value("bridge", Fields),
-					proplists:get_value("queue", Fields, [])
+					Qs
 				}
 			end,
 			proplists:get_value("ports", Opts, [])
