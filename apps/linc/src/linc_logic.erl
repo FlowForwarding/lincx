@@ -460,7 +460,16 @@ extract_mac([N1, N2 | Rest], Mac) ->
     extract_mac(Rest, <<Mac/binary, B1:4, B2:4>>).
 
 ofp_channel_send(Id, Backend, Message) ->
-    case ofp_channel:send(Id, Message) of
+    %% ofp_channel:send() can generate an exception, workaround this
+    SendRes =
+        try
+            ofp_channel:send(Id, Message)
+        catch
+            exit:{noproc,_} ->
+                {error, noproc}
+        end,
+
+    case SendRes of
         ok ->
             Backend:log_message_sent(Message),
             ok;
