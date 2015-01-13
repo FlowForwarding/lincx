@@ -37,9 +37,9 @@
 packet_modifying_actions_test_() ->
 	[{"Action Set-Field", fun action_set_field/0},
 
-	 %{"Action Push-Tag: PBB", fun action_push_tag_pbb/0},
-	 %{"Action Pop-Tag: PBB", fun action_pop_tag_pbb/0},
-	 %{"Action Push-Tag: VLAN", fun action_push_tag_vlan/0},
+	 {"Action Push-Tag: PBB", fun action_push_tag_pbb/0},
+	 {"Action Pop-Tag: PBB", fun action_pop_tag_pbb/0},
+	 {"Action Push-Tag: VLAN", fun action_push_tag_vlan/0},
 	 {"Action Pop-Tag: VLAN", fun action_pop_tag_vlan/0},
 	 {"Action Push-Tag: MPLS", fun action_push_tag_mpls/0},
 	 {"Action Pop-Tag: MPLS", fun action_pop_tag_mpls/0},

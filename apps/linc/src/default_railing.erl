@@ -48,8 +48,7 @@ yml(Cfg) ->
 				throw("invalid number of docs")
 		end,
 
-	%io:format("~p\n", [Opts]),
-	%%[check_opt(O) || O <- Opts],
+	[check_opt(O) || O <- Opts],
 
 	Queues =
 		lists:map(
@@ -167,25 +166,19 @@ check_opt({"ports", Ports}) when is_list(Ports) ->
 	[check_port(P) || P <- Ports];
 check_opt({"controllers", Controllers}) when is_list(Controllers) ->
 	[check_controller(C) || C <- Controllers];
-check_opt({"listen", Listen}) when is_integer(Listen) ->
+check_opt({"listen", Listen}) when is_list(Listen) ->
 	ok;
 check_opt({"memory", Memory}) when is_integer(Memory) ->
+	ok;
+check_opt({"secret", Secret}) when is_list(Secret) ->
+	ok;
+check_opt({"9p", NineP}) when is_list(NineP) ->
 	ok;
 check_opt(Unknown) ->
 	throw(io_lib:format("unknown option: ~p", [Unknown])).
 
 check_controller(Controller) when is_list(Controller) ->
-	lists:foreach(
-		fun
-			({"ip", Ip}) ->
-				check_ip(Ip);
-			({"port", Port}) when is_integer(Port) ->
-				ok;
-			(Unknown) ->
-				throw(io_lib:format("unknown controller field: ~p", [Unknown]))
-		end,
-		Controller
-	);
+	ok;
 check_controller(Unknown) ->
 	throw(io_lib:format("invalid controller: ~p", [Unknown])).
 

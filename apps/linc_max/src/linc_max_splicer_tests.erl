@@ -89,7 +89,7 @@ arp_test_() ->
 				fun(#arp{tha =Mac1}) -> ?assertEqual(Mac, Mac1);
 						(_) -> ok end)) ].
 
-ipv4_test_fix() ->
+ipv4_test_() ->
 	Addr = <<126,0,1,42>>,
 	GetSum = fun(#ipv4{sum =Sum}) -> Sum;
 					(_) -> undefined end,
@@ -212,7 +212,6 @@ edit(OldPkt, Field, Value, CheckFun, GetSum) ->
 protected(OldPkt, Field, Value) ->
 	P = pkt:encapsulate(OldPkt),
 	R = linc_max_splicer:edit(P, Field, Value),
-	%?assertEqual(protected, R).
-	ok.
+	?assertEqual(protected, R).
 
 %%EOF
