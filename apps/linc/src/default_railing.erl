@@ -357,7 +357,7 @@ addr(Addr) ->
 	Addr.
 
 conf(Ports, Queues, Controllers, Ipconf, ListenerIp, ListenerPort, Memory, Mount) ->
-	{ok, [SysConf]} = file:consult("priv/sys.config"),
+	{ok, [SysConf]} = file:consult("priv/def.config"),
 	LincConf = [
 		{of_config,disabled},
 		{capable_switch_ports,
@@ -379,7 +379,7 @@ conf(Ports, Queues, Controllers, Ipconf, ListenerIp, ListenerPort, Memory, Mount
 		}
 	],
 
-	{ok, File} = file:open("priv/usr.config",[write]),
+	{ok, File} = file:open("priv/sys.config",[write]),
 	ok = io:format(File, "~p.\n", [[{linc, LincConf} | SysConf]]),
 	ok = file:close(File),
 
@@ -393,7 +393,7 @@ conf(Ports, Queues, Controllers, Ipconf, ListenerIp, ListenerPort, Memory, Mount
 				"crypto,asn1,public_key,ssh,compiler,syntax_tools,xmerl,mnesia,lager,linc"
 			"])\\\""
 		},
-		{extra, "-config /lincx/priv/usr.config"},
+		{extra, "-config /lincx/priv/sys.config"},
 		{memory, Memory},
 		{lib, eunit},
 		{lib, tools},

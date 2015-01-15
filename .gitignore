@@ -15,4 +15,4 @@ lincx.yml
 
 domain_config
 lincx.img
-priv/usr.config
+priv/sys.config
