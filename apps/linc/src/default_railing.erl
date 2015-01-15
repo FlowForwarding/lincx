@@ -344,15 +344,6 @@ read_erl(Conf) ->
 
 	conf(Ports, Queues, Controllers, Ipconf, ListenerIp, ListenerPort, Memory, Mount).
 
-argumentize(App, Key, Val) ->
-	%% this weird transform required to properly escape string values
-	EscapedVal =
-		string:strip(
-			lists:flatten(io_lib:format("~p", [lists:flatten(io_lib:print(Val,1,1024,-1))])),
-			both, $"
-		),
-	io_lib:format("-~p ~p '~s'", [App, Key, EscapedVal]).
-
 bridge(B) when is_atom(B) ->
 	atom_to_list(B);
 bridge(N) when is_integer(N) ->
@@ -366,21 +357,16 @@ addr(Addr) ->
 	Addr.
 
 conf(Ports, Queues, Controllers, Ipconf, ListenerIp, ListenerPort, Memory, Mount) ->
-	[{vif, 'bridge=xenbr0'}] ++
-	[{vif, list_to_atom("bridge=" ++ B)} || {_,B,_} <- Ports] ++
-	[
-		{extra, Ipconf},
-		{extra, Mount},
-		{extra, argumentize(
-			linc, capable_switch_ports,
+	{ok, [SysConf]} = file:consult("priv/sys.config"),
+	LincConf = [
+		{of_config,disabled},
+		{capable_switch_ports,
 			[{port,Id,[{interface,"eth" ++ integer_to_list(Id)},{type,vif}]} || {Id,_,_} <- Ports]
-		)},
-		{extra, argumentize(
-			linc, capable_switch_queues,
+		},
+		{capable_switch_queues,
 			[{queue, Id, [{min_rate, Min}, {max_rate, Max}]} || {Id, Min, Max} <- Queues]
-		)},
-		{extra, argumentize(
-			linc, logical_switches,
+		},
+		{logical_switches,
 			[{switch,0,[
 				{backend,linc_max},
 				{controllers,
@@ -390,13 +376,24 @@ conf(Ports, Queues, Controllers, Ipconf, ListenerIp, ListenerPort, Memory, Mount
 				{queues_status, disabled},
 				{ports, [{port,Id,{queues,Queue}} || {Id,_,Queue} <- Ports]}
 			]}]
-		)},
+		}
+	],
+
+	{ok, File} = file:open("priv/usr.config",[write]),
+	ok = io:format(File, "~p.\n", [[{linc, LincConf} | SysConf]]),
+	ok = file:close(File),
+
+	[{vif, 'bridge=xenbr0'}] ++
+	[{vif, list_to_atom("bridge=" ++ B)} || {_,B,_} <- Ports] ++
+	[
+		{extra, Ipconf},
+		{extra, Mount},
 		{extra,
 			"-eval \\\"lists:map(fun application:start/1, ["
 				"crypto,asn1,public_key,ssh,compiler,syntax_tools,xmerl,mnesia,lager,linc"
 			"])\\\""
 		},
-		{extra, "-config " ++ "/lincx/priv/sys.config"},
+		{extra, "-config /lincx/priv/usr.config"},
 		{memory, Memory},
 		{lib, eunit},
 		{lib, tools},

@@ -11,6 +11,8 @@ deps
 erl_crash.dump
 
 lincx.config
+lincx.yml
 
 domain_config
 lincx.img
+priv/usr.config
