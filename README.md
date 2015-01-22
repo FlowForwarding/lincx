@@ -17,8 +17,7 @@ LINCX is a new faster version of [LINC-Switch][oldlinc].
 
 ### How to use it?
 
-1. Check that you have Erlang/OTP R16B01 installed. Other versions will NOT
-work. You may need to build Erlang/OTP R16B01 from [sources](http://www.erlang.org/download_release/19).
+1. Check that you have Erlang/OTP 17 installed. Other versions will NOT work.
 
 1. Clone the LINCX repository:
 ```
