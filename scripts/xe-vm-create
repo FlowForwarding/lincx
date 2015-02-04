@@ -1,0 +1,90 @@
+#!/usr/bin/env sh
+set -e
+
+if [ "$EUID" -ne 0 ]; then
+        echo "Please run as root"
+        exit
+fi
+
+if [ $# -ne 1 ]; then
+	echo "Usage: xe-vm-create <yml config>"
+	exit
+fi
+
+if [ ! -f $1 ]; then
+	echo "Can't find $1"
+	exit
+fi
+
+# get abs path
+CFG=$(readlink -f $1)
+# get vm name
+NAME=$(basename "$1" .yml)
+
+cd $(dirname "$0")/..
+cp $CFG lincx.yml
+./railing image -n lincx
+
+# extract extra part of domain_config, do some escaping for pygrub
+EXTRA=$(awk -v lineNum=3 '{if (NR == lineNum) {print substr($0,10,length($0)-10)}}' domain_config)
+EXTRA=${EXTRA//\\\"/\'}
+
+ELF_SIZE=$(stat -c%s "lincx.img")
+
+VDI=$(xe vdi-list name-label=$NAME --minimal)
+if [ -z "$VDI" ]; then
+	echo "XE: create vdi"
+	SR=$(xe sr-list name-label="Local storage" --minimal)
+	if [ -z "$SR" ]; then
+		echo "XE: sr \"Local storage\" not found :("
+		exit
+	fi
+	VDI=$(xe vdi-create sr-uuid=$SR \
+		name-label=$NAME type=user virtual-size=$((ELF_SIZE + 1000000)))
+	if [ $? -ne 0 ]; then
+		echo "XE: vdi-create failed :("
+		exit
+	fi
+fi
+
+echo "XE: init vdi"
+MNT=$(mktemp -d mnt_XXX)
+IMG=$(mktemp lincx_XXX)
+dd if=/dev/zero of=$IMG bs=$((ELF_SIZE + 500000)) count=1 2>/dev/null
+mkfs.ext3 -F -q $IMG
+mount -o loop $IMG $MNT
+mkdir -p $MNT/boot/grub
+cp lincx.img $MNT/boot/
+echo -e "default 0\ntimeout 0\ntitle LINCX\n\troot (hd0,0)\n\tkernel /boot/lincx.img $EXTRA" > $MNT/boot/grub/menu.lst
+umount $MNT
+rmdir $MNT
+# vdi-import complain and return error, but do the job nicely
+xe vdi-import uuid=$VDI filename=$IMG 2>/dev/null || true
+rm -f $IMG
+
+VM=$(xe vm-list name-label=$NAME --minimal)
+if [ -z "$VM" ]; then
+	echo "XE: create vm"
+	VM=$(xe vm-install template="Other install media" new-name-label=$NAME)
+	if [ -z "$VM" ]; then
+		echo "XE: vm-install failed :("
+		exit
+	fi
+	xe vm-param-set uuid=$VM HVM-boot-policy=""
+	xe vm-param-set uuid=$VM PV-bootloader=pygrub
+fi
+
+VBD=$(xe vbd-list vdi-name-label=$NAME --minimal)
+if [ ! -z "$VBD" ]; then
+	echo "XE: destroy old vbd"
+	xe vbd-destroy uuid=$VBD
+fi
+
+echo "XE: create vbd"
+VBD=$(xe vbd-create device=0 vm-uuid=$VM vdi-uuid=$VDI bootable=true mode=ro type=disk)
+if [ $? -ne 0 ]; then
+	echo "XE: vdb-create failed :("
+	exit
+fi
+
+echo -e "XE: vm is ready, to start exec:\n\txe vm-start vm=$NAME"
