@@ -63,16 +63,17 @@ xe vdi-import uuid=$VDI filename=$IMG 2>/dev/null || true
 rm -f $IMG
 
 VM=$(xe vm-list name-label=$NAME --minimal)
-if [ -z "$VM" ]; then
-	echo "XE: create vm"
-	VM=$(xe vm-install template="Other install media" new-name-label=$NAME)
-	if [ -z "$VM" ]; then
-		echo "XE: vm-install failed :("
-		exit
-	fi
-	xe vm-param-set uuid=$VM HVM-boot-policy=""
-	xe vm-param-set uuid=$VM PV-bootloader=pygrub
+if [ ! -z "$VM" ]; then
+	xe vm-destroy uuid=$VM
 fi
+echo "XE: create vm"
+VM=$(xe vm-install template="Other install media" new-name-label=$NAME)
+if [ -z "$VM" ]; then
+	echo "XE: vm-install failed :("
+	exit
+fi
+xe vm-param-set uuid=$VM HVM-boot-policy=""
+xe vm-param-set uuid=$VM PV-bootloader=pygrub
 
 VBD=$(xe vbd-list vdi-name-label=$NAME --minimal)
 if [ ! -z "$VBD" ]; then
@@ -86,5 +87,22 @@ if [ $? -ne 0 ]; then
 	echo "XE: vdb-create failed :("
 	exit
 fi
+
+echo "XE: setup network"
+DEVICE=0
+for BRIDGE in $(grep vif < domain_config | grep -Po "(?<=bridge=)([^\']*)")
+do
+	NETWORK=$(xe network-list bridge=$BRIDGE --minimal)
+	if [ -z "$NETWORK" ]; then
+		echo "XE: can't find network bridge $BRIDGE"
+		exit
+	fi
+	VIF=$(xe vif-create vm-uuid=$VM network-uuid=$NETWORK mac=random device=$DEVICE)
+	if [ $? -ne 0 ]; then
+		echo "XE: vif-create failed :("
+		exit
+	fi
+	DEVICE=$((DEVICE + 1))
+done
 
 echo -e "XE: vm is ready, to start exec:\n\txe vm-start vm=$NAME"
