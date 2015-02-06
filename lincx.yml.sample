@@ -9,9 +9,9 @@ queues:
   - {id: 2, min: 0, max: 200}
 
 ports:
-  - {id: 1, bridge: xenbr1, queue: 1}
-  - {id: 2, bridge: xenbr2, queue: 2}
-  - {id: 3, bridge: xenbr3, queue: 3}
+  - {id: 1, bridge: xenbr1}
+  - {id: 2, bridge: xenbr2}
+  - {id: 3, bridge: xenbr3}
 
 controllers:
   - 192.168.3.30:6653
