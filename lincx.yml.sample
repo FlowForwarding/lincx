@@ -9,7 +9,7 @@ queues:
   - {id: 2, min: 0, max: 200}
 
 ports:
-  - {id: 1, bridge: xenbr1}
+  - {id: 1, bridge: xenbr1, vif_mac: 11:22:33:44:55:66}
   - {id: 2, bridge: xenbr2}
   - {id: 3, bridge: xenbr3}
 
