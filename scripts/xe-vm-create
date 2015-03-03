@@ -90,14 +90,19 @@ fi
 
 echo "XE: setup network"
 DEVICE=0
-for BRIDGE in $(grep vif < domain_config | grep -Po "(?<=bridge=)([^\']*)")
+for DESC in $(grep vif < domain_config | grep -Po "(?<=bridge=)([^\']*)")
 do
+	MAC=$(echo $DESC | grep -Po "(?<=mac=)(.*)")
+	if [ -z "$MAC" ]; then
+		MAC=random
+	fi
+	BRIDGE=$(echo $DESC | grep -Po "(^[^,]*)")
 	NETWORK=$(xe network-list bridge=$BRIDGE --minimal)
 	if [ -z "$NETWORK" ]; then
 		echo "XE: can't find network bridge $BRIDGE"
 		exit
 	fi
-	VIF=$(xe vif-create vm-uuid=$VM network-uuid=$NETWORK mac=random device=$DEVICE)
+	VIF=$(xe vif-create vm-uuid=$VM network-uuid=$NETWORK mac=$MAC device=$DEVICE)
 	if [ $? -ne 0 ]; then
 		echo "XE: vif-create failed :("
 		exit

@@ -75,6 +75,7 @@ yml(Cfg) ->
 				{
 					proplists:get_value("id", Fields),
 					proplists:get_value("bridge", Fields),
+					proplists:get_value("vif_mac", Fields),
 					Qs
 				}
 			end,
@@ -189,6 +190,8 @@ check_port(Port) when is_list(Port) ->
 				ok;
 			({"bridge", Bridge}) when is_list(Bridge) ->
 				ok;
+			({"vif_mac", VifMac}) when is_list(VifMac) ->
+				ok;
 			({"queue", Queue}) when is_integer(Queue) ->
 				ok;
 			(Unknown) ->
@@ -272,6 +275,8 @@ read_erl(Conf) ->
 								bridge(B)
 						end,
 
+					VifMac = proplists:get_value(vif_mac, PortOps),
+
 					Queue =
 						case proplists:get_value(queue, PortOps) of
 							undefined ->
@@ -280,7 +285,7 @@ read_erl(Conf) ->
 								[Q]
 						end,
 
-					Ports ++ [{PortNo, Bridge, Queue}];
+					Ports ++ [{PortNo, Bridge, VifMac, Queue}];
 				(_, Ports) ->
 					Ports
 			end,
@@ -361,7 +366,7 @@ conf(Ports, Queues, Controllers, Ipconf, ListenerIp, ListenerPort, Memory, Mount
 	LincConf = [
 		{of_config,disabled},
 		{capable_switch_ports,
-			[{port,Id,[{interface,"eth" ++ integer_to_list(Id)},{type,vif}]} || {Id,_,_} <- Ports]
+			[{port,Id,[{interface,"eth" ++ integer_to_list(Id)},{type,vif}]} || {Id,_,_,_} <- Ports]
 		},
 		{capable_switch_queues,
 			[{queue, Id, [{min_rate, Min}, {max_rate, Max}]} || {Id, Min, Max} <- Queues]
@@ -374,7 +379,7 @@ conf(Ports, Queues, Controllers, Ipconf, ListenerIp, ListenerPort, Memory, Mount
 				},
 				{controllers_listener, {ListenerIp, ListenerPort, tcp}},
 				{queues_status, disabled},
-				{ports, [{port,Id,{queues,Queue}} || {Id,_,Queue} <- Ports]}
+				{ports, [{port,Id,{queues,Queue}} || {Id,_,_,Queue} <- Ports]}
 			]}]
 		}
 	],
@@ -383,8 +388,18 @@ conf(Ports, Queues, Controllers, Ipconf, ListenerIp, ListenerPort, Memory, Mount
 	ok = io:format(File, "~p.\n", [[{linc, LincConf} | SysConf]]),
 	ok = file:close(File),
 
-	[{vif, 'bridge=xenbr0'}] ++
-	[{vif, list_to_atom("bridge=" ++ B)} || {_,B,_} <- Ports] ++
+	Vifs =
+		lists:map(
+			fun
+				({_,B,undefined,_}) ->
+					{vif, list_to_atom("bridge=" ++ B)};
+				({_,B,Mac,_}) ->
+					{vif, list_to_atom("bridge=" ++ B ++ ",mac=" ++ Mac)}
+			end,
+			Ports
+		),
+
+	[{vif, 'bridge=xenbr0'}] ++ Vifs ++
 	[
 		{extra, Ipconf},
 		{extra, Mount},
