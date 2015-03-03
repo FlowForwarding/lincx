@@ -92,10 +92,7 @@ echo "XE: setup network"
 DEVICE=0
 for DESC in $(grep vif < domain_config | grep -Po "(?<=bridge=)([^\']*)")
 do
-	MAC=$(echo $DESC | grep -Po "(?<=mac=)(.*)")
-	if [ -z "$MAC" ]; then
-		MAC=random
-	fi
+	MAC=$(echo "$DESC" | grep -Po "(?<=mac=)(.*)" || echo random)
 	BRIDGE=$(echo $DESC | grep -Po "(^[^,]*)")
 	NETWORK=$(xe network-list bridge=$BRIDGE --minimal)
 	if [ -z "$NETWORK" ]; then
