@@ -147,6 +147,8 @@ yml(Cfg) ->
 
 	conf(Ports, Queues, Controllers, Ipconf, ListenIp, ListenPort, Memory, NineP ++ " " ++ Secret).
 
+check_opt({"ipconf", "dhcp"}) ->
+	ok;
 check_opt({"ipconf", Ipconf}) when is_list(Ipconf) ->
 	lists:foreach(
 		fun
