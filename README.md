@@ -62,7 +62,7 @@ To add an OpenFlow port use the following option:
 	{port, PortNo, AuxProps}.
 ```
 By default, an OpenFlow port 1 connects to the bridge named br1 in Dom0. The
-name of the brdige can be set in auxilliary properties:
+name of the brdige can be set in auxiliary properties:
 ```
 	{port, 1, [{bridge,br7}]}. %% connects the port to br7
 ```
@@ -73,7 +73,7 @@ To add multiple ports use:
 ```
 By default, the ports are numbered from 1 to NumOfPorts and are connected to
 brdiges br1, br2, etc. The starting port number and the prefix for bridge names
-can be changed using auxilliary properties:
+can be changed using auxiliary properties:
 ```
 	%% adds ports 5,6,7 connected to xenbr5,xenbr6,xenbr7
 	{ports, 3, [{start,5},{prefix,xenbr}]}.
